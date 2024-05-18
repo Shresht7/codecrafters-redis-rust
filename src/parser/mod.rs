@@ -59,7 +59,7 @@ pub fn parse(input: &[u8]) -> Result<Vec<RESPData>, Box<dyn std::error::Error>> 
         remaining = rest;
     }
 
-    // Return the parsed data and the remaining input
+    // Return the parsed data
     Ok(data)
 }
 
@@ -72,7 +72,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_simple_string() {
+    fn should_parse_simple_string() {
         let input = b"+hello world\r\n";
         let expected = vec![RESPData::SimpleString("hello world".to_string())];
         let actual = parse(input).unwrap();
@@ -80,19 +80,32 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_empty_input() {
+    fn should_error_on_empty_input() {
         let input = b"\r\n";
         assert!(parse(input).is_err());
     }
 
     #[test]
-    fn test_parse_multiple_elements() {
+    fn should_parse_multiple_elements() {
         let input = b"+hello world\r\n:-123\r\n";
         let expected = vec![
             RESPData::SimpleString("hello world".to_string()),
             RESPData::Integer(-123),
         ];
         let actual = parse(input).unwrap();
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    #[ignore]
+    fn should_parse_echo_command() {
+        let input = ["*2\r\n", "$4\r\n", "ECHO\r\n", "$9\r\n", "pineapple\r\n"];
+        let expected = vec![
+            RESPData::Integer(2),
+            RESPData::SimpleString("ECHO".to_string()),
+            RESPData::SimpleString("pineapple".to_string()),
+        ];
+        let actual = parse(input.concat().as_bytes()).unwrap();
         assert_eq!(actual, expected);
     }
 }
