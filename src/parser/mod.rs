@@ -13,6 +13,7 @@
 // RESP can serialize different data types including strings, integers, arrays, etc.
 
 // Library
+mod integer;
 mod simple_string;
 
 /// The Carriage Return Line Feed (CRLF) sequence
@@ -22,7 +23,7 @@ const CRLF: &[u8] = b"\r\n";
 #[derive(Debug, PartialEq)]
 pub enum RESPData {
     SimpleString(String),
-    // Integer(i64),
+    Integer(i64),
 }
 
 /// Parses the given input data and returns the corresponding `RESPData` and the remaining input
@@ -33,6 +34,7 @@ fn _parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>>
     // Match on the first_byte to determine the data type and parse the input accordingly
     match first_byte {
         b'+' => simple_string::parse(&input[1..]),
+        b':' => integer::parse(&input[1..]),
         _ => Err("Invalid data type".into()),
     }
 }
@@ -78,14 +80,19 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_invalid_input() {
-        let input = b"hello world";
+    fn test_parse_empty_input() {
+        let input = b"\r\n";
         assert!(parse(input).is_err());
     }
 
     #[test]
-    fn test_parse_empty_input() {
-        let input = b"\r\n";
-        assert!(parse(input).is_err());
+    fn test_parse_multiple_elements() {
+        let input = b"+hello world\r\n:-123\r\n";
+        let expected = vec![
+            RESPData::SimpleString("hello world".to_string()),
+            RESPData::Integer(-123),
+        ];
+        let actual = parse(input).unwrap();
+        assert_eq!(actual, expected);
     }
 }

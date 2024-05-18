@@ -1,0 +1,72 @@
+// Library
+use crate::parser::{RESPData, CRLF};
+
+// --------------
+// PARSE INTEGERS
+// --------------
+
+/// Parses an `Integer` from the given input data
+pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
+    // Find the position of the CRLF sequence in the input
+    let end_pos = input
+        .windows(2)
+        .position(|window| window == CRLF)
+        .ok_or("Invalid input. Expecting a CRLF sequence")?;
+
+    // Extract the integer from the input up to the CRLF sequence
+    let integer = String::from_utf8(input[..end_pos].to_vec())?.parse::<i64>()?;
+
+    // Return the parsed integer and the remaining input
+    Ok((RESPData::Integer(integer), &input[end_pos + CRLF.len()..]))
+}
+
+// -----
+// TESTS
+// -----
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_integer() {
+        let input = b"123\r\n";
+        let expected = RESPData::Integer(123);
+        let (actual, _) = parse(input).unwrap();
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_parse_negative_integer() {
+        let input = b"-123\r\n";
+        let expected = RESPData::Integer(-123);
+        let (actual, _) = parse(input).unwrap();
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_parse_zero() {
+        let input = b"0\r\n";
+        let expected = RESPData::Integer(0);
+        let (actual, _) = parse(input).unwrap();
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_parse_floating_point() {
+        let input = b"123.45\r\n";
+        assert!(parse(input).is_err());
+    }
+
+    #[test]
+    fn test_parse_invalid_input() {
+        let input = b"hello world\r\n";
+        assert!(parse(input).is_err());
+    }
+
+    #[test]
+    fn test_parse_empty_input() {
+        let input = b"\r\n";
+        assert!(parse(input).is_err());
+    }
+}
