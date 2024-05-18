@@ -1,6 +1,7 @@
 // Library
 use std::io::{Read, Write};
 use std::net::TcpListener;
+use std::thread;
 
 fn main() {
     // Run the server on the given address and port
@@ -15,7 +16,16 @@ fn run_server(addr: &str) -> Result<(), Box<dyn std::error::Error>> {
 
     // Listen for incoming connections and handle them
     for stream in listener.incoming() {
-        handle_connection(&mut stream?)?;
+        // Unwrap the stream to get the TcpStream object and clone it to allow multiple connections
+        let mut s = stream?.try_clone()?;
+
+        // Set the stream to non-blocking mode to allow multiple connections to be handled concurrently
+        s.set_nonblocking(true)?;
+
+        // Spawn a new thread for each incoming connection
+        thread::spawn(move || {
+            handle_connection(&mut s).expect("Failed to handle connection");
+        });
     }
 
     Ok(())
