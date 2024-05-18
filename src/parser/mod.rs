@@ -1,32 +1,14 @@
-// REDIS SERIALIZATION PROTOCOL
-//
-// > Source: https://redis.io/topics/protocol
-//
-// Redis Serialization Protocol (RESP) is the protocol used in Redis to
-// serialize the data exchanged between the server and the client.
-//
-// RESP is a compromise between the following things:
-// - Simple and Fast to parse.
-// - Human readable and writable.
-// - Easy to implement.
-//
-// RESP can serialize different data types including strings, integers, arrays, etc.
-
 // Library
+mod data_types;
 mod integer;
 mod simple_error;
 mod simple_string;
 
+// Use statements
+use data_types::RESPData;
+
 /// The Carriage Return Line Feed (CRLF) sequence
 const CRLF: &[u8] = b"\r\n";
-
-/// Represents the different types of data that can be serialized using RESP (Redis Serialization Protocol).
-#[derive(Debug, PartialEq)]
-pub enum RESPData {
-    SimpleString(String),
-    SimpleError(String),
-    Integer(i64),
-}
 
 /// Parses the given input data and returns the corresponding `RESPData` and the remaining input
 fn _parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
