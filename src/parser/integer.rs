@@ -13,7 +13,7 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
         .position(|window| window == CRLF)
         .ok_or("Invalid input. Expecting a CRLF sequence")?;
 
-    // Extract the integer from the input up to the CRLF sequence
+    // Extract the integer from the input up to the CRLF sequence and parse it as an i64
     let integer = String::from_utf8(input[..end_pos].to_vec())?.parse::<i64>()?;
 
     // Return the parsed integer and the remaining input
@@ -29,7 +29,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_integer() {
+    fn should_parse_integer() {
         let input = b"123\r\n";
         let expected = RESPData::Integer(123);
         let (actual, _) = parse(input).unwrap();
@@ -37,7 +37,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_negative_integer() {
+    fn should_parse_negative_integer() {
         let input = b"-123\r\n";
         let expected = RESPData::Integer(-123);
         let (actual, _) = parse(input).unwrap();
@@ -45,7 +45,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_zero() {
+    fn should_parse_zero() {
         let input = b"0\r\n";
         let expected = RESPData::Integer(0);
         let (actual, _) = parse(input).unwrap();
@@ -53,19 +53,27 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_floating_point() {
+    fn should_not_parse_floats() {
         let input = b"123.45\r\n";
         assert!(parse(input).is_err());
     }
 
     #[test]
-    fn test_parse_invalid_input() {
+    fn should_return_the_remaining_input() {
+        let input = b"123\r\nhello world";
+        let expected = b"hello world";
+        let (_, remaining) = parse(input).unwrap();
+        assert_eq!(remaining, expected);
+    }
+
+    #[test]
+    fn should_error_on_invalid_input() {
         let input = b"hello world\r\n";
         assert!(parse(input).is_err());
     }
 
     #[test]
-    fn test_parse_empty_input() {
+    fn should_error_on_empty_input() {
         let input = b"\r\n";
         assert!(parse(input).is_err());
     }
