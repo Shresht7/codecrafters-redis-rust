@@ -14,6 +14,7 @@
 
 // Library
 mod integer;
+mod simple_error;
 mod simple_string;
 
 /// The Carriage Return Line Feed (CRLF) sequence
@@ -23,6 +24,7 @@ const CRLF: &[u8] = b"\r\n";
 #[derive(Debug, PartialEq)]
 pub enum RESPData {
     SimpleString(String),
+    SimpleError(String),
     Integer(i64),
 }
 
@@ -34,6 +36,7 @@ fn _parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>>
     // Match on the first_byte to determine the data type and parse the input accordingly
     match first_byte {
         b'+' => simple_string::parse(&input[1..]),
+        b'-' => simple_error::parse(&input[1..]),
         b':' => integer::parse(&input[1..]),
         _ => Err("Invalid data type".into()),
     }
