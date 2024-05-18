@@ -27,19 +27,27 @@ fn handle_connection(stream: &mut std::net::TcpStream) -> Result<(), Box<dyn std
     /// The size of the buffer to read incoming data
     const BUFFER_SIZE: usize = 1024;
 
-    // Read the incoming data from the stream
-    let mut buffer = [0; BUFFER_SIZE];
-    stream.read(&mut buffer)?;
+    // Loop as long as requests are being made
+    loop {
+        // Read the incoming data from the stream
+        let mut buffer = [0; BUFFER_SIZE];
+        let bytes_read = stream.read(&mut buffer)?;
 
-    // Print the incoming data
-    println!("Request: {}", String::from_utf8_lossy(&buffer));
+        // If no bytes were read, the client has closed the connection
+        if bytes_read == 0 {
+            break;
+        }
 
-    // Write a response back to the stream
-    let response = b"+PONG\r\n";
-    stream.write_all(response)?;
+        // Print the incoming data
+        println!("Request: {}", String::from_utf8_lossy(&buffer));
 
-    // Flush the stream to ensure the response is sent
-    stream.flush()?;
+        // Write a response back to the stream
+        let response = b"+PONG\r\n";
+        stream.write_all(response)?;
+
+        // Flush the stream to ensure the response is sent
+        stream.flush()?;
+    }
 
     Ok(())
 }
