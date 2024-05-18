@@ -72,4 +72,24 @@ pub enum RESPData {
     /// :0\r\n
     /// ```
     Integer(i64),
+
+    /// A _Bulk String_ represents a single binary string. The string can be of any size, but by default
+    /// Redis limits it to 512MB.
+    /// The first byte of a _Bulk String_ is the dollar `$` character, followed by the number of bytes in
+    /// the string (as a decimal number), and the CRLF sequence.
+    ///
+    /// Example:
+    /// ```sh
+    /// $6\r\nfoobar\r\n # $<length>\r\n<data>\r\n
+    /// $0\r\n\r\n # Empty string
+    /// ```
+    ///
+    /// While RESP3 has a new data type for _Null_, RESP2 uses _Bulk Strings_ to represent null values.
+    /// A _Bulk String_ with a length of `-1` represents a null value.
+    ///
+    /// Example:
+    /// ```sh
+    /// $-1\r\n
+    /// ```
+    BulkString(String),
 }
