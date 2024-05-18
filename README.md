@@ -73,6 +73,29 @@ In addition to handling multiple commands from the same connection, Redis server
 
 ---
 
+## Stage 5: Implement the ECHO command
+
+In this stage, we add support for the [`ECHO`](https://redis.io/commands/echo) command.
+
+`ECHO`, like `PING`, is a command mostly used for testing and debugging. It simply returns the message that was sent to it.
+
+```sh
+$ redis-cli PING # The command we implemented in the previous stages
+PONG
+$ redis-cli ECHO "Hello, World!"
+"Hello, World!"
+```
+
+> [!NOTE]
+> Redis commands are case-insensitive, so `ECHO`, `echo`, and `EcHo` are all valid commands.
+
+### 📕 References
+
+- [RESP Bulk String](https://redis.io/docs/reference/protocol-spec/#bulk-strings)
+- [RESP: Redis Serialization Protocol][Redis Protocol]
+
+---
+
 <!-- ----- -->
 <!-- LINKS -->
 <!-- ----- -->
