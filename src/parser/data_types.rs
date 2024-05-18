@@ -15,6 +15,24 @@
 /// - Easy to implement.
 ///
 /// RESP can serialize different data types including strings, integers, arrays, etc.
+///
+///
+/// | RESP data type    | MPV    | Category   | First byte |
+/// |-------------------|--------|------------|------------|
+/// | Simple strings    | RESP2  | Simple     | `+`        |
+/// | Simple Errors     | RESP2  | Simple     | `-`        |
+/// | Integers          | RESP2  | Simple     | `:`        |
+/// | Bulk strings      | RESP2  | Aggregate  | `$`        |
+/// | Arrays            | RESP2  | Aggregate  | `*`        |
+/// | Nulls             | RESP3  | Simple     | `_`        |
+/// | Booleans          | RESP3  | Simple     | `#`        |
+/// | Doubles           | RESP3  | Simple     | `,`        |
+/// | Big numbers       | RESP3  | Simple     | `(`        |
+/// | Bulk errors       | RESP3  | Aggregate  | `!`        |
+/// | Verbatim strings  | RESP3  | Aggregate  | `=`        |
+/// | Maps              | RESP3  | Aggregate  | `%`        |
+/// | Sets              | RESP3  | Aggregate  | `~`        |
+/// | Pushes            | RESP3  | Aggregate  | `>`        |
 #[derive(Debug, PartialEq)]
 pub enum RESPData {
     /// Simple Strings are encoded with a leading `+` character followed by the string itself.
