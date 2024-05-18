@@ -10,6 +10,8 @@ event loops, the Redis protocol and more.
 **Note**: If you're viewing this repo on GitHub, head over to
 [codecrafters.io](https://codecrafters.io) to try the challenge.
 
+---
+
 ## Stage 1: Bind to a Port
 
 In this stage, we implement a TCP server that listens on port `6379`.
@@ -26,6 +28,8 @@ In this stage, we implement a TCP server that listens on port `6379`.
 - 📽️ [YouTube (BenEater): Networking Tutorial Playlist](https://www.youtube.com/playlist?list=PLowKtXNTBypH19whXTVoG3oKSuOcw_XeW)
 - 📄 [Network Protocols](https://app.codecrafters.io/concepts/network-protocols)
 - 📄 [TCP: An Overview](https://app.codecrafters.io/concepts/network-protocols)
+
+---
 
 ## Stage 2: Respond to PING
 
@@ -45,11 +49,29 @@ Redis clients communicate with Redis servers by sending "[commands](https://redi
 - 📄 [Redis Protocol][Redis Protocol]
 - 📄 [Rust TCP Server](https://app.codecrafters.io/concepts/rust-tcp-server)
 
+---
+
 ## Stage 3: Respond to multiple PINGs
 
 In this stage, we respond to multiple PING commands sent by the **same connection**.
 
 A Redis server starts to listen for the next command as soon as it's done responding to the previous one, in the same connection. This allows Redis clients to send multiple commands in quick succession.
+
+---
+
+## Stage 4: Handle concurrent clients
+
+In this stage, we add support for multiple concurrent clients.
+
+In addition to handling multiple commands from the same connection, Redis servers are also designed to handle multiple clients at once. This can be done by using threads, or (like Redis) by using a single-threaded event loop.
+
+### 📕 References
+
+- 📄 https://rohitpaulk.com/articles/redis-3
+- 📽️ [YouTube: Phillip Robert - What the heck is the event loop anyway?](https://www.youtube.com/watch?v=8aGhZQkoFbQ&ab_channel=JSConf)
+- 📽️ [YouTube: JSConf - Event Loop](https://www.youtube.com/watch?v=cCOL7MC4Pl0)
+
+---
 
 <!-- ----- -->
 <!-- LINKS -->
