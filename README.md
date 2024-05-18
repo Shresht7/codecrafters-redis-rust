@@ -27,6 +27,23 @@ In this stage, we implement a TCP server that listens on port `6379`.
 - 📄 [Network Protocols](https://app.codecrafters.io/concepts/network-protocols)
 - 📄 [TCP: An Overview](https://app.codecrafters.io/concepts/network-protocols)
 
+## Stage 2: Respond to PING
+
+In this stage, we implement a Redis server that responds to the [`PING`](https://redis.io/commands/ping) command.
+
+Redis clients communicate with Redis servers by sending "[commands](https://redis.io/docs/latest/commands/)", and the server responds with a reply. Both, "commands" and "responses" are encoded using the [Redis Protocol][Redis Protocol]
+
+`PING` is one of the simplest Redis commands. It's used to check whether a Redis server is healthy. The server responds with a `PONG\r\n` message.
+
+> [!NOTE]
+> The exact bytes your program receives won't just be `PING`, it'll be something like `*1\r\n$4\r\nPING\r\n`. This is because Redis commands are encoded using the [Redis Protocol][Redis Protocol]. This is handled in later stages.
+
+### 📕 References
+
+- 📄 [Redis: PING Command](https://redis.io/commands/ping)
+- 📄 https://lethain.com/redis-protocol/
+- 📄 [Redis Protocol][Redis Protocol]
+- 📄 [Rust TCP Server](https://app.codecrafters.io/concepts/rust-tcp-server)
 
 
 <!-- ----- -->
@@ -34,3 +51,4 @@ In this stage, we implement a TCP server that listens on port `6379`.
 <!-- ----- -->
 
 [TCP]: https://en.wikipedia.org/wiki/Transmission_Control_Protocol
+[Redis Protocol]: https://redis.io/topics/protocol
