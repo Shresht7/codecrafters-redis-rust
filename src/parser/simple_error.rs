@@ -1,5 +1,5 @@
 // Library
-use crate::parser::{RESPData, CRLF};
+use super::{helpers, RESPData, CRLF};
 
 // -------------------
 // PARSE SIMPLE ERRORS
@@ -8,10 +8,7 @@ use crate::parser::{RESPData, CRLF};
 /// Parses a `SimpleError` from the given input data
 pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
     // Find the position of the CRLF sequence in the input
-    let end_pos = input
-        .windows(2)
-        .position(|window| window == CRLF)
-        .ok_or("Invalid input. Expecting a CRLF sequence")?;
+    let end_pos = helpers::find_crlf(input)?;
 
     // Extract the error message from the input up to the CRLF sequence
     let error_message = String::from_utf8(input[..end_pos].to_vec())?;

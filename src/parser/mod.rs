@@ -1,6 +1,7 @@
 // Library
 mod bulk_string;
 mod data_types;
+mod helpers;
 mod integer;
 mod simple_error;
 mod simple_string;

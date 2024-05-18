@@ -1,5 +1,5 @@
 // Library
-use crate::parser::{RESPData, CRLF};
+use super::{helpers, RESPData, CRLF};
 
 // ------------------
 // PARSE BULK STRINGS
@@ -8,10 +8,7 @@ use crate::parser::{RESPData, CRLF};
 /// Parses a `BulkString` from the given input data
 pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
     // Find the position of the first CRLF sequence in the input
-    let len_end_pos = input
-        .windows(2)
-        .position(|window| window == CRLF)
-        .ok_or("Invalid input. Expecting a CRLF sequence")?;
+    let len_end_pos = helpers::find_crlf(input)?;
 
     // Extract the length of the bulk string
     let length = String::from_utf8(input[..len_end_pos].to_vec())?.parse::<i64>()?;
