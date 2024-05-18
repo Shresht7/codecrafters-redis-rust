@@ -32,7 +32,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_simple_string() {
+    fn should_parse_simple_string() {
         let input = b"hello world\r\n";
         let expected = RESPData::SimpleString("hello world".to_string());
         let (actual, _) = parse(input).unwrap();
@@ -40,16 +40,25 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_invalid_input() {
+    fn should_error_on_invalid_input() {
         let input = b"hello world";
         assert!(parse(input).is_err());
     }
 
     #[test]
-    fn test_parse_empty_input() {
+    fn should_parse_empty_input() {
         let input = b"\r\n";
         let expected = RESPData::SimpleString("".to_string());
         let (actual, _) = parse(input).unwrap();
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn should_return_the_remaining_input() {
+        let input = b"hello world\r\nextra data";
+        let expected = RESPData::SimpleString("hello world".to_string());
+        let (actual, remaining) = parse(input).unwrap();
+        assert_eq!(actual, expected);
+        assert_eq!(remaining, b"extra data");
     }
 }
