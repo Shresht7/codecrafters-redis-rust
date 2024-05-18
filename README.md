@@ -45,6 +45,11 @@ Redis clients communicate with Redis servers by sending "[commands](https://redi
 - 📄 [Redis Protocol][Redis Protocol]
 - 📄 [Rust TCP Server](https://app.codecrafters.io/concepts/rust-tcp-server)
 
+## Stage 3: Respond to multiple PINGs
+
+In this stage, we respond to multiple PING commands sent by the **same connection**.
+
+A Redis server starts to listen for the next command as soon as it's done responding to the previous one, in the same connection. This allows Redis clients to send multiple commands in quick succession.
 
 <!-- ----- -->
 <!-- LINKS -->
