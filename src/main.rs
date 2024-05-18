@@ -2,6 +2,8 @@
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 
+mod parser;
+
 // ----
 // MAIN
 // ----
@@ -55,6 +57,10 @@ async fn handle_connection(
 
         // Print the incoming data
         println!("Request: {}", String::from_utf8_lossy(&buffer));
+
+        // Parse the incoming data
+        let parsed_data = parser::parse(&buffer[..bytes_read])?;
+        println!("Parsed data: {:?}", parsed_data);
 
         // Write a response back to the stream
         let response = b"+PONG\r\n";
