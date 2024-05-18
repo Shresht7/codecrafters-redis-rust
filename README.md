@@ -10,30 +10,27 @@ event loops, the Redis protocol and more.
 **Note**: If you're viewing this repo on GitHub, head over to
 [codecrafters.io](https://codecrafters.io) to try the challenge.
 
-# Passing the first stage
+## Stage 1: Bind to a Port
 
-The entry point for your Redis implementation is in `src/main.rs`. Study and
-uncomment the relevant code, and push your changes to pass the first stage:
+In this stage, we implement a TCP server that listens on port `6379`.
 
-```sh
-git add .
-git commit -m "pass 1st stage" # any msg
-git push origin master
-```
+[TCP][TCP] is the underlying protocol used by protocols like HTTP, HTTPS, SSH and more. Redis server and clients use TCP to communicate with each other.
 
-That's all!
+> [!NOTE]
+> Redis uses port `6379`. If you already have a Redis server running on your machine and listening on port `6379`, you'll see a "port already in use" error. You can either stop the Redis server or change the port number in your code.
 
-# Stage 2 & beyond
+### 📕 Reference
 
-Note: This section is for stages 2 and beyond.
+- 📄 [Wikipedia: TCP][TCP]
+- 📽️ [YouTube (Julia Evans): fun with Sockets: let's write a web-server!](https://www.youtube.com/watch?v=1HF-UAGcuvs)
+- 📽️ [YouTube (BenEater): Networking Tutorial Playlist](https://www.youtube.com/playlist?list=PLowKtXNTBypH19whXTVoG3oKSuOcw_XeW)
+- 📄 [Network Protocols](https://app.codecrafters.io/concepts/network-protocols)
+- 📄 [TCP: An Overview](https://app.codecrafters.io/concepts/network-protocols)
 
-1. Ensure you have `cargo (1.54)` installed locally
-1. Run `./spawn_redis_server.sh` to run your Redis server, which is implemented
-   in `src/main.rs`. This command compiles your Rust project, so it might be
-   slow the first time you run it. Subsequent runs will be fast.
-1. Commit your changes and run `git push origin master` to submit your solution
-   to CodeCrafters. Test output will be streamed to your terminal.
 
-## 📕 References
 
-- [Wikipedia: TCP](https://en.wikipedia.org/wiki/Transmission_Control_Protocol)
+<!-- ----- -->
+<!-- LINKS -->
+<!-- ----- -->
+
+[TCP]: https://en.wikipedia.org/wiki/Transmission_Control_Protocol
