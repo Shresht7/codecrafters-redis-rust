@@ -20,7 +20,7 @@ fn run_server(addr: &str) -> Result<(), Box<dyn std::error::Error>> {
         let mut s = stream?.try_clone()?;
 
         // Set the stream to non-blocking mode to allow multiple connections to be handled concurrently
-        s.set_nonblocking(true)?;
+        // s.set_nonblocking(true)?;
 
         // Spawn a new thread for each incoming connection
         thread::spawn(move || {
