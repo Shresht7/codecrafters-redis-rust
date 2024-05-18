@@ -34,8 +34,8 @@ fn handle_connection(stream: &mut std::net::TcpStream) {
     println!("Request: {}", String::from_utf8_lossy(&buffer));
 
     // Write a response back to the stream
-    let response = "+PONG\r\n";
-    stream.write_all(response.as_bytes()).unwrap();
+    let response = b"+PONG\r\n";
+    stream.write_all(response).unwrap();
 
     // Flush the stream to ensure the response is sent
     stream.flush().unwrap();
