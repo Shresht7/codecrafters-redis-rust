@@ -1,6 +1,6 @@
 // Library
 use super::{
-    helpers::{self, CRLF},
+    reader::{self, CRLF},
     RESPData,
 };
 
@@ -19,14 +19,14 @@ use super::{
 /// 6\r\nfoobar\r\n => "foobar"
 /// ```
 pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
-    // Create a reader to help extract data from the input
-    let mut reader = helpers::read(input);
+    // Create a reader to help extract information from the input byte slice
+    let mut bytes = reader::read(input);
 
-    // Find the position of the first CRLF sequence in the input
-    let len_end_pos = reader.find_crlf()?;
+    // Find the position of the first CRLF sequence
+    let len_end_pos = bytes.find_crlf()?;
 
-    // Extract the length of the bulk string from the input
-    let length = reader.to(len_end_pos).parse::<i64>()?;
+    // Extract the "length" of the bulk string
+    let length = bytes.to(len_end_pos).parse::<i64>()?;
 
     // Calculate the position of the start of the bulk string data
     let data_start_pos = len_end_pos + CRLF.len();
@@ -48,7 +48,7 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
     let data_end_pos = data_start_pos + length as usize;
 
     // Extract the bulk string from the input and convert it to a String
-    let bulk_string = reader.from(data_start_pos).to(data_end_pos).as_string()?;
+    let bulk_string = bytes.from(data_start_pos).to(data_end_pos).as_string()?;
 
     // Return the parsed bulk string and the remaining input
     Ok((

@@ -1,6 +1,6 @@
 // Library
 use super::{
-    helpers::{self, CRLF},
+    reader::{self, CRLF},
     RESPData,
 };
 
@@ -10,14 +10,14 @@ use super::{
 
 /// Parses an `Integer` from the given input data
 pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
-    // Create a reader to help extract data from the input
-    let mut reader = helpers::read(input);
+    // Create a reader to help extract information from the input byte slice
+    let mut bytes = reader::read(input);
 
     // Find the position of the CRLF sequence in the input
-    let end_pos = reader.find_crlf()?;
+    let end_pos = bytes.find_crlf()?;
 
     // Extract the integer from the input up to the CRLF sequence and parse it as an i64
-    let integer = reader.to(end_pos).parse::<i64>()?;
+    let integer = bytes.to(end_pos).parse::<i64>()?;
 
     // Return the parsed integer and the remaining input
     Ok((RESPData::Integer(integer), &input[end_pos + CRLF.len()..]))
