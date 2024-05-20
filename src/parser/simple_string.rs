@@ -1,5 +1,8 @@
 // Library
-use super::{helpers, RESPData, CRLF};
+use super::{
+    helpers::{self, CRLF},
+    RESPData,
+};
 
 // -------------------
 // PARSE SIMPLE STRING
@@ -7,11 +10,14 @@ use super::{helpers, RESPData, CRLF};
 
 /// Parses a `SimpleString` from the given input data
 pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
+    // Create a reader to help extract data from the input
+    let mut reader = helpers::read(input);
+
     // Find the position of the CRLF sequence in the input
-    let end_pos = helpers::find_crlf(input)?;
+    let end_pos = reader.find_crlf()?;
 
     // Extract the simple string from the input up to the CRLF sequence
-    let simple_string = String::from_utf8(input[..end_pos].to_vec())?;
+    let simple_string = reader.to(end_pos).as_string()?;
 
     // Return the parsed simple string and the remaining input
     Ok((

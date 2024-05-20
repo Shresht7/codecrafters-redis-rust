@@ -1,5 +1,8 @@
 // Library
-use super::{helpers, RESPData, CRLF};
+use super::{
+    helpers::{self, CRLF},
+    RESPData,
+};
 
 // --------------
 // PARSE INTEGERS
@@ -7,11 +10,14 @@ use super::{helpers, RESPData, CRLF};
 
 /// Parses an `Integer` from the given input data
 pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
+    // Create a reader to help extract data from the input
+    let mut reader = helpers::read(input);
+
     // Find the position of the CRLF sequence in the input
-    let end_pos = helpers::find_crlf(input)?;
+    let end_pos = reader.find_crlf()?;
 
     // Extract the integer from the input up to the CRLF sequence and parse it as an i64
-    let integer = String::from_utf8(input[..end_pos].to_vec())?.parse::<i64>()?;
+    let integer = reader.to(end_pos).parse::<i64>()?;
 
     // Return the parsed integer and the remaining input
     Ok((RESPData::Integer(integer), &input[end_pos + CRLF.len()..]))

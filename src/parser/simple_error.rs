@@ -1,5 +1,8 @@
 // Library
-use super::{helpers, RESPData, CRLF};
+use super::{
+    helpers::{self, CRLF},
+    RESPData,
+};
 
 // -------------------
 // PARSE SIMPLE ERRORS
@@ -7,11 +10,14 @@ use super::{helpers, RESPData, CRLF};
 
 /// Parses a `SimpleError` from the given input data
 pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
+    // Create a reader to help extract data from the input
+    let mut reader = helpers::read(input);
+
     // Find the position of the CRLF sequence in the input
-    let end_pos = helpers::find_crlf(input)?;
+    let end_pos = reader.find_crlf()?;
 
     // Extract the error message from the input up to the CRLF sequence
-    let error_message = String::from_utf8(input[..end_pos].to_vec())?;
+    let error_message = reader.to(end_pos).as_string()?;
 
     // Return the parsed error message and the remaining input
     Ok((

@@ -9,9 +9,6 @@ mod simple_string;
 // Use statements
 use data_types::RESPData;
 
-/// The Carriage Return Line Feed (CRLF) sequence
-const CRLF: &[u8] = b"\r\n";
-
 /// Parses the given input data and returns the corresponding `RESPData` and the remaining input
 fn _parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
     // Extract the first byte from the input, which indicates the data type

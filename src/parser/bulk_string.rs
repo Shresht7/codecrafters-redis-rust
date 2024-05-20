@@ -1,41 +1,59 @@
 // Library
-use super::{helpers, RESPData, CRLF};
+use super::{
+    helpers::{self, CRLF},
+    RESPData,
+};
 
 // ------------------
 // PARSE BULK STRINGS
 // ------------------
 
-/// Parses a `BulkString` from the given input data
+/// Parses a `BulkString` from the given input data.
+/// A bulk string is a sequence of bytes with a length of `N` bytes followed by `N` bytes of data.
+/// The length of the bulk string is encoded as a decimal number followed by a CRLF sequence.
+/// If the length is -1, the bulk string is null.
+/// The bulk string is terminated by a CRLF sequence.
+///
+/// Example:
+/// ```sh
+/// 6\r\nfoobar\r\n => "foobar"
+/// ```
 pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
-    // Find the position of the first CRLF sequence in the input
-    let len_end_pos = helpers::find_crlf(input)?;
+    // Create a reader to help extract data from the input
+    let mut reader = helpers::read(input);
 
-    // Extract the length of the bulk string
-    let length = String::from_utf8(input[..len_end_pos].to_vec())?.parse::<i64>()?;
+    // Find the position of the first CRLF sequence in the input
+    let len_end_pos = reader.find_crlf()?;
+
+    // Extract the length of the bulk string from the input
+    let length = reader.to(len_end_pos).parse::<i64>()?;
+
+    // Calculate the position of the start of the bulk string data
+    let data_start_pos = len_end_pos + CRLF.len();
 
     // Check if the bulk string is null
     if length == -1 {
         return Ok((
             RESPData::BulkString(String::new()),
-            &input[len_end_pos + CRLF.len()..],
+            &input[data_start_pos..], // Remaining bytes
         ));
     }
 
-    // Check if the input has enough elements
-    if input.len() < len_end_pos + CRLF.len() + length as usize {
-        return Err("Invalid input. Expecting more data".into());
+    // Check if there is enough data to parse the bulk string
+    if data_start_pos + length as usize > input.len() {
+        return Err("Invalid input. Insufficient data".into());
     }
 
-    // Find the position of the next CRLF sequence in the input
-    let data_end_pos = len_end_pos + CRLF.len() + length as usize;
+    // Calculate the position of the end of the bulk string data
+    let data_end_pos = data_start_pos + length as usize;
 
     // Extract the bulk string from the input and convert it to a String
-    let bulk_string = String::from_utf8(input[len_end_pos + CRLF.len()..data_end_pos].to_vec())?;
+    let bulk_string = reader.from(data_start_pos).to(data_end_pos).as_string()?;
 
     // Return the parsed bulk string and the remaining input
     Ok((
         RESPData::BulkString(bulk_string),
-        &input[data_end_pos + CRLF.len()..],
+        &input[data_end_pos + CRLF.len()..], // Remaining bytes
     ))
 }
 
