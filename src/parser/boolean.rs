@@ -7,9 +7,9 @@ use super::{
 /// The first_byte of a boolean value
 const FIRST_BYTE: &[u8] = b"#";
 
-// -------------
-// PARSE BOOLEAN
-// -------------
+// --------------
+// BOOLEAN PARSER
+// --------------
 
 /// Parses a boolean value from the input byte slice.
 ///
@@ -53,6 +53,7 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
         );
     }
 
+    // Return the parsed boolean value and the remaining input
     Ok((
         RESPData::Boolean(boolean),
         &input[crlf_end_pos..], // Remaining bytes
@@ -99,7 +100,6 @@ impl std::error::Error for BooleanParserError {}
 mod tests {
     use super::*;
 
-
     #[test]
     fn should_error_on_insufficient_data() {
         let input = b"#t";
@@ -130,14 +130,12 @@ mod tests {
         assert_eq!(result, expected);
     }
 
-    
     #[test]
     fn should_error_on_invalid_input_boolean() {
         let input = b"#x\r\n";
         let result = parse(input);
         assert!(result.is_err());
     }
-
     
     #[test]
     fn should_error_on_invalid_input_crlf() {
