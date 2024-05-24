@@ -47,11 +47,14 @@ impl<'a> BytesReader<'a> {
     /// let mut bytes = reader::read(input);   // Create a new BytesReader instance
     /// let pos = bytes.find_crlf().unwrap();  // => 11
     /// ```
-    pub fn find_crlf(&mut self) -> Result<usize, Box<dyn std::error::Error>> {
-        self.slice
+    pub fn find_crlf(&mut self) -> Result<(usize, usize), Box<dyn std::error::Error>> {
+        let start_pos = self
+            .slice
             .windows(CRLF.len())
             .position(|window| window == CRLF)
-            .ok_or("Invalid input. Expecting a CRLF sequence".into())
+            .ok_or_else(|| "Invalid input. Expecting a CRLF sequence")?;
+        let end_pos = start_pos + CRLF.len();
+        Ok((start_pos, end_pos))
     }
 
     /// Set the start position of the reader.

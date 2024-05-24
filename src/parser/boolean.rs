@@ -37,8 +37,7 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
     let mut bytes = reader::read(input);
 
     // Find the position of the CRLF sequence
-    let crlf_pos = bytes.find_crlf()?;
-    let crlf_end_pos = crlf_pos + CRLF.len();
+    let (crlf_pos, crlf_end_pos) = bytes.find_crlf()?;
 
     // Extract the boolean value
     let boolean = match input[1] {

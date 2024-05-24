@@ -1,8 +1,5 @@
 // Library
-use super::{
-    reader::{self, CRLF},
-    RESPData,
-};
+use super::{reader, RESPData};
 
 // -------------------
 // PARSE SIMPLE STRING
@@ -14,16 +11,13 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
     let mut bytes = reader::read(input);
 
     // Find the position of the CRLF sequence in the input
-    let end_pos = bytes.find_crlf()?;
+    let (end_pos, rest_pos) = bytes.find_crlf()?;
 
     // Extract the simple string from the input up to the CRLF sequence
     let simple_string = bytes.to(end_pos).as_string()?;
 
     // Return the parsed simple string and the remaining input
-    Ok((
-        RESPData::SimpleString(simple_string),
-        &input[end_pos + CRLF.len()..],
-    ))
+    Ok((RESPData::SimpleString(simple_string), &input[rest_pos..]))
 }
 
 // -----

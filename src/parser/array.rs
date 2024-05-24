@@ -1,8 +1,5 @@
 // Library
-use super::{
-    reader::{self, CRLF},
-    RESPData,
-};
+use super::{reader, RESPData};
 
 // -----------
 // PARSE ARRAY
@@ -23,14 +20,11 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
     // Create a reader to help extract information from the input byte slice
     let mut bytes = reader::read(input);
 
-    // Find the position of the first CRLF sequence
-    let len_end_pos = bytes.find_crlf()?;
+    // Find the position of the first CRLF sequence and the start of the array data
+    let (len_end_pos, data_start_pos) = bytes.find_crlf()?;
 
     // Extract the "length" of the array
     let length = bytes.to(len_end_pos).parse::<i64>()?;
-
-    // Calculate the position of the start of the array data
-    let data_start_pos = len_end_pos + CRLF.len();
 
     // Check if the array is empty or null
     if length <= 0 {

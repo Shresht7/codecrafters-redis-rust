@@ -1,8 +1,5 @@
 // Library
-use super::{
-    reader::{self, CRLF},
-    RESPData,
-};
+use super::{reader, RESPData};
 
 // -------------------
 // PARSE SIMPLE ERRORS
@@ -14,16 +11,13 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
     let mut bytes = reader::read(input);
 
     // Find the position of the CRLF sequence in the input
-    let end_pos = bytes.find_crlf()?;
+    let (end_pos, rest_pos) = bytes.find_crlf()?;
 
     // Extract the error message from the input up to the CRLF sequence
     let error_message = bytes.to(end_pos).as_string()?;
 
     // Return the parsed error message and the remaining input
-    Ok((
-        RESPData::SimpleError(error_message),
-        &input[end_pos + CRLF.len()..],
-    ))
+    Ok((RESPData::SimpleError(error_message), &input[rest_pos..]))
 }
 
 // -----
