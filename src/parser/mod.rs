@@ -3,6 +3,7 @@ mod array;
 mod boolean;
 mod bulk_string;
 mod data_types;
+mod errors;
 mod integer;
 mod null;
 mod reader;
