@@ -92,4 +92,19 @@ pub enum RESPData {
     /// $-1\r\n
     /// ```
     BulkString(String),
+
+    /// An _Array_ is a sequence of RESP values. The first byte of the _Array_ is the asterisk `*` character,
+    /// followed by the number of elements in the array, and the CRLF sequence.
+    /// Each element in the array is encoded according to the rules of the RESP protocol.
+    /// The array is terminated by a CRLF sequence.
+    ///
+    /// An empty array is represented as `*0\r\n`.
+    ///
+    /// Example:
+    /// ```sh
+    /// *3\r\n:1\r\n:2\r\n:3\r\n
+    /// ```
+    ///
+    /// The above example represents an array with three elements: `1`, `2`, and `3`.
+    Array(Vec<RESPData>),
 }
