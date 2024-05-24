@@ -1,4 +1,5 @@
 // Library
+use super::errors::ParserError;
 use super::{reader, RESPData};
 
 /// The first byte of a simple string
@@ -19,12 +20,16 @@ const FIRST_BYTE: u8 = b'+';
 /// +hello world\r\n => "hello world"
 /// ```
 pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
-    // Check if the input starts with the plus `+` character
-    if input.first() != Some(&FIRST_BYTE) {
-        return Err(SimpleStringParserError::InvalidFirstByte(input[0]).into());
-    }
     // Create a reader to help extract information from the input byte slice
     let mut bytes = reader::read(input);
+
+    // Check if the input starts with the plus `+` character
+    let first_byte = bytes.first()?;
+    if first_byte != FIRST_BYTE {
+        return Err(Box::new(ParserError::InvalidFirstByte(
+            first_byte, FIRST_BYTE,
+        )));
+    }
 
     // Find the position of the CRLF sequence in the byte slice
     let (end_pos, rest_pos) = bytes.find_crlf()?;
@@ -35,35 +40,6 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
     // Return the parsed simple string and the remaining input
     Ok((RESPData::SimpleString(simple_string), &input[rest_pos..]))
 }
-
-// ------
-// ERRORS
-// ------
-
-/// Errors that can occur while parsing a simple string
-#[derive(Debug)]
-pub enum SimpleStringParserError {
-    /// The first byte of the input data is invalid and does not match `+`
-    InvalidFirstByte(u8),
-}
-
-// Implement the `Display` trait for the `SimpleStringParserError` type
-impl std::fmt::Display for SimpleStringParserError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            SimpleStringParserError::InvalidFirstByte(byte) => {
-                write!(
-                    f,
-                    "Invalid first byte: expected '+', found '{}'",
-                    *byte as char
-                )
-            }
-        }
-    }
-}
-
-// Implement the `Error` trait for the `SimpleStringParserError` type
-impl std::error::Error for SimpleStringParserError {}
 
 // -----
 // TESTS
