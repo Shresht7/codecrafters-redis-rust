@@ -73,10 +73,13 @@ pub enum RESPData {
     /// ```
     Integer(i64),
 
-    /// A _Bulk String_ represents a single binary string. The string can be of any size, but by default
+    /// A *Bulk String* represents a single binary string. The string can be of any size, but by default
     /// Redis limits it to 512MB.
-    /// The first byte of a _Bulk String_ is the dollar `$` character, followed by the number of bytes in
-    /// the string (as a decimal number), and the CRLF sequence.
+    /// A bulk string is a sequence of bytes with a length of `N` bytes followed by `N` bytes of data.
+    /// The length of the bulk string is encoded as a decimal number followed by a CRLF sequence.
+    /// The bulk string is terminated by a CRLF sequence.
+    ///
+    /// If the length is -1, the bulk string is null.
     ///
     /// Example:
     /// ```sh
