@@ -34,8 +34,13 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
 
     // Check if the array is empty or null
     if length <= 0 {
+        let result = if length == -1 {
+            RESPData::Null
+        } else {
+            RESPData::Array(Vec::new())
+        };
         return Ok((
-            RESPData::Array(Vec::new()),
+            result,
             &input[data_start_pos..], // Remaining bytes
         ));
     }
@@ -104,9 +109,9 @@ mod tests {
     #[test]
     fn should_parse_null_array() {
         let input = b"-1\r\n";
-        let expected = vec![];
+        let expected = RESPData::Null;
         let (actual, _) = parse(input).unwrap();
-        assert_eq!(actual, RESPData::Array(expected));
+        assert_eq!(actual, expected);
     }
 
     #[test]

@@ -107,4 +107,8 @@ pub enum RESPData {
     ///
     /// The above example represents an array with three elements: `1`, `2`, and `3`.
     Array(Vec<RESPData>),
+
+    /// A _Null_ value is a simple data type that represents a null value.
+    /// This can be used in bulk strings, arrays, etc.
+    Null,
 }

@@ -34,7 +34,7 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
     // Check if the bulk string is null
     if length == -1 {
         return Ok((
-            RESPData::BulkString(String::new()),
+            RESPData::Null,
             &input[data_start_pos..], // Remaining bytes
         ));
     }
@@ -84,7 +84,7 @@ mod tests {
     #[test]
     fn should_parse_null_bulk_string() {
         let input = b"-1\r\n";
-        let expected = RESPData::BulkString("".to_string());
+        let expected = RESPData::Null;
         let (actual, _) = parse(input).unwrap();
         assert_eq!(actual, expected);
     }
