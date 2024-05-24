@@ -118,4 +118,16 @@ pub enum RESPData {
     /// _\r\n
     /// ```
     Null,
+
+    /// A _Boolean_ value is a simple data type that represents a boolean value.
+    /// A boolean value is represented by the hash `#` character
+    /// followed by `t` or `f` for `true` or `false` respectively
+    /// and is terminated by the CRLF sequence.
+    ///
+    /// Example:
+    /// ```sh
+    /// #t\r\n // true
+    /// #f\r\n // false
+    /// ```
+    Boolean(bool),
 }
