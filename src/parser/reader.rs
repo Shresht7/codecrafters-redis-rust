@@ -8,10 +8,10 @@
 /// // Read the first 5 bytes from the input
 /// let str = bytes.to(5).as_str().unwrap(); // => "hello"
 /// ```
-
 // ---------
 // CONSTANTS
 // ---------
+use super::errors::ParserError;
 
 /// The Carriage Return Line Feed (CRLF) sequence.
 /// This is used as the terminator in the Redis Serialization Protocol (RESP)
@@ -55,6 +55,14 @@ impl<'a> BytesReader<'a> {
             .ok_or(BytesReaderError::NonTerminating(self.slice.len()))?;
         let end_pos = start_pos + CRLF.len();
         Ok((start_pos, end_pos))
+    }
+
+    /// Return the first byte in the byte slice
+    pub fn first(&self) -> Result<u8, Box<dyn std::error::Error>> {
+        match self.slice.get(0) {
+            Some(b) => Ok(b.clone()),
+            None => Err(Box::new(ParserError::EmptyInput)),
+        }
     }
 
     /// Set the start position of the reader.
