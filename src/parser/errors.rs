@@ -5,6 +5,8 @@
 /// Errors that can occur while parsing a RESP data type
 #[derive(Debug)]
 pub enum ParserError {
+    /// The input byte slice is empty
+    EmptyInput,
     /// The first byte of the input data is invalid
     InvalidFirstByte(u8, u8), // Actual, Expected
 }
@@ -13,6 +15,8 @@ pub enum ParserError {
 impl std::fmt::Display for ParserError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
+            ParserError::EmptyInput => write!(f, "The byte slice is empty!"),
+
             ParserError::InvalidFirstByte(actual, expected) => {
                 write!(
                     f,
