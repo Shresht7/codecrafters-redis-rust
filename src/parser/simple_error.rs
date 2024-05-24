@@ -1,12 +1,30 @@
 // Library
+use super::errors::ParserError;
 use super::{reader, RESPData};
+
+/// The first byte of a simple error
+const FIRST_BYTE: u8 = b'-';
 
 // -------------------
 // PARSE SIMPLE ERRORS
 // -------------------
 
 /// Parses a `SimpleError` from the given input data
+///
+/// A simple error is encoded as follows:
+/// - A prefix of `-` followed by the error message
+/// - CRLF terminator sequence
+///
+/// Example:
+/// ```sh
+/// -Error message\r\n => "Error message"
+/// ```
 pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
+    // Check if the input starts with the minus `-` character
+    if input.first() != Some(&FIRST_BYTE) {
+        return Err(ParserError::InvalidFirstByte(input[0], FIRST_BYTE).into());
+    }
+
     // Create a reader to help extract information from the input byte slice
     let mut bytes = reader::read(input);
 
@@ -14,7 +32,7 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
     let (end_pos, rest_pos) = bytes.find_crlf()?;
 
     // Extract the error message from the input up to the CRLF sequence
-    let error_message = bytes.to(end_pos).as_string()?;
+    let error_message = bytes.slice(1, end_pos).as_string()?;
 
     // Return the parsed error message and the remaining input
     Ok((RESPData::SimpleError(error_message), &input[rest_pos..]))
@@ -35,7 +53,7 @@ mod tests {
 
     #[test]
     fn should_parse_simple_error() {
-        let input = b"Error message\r\n";
+        let input = b"-Error message\r\n";
         let expected = RESPData::SimpleError("Error message".to_string());
         match parse(input) {
             Ok((actual, _)) => assert_eq!(actual, expected),
@@ -45,7 +63,7 @@ mod tests {
 
     #[test]
     fn should_parse_empty_simple_error() {
-        let input = b"\r\n";
+        let input = b"-\r\n";
         let expected = RESPData::SimpleError("".to_string());
         match parse(input) {
             Ok((actual, _)) => assert_eq!(actual, expected),
@@ -55,7 +73,7 @@ mod tests {
 
     #[test]
     fn should_parse_simple_error_with_special_characters() {
-        let input = b"Error message with special characters: !@#$%^&*()\r\n";
+        let input = b"-Error message with special characters: !@#$%^&*()\r\n";
         let expected =
             RESPData::SimpleError("Error message with special characters: !@#$%^&*()".to_string());
         match parse(input) {
@@ -66,13 +84,13 @@ mod tests {
 
     #[test]
     fn should_not_parse_simple_error_without_crlf() {
-        let input = b"Error message";
+        let input = b"-Error message";
         assert!(parse(input).is_err());
     }
 
     #[test]
     fn should_return_the_remaining_input() {
-        let input = b"Error message\r\nRemaining input";
+        let input = b"-Error message\r\nRemaining input";
         let expected = b"Remaining input";
         match parse(input) {
             Ok((_, actual)) => assert_eq!(actual, expected),
@@ -82,19 +100,19 @@ mod tests {
 
     #[test]
     fn should_error_on_invalid_input() {
-        let input = b"Error message\r\nRemaining input";
+        let input = b"-Error message\r\nRemaining input";
         assert!(parse(input).is_ok());
     }
 
     #[test]
     fn should_error_on_empty_input() {
-        let input = b"\r\n";
+        let input = b"-\r\n";
         assert!(parse(input).is_ok());
     }
 
     #[test]
     fn should_error_on_invalid_utf8() {
-        let input = b"Error message\xF0\x28\x8C\xBC\r\n";
+        let input = b"-Error message\xF0\x28\x8C\xBC\r\n";
         assert!(parse(input).is_err());
     }
 }

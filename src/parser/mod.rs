@@ -21,7 +21,7 @@ fn _parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>>
     // Match on the first_byte to determine the data type and parse the input accordingly
     match first_byte {
         b'+' => simple_string::parse(&input),
-        b'-' => simple_error::parse(&input[1..]),
+        b'-' => simple_error::parse(&input),
         b':' => integer::parse(&input[1..]),
         b'$' => bulk_string::parse(&input),
         b'*' => array::parse(&input),
