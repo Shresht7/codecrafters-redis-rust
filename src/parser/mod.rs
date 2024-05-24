@@ -3,6 +3,7 @@ mod array;
 mod bulk_string;
 mod data_types;
 mod integer;
+mod null;
 mod reader;
 mod simple_error;
 mod simple_string;
@@ -22,6 +23,7 @@ fn _parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>>
         b':' => integer::parse(&input[1..]),
         b'$' => bulk_string::parse(&input[1..]),
         b'*' => array::parse(&input[1..]),
+        b'_' => null::parse(&input),
         _ => Err("Invalid data type".into()),
     }
 }
@@ -93,6 +95,30 @@ mod tests {
             RESPData::SimpleString("pineapple".to_string()),
         ];
         let actual = parse(input.concat().as_bytes()).unwrap();
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn should_parse_null() {
+        let input = b"_\r\n";
+        let expected = vec![RESPData::Null];
+        let actual = parse(input).unwrap();
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn should_parse_null_array() {
+        let input = b"*-1\r\n";
+        let expected = vec![RESPData::Null];
+        let actual = parse(input).unwrap();
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn should_parse_null_bulk_string() {
+        let input = b"$-1\r\n";
+        let expected = vec![RESPData::Null];
+        let actual = parse(input).unwrap();
         assert_eq!(actual, expected);
     }
 }

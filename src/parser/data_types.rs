@@ -110,5 +110,12 @@ pub enum RESPData {
 
     /// A _Null_ value is a simple data type that represents a null value.
     /// This can be used in bulk strings, arrays, etc.
+    /// The first byte of a _Null_ value is the underscore `_` character.
+    /// A _Null_ value is terminated by the CRLF sequence.
+    ///
+    /// Example:
+    /// ```sh
+    /// _\r\n
+    /// ```
     Null,
 }
