@@ -5,7 +5,7 @@ use super::{
 };
 
 /// The first_byte of a boolean value
-const FIRST_BYTE: &[u8] = b"#";
+const FIRST_BYTE: u8 = b'#';
 
 // --------------
 // BOOLEAN PARSER
@@ -28,8 +28,8 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
         return Err(BooleanParserError::InsufficientData(input.len()).into());
     }
 
-    // Check if the input starts with the hash character
-    if !input.starts_with(FIRST_BYTE) {
+    // Check if the input starts with the hash `#` character
+    if !input[0] == FIRST_BYTE {
         return Err(BooleanParserError::InvalidFirstByte(input[0]).into());
     }
 
