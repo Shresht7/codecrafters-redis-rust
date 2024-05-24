@@ -45,12 +45,19 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
 mod tests {
     use super::*;
 
+    /// Helper function to display errors in the test output
+    fn show(err: Box<dyn std::error::Error>) {
+        panic!("\u{001b}[31mERROR [{:?}]: {}\u{001b}[0m", err, err);
+    }
+
     #[test]
     fn should_parse_null() {
         let input = b"_\r\n";
         let expected = (RESPData::Null, &b""[..]);
-        let result = parse(input).unwrap();
-        assert_eq!(result, expected);
+        match parse(input) {
+            Ok((actual, _)) => assert_eq!(actual, expected.0),
+            Err(err) => show(err),
+        }
     }
 
     #[test]

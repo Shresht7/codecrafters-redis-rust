@@ -62,12 +62,19 @@ pub fn parse(input: &[u8]) -> Result<Vec<RESPData>, Box<dyn std::error::Error>> 
 mod tests {
     use super::*;
 
+    /// Helper function to display errors in the test output
+    fn show(err: Box<dyn std::error::Error>) {
+        panic!("\u{001b}[31mERROR [{:?}]: {}\u{001b}[0m", err, err);
+    }
+
     #[test]
     fn should_parse_simple_string() {
         let input = b"+hello world\r\n";
         let expected = vec![RESPData::SimpleString("hello world".to_string())];
-        let actual = parse(input).unwrap();
-        assert_eq!(actual, expected);
+        match parse(input) {
+            Ok(actual) => assert_eq!(actual, expected),
+            Err(err) => show(err),
+        }
     }
 
     #[test]
@@ -83,8 +90,10 @@ mod tests {
             RESPData::SimpleString("hello world".to_string()),
             RESPData::Integer(-123),
         ];
-        let actual = parse(input).unwrap();
-        assert_eq!(actual, expected);
+        match parse(input) {
+            Ok(actual) => assert_eq!(actual, expected),
+            Err(err) => show(err),
+        }
     }
 
     #[test]
@@ -96,31 +105,39 @@ mod tests {
             RESPData::SimpleString("ECHO".to_string()),
             RESPData::SimpleString("pineapple".to_string()),
         ];
-        let actual = parse(input.concat().as_bytes()).unwrap();
-        assert_eq!(actual, expected);
+        match parse(input.concat().as_bytes()) {
+            Ok(actual) => assert_eq!(actual, expected),
+            Err(err) => show(err),
+        }
     }
 
     #[test]
     fn should_parse_null() {
         let input = b"_\r\n";
         let expected = vec![RESPData::Null];
-        let actual = parse(input).unwrap();
-        assert_eq!(actual, expected);
+        match parse(input) {
+            Ok(actual) => assert_eq!(actual, expected),
+            Err(err) => show(err),
+        }
     }
 
     #[test]
     fn should_parse_null_array() {
         let input = b"*-1\r\n";
         let expected = vec![RESPData::Null];
-        let actual = parse(input).unwrap();
-        assert_eq!(actual, expected);
+        match parse(input) {
+            Ok(actual) => assert_eq!(actual, expected),
+            Err(err) => show(err),
+        }
     }
 
     #[test]
     fn should_parse_null_bulk_string() {
         let input = b"$-1\r\n";
         let expected = vec![RESPData::Null];
-        let actual = parse(input).unwrap();
-        assert_eq!(actual, expected);
+        match parse(input) {
+            Ok(actual) => assert_eq!(actual, expected),
+            Err(err) => show(err),
+        }
     }
 }

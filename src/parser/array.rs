@@ -111,6 +111,11 @@ impl std::error::Error for ArrayParserError {}
 mod tests {
     use super::*;
 
+    /// Helper function to display errors in the test output
+    fn show(err: Box<dyn std::error::Error>) {
+        panic!("\u{001b}[31mERROR [{:?}]: {}\u{001b}[0m", err, err);
+    }
+
     #[test]
     fn should_parse_array() {
         let input = b"*3\r\n:1\r\n:2\r\n:3\r\n";
@@ -119,8 +124,10 @@ mod tests {
             RESPData::Integer(2),
             RESPData::Integer(3),
         ];
-        let (actual, _) = parse(input).unwrap();
-        assert_eq!(actual, RESPData::Array(expected));
+        match parse(input) {
+            Ok((actual, _)) => assert_eq!(actual, RESPData::Array(expected)),
+            Err(err) => show(err),
+        }
     }
 
     #[test]
@@ -130,24 +137,30 @@ mod tests {
             RESPData::BulkString("hello".to_string()),
             RESPData::BulkString("world".to_string()),
         ];
-        let (actual, _) = parse(input).unwrap();
-        assert_eq!(actual, RESPData::Array(expected));
+        match parse(input) {
+            Ok((actual, _)) => assert_eq!(actual, RESPData::Array(expected)),
+            Err(err) => show(err),
+        }
     }
 
     #[test]
     fn should_parse_empty_array() {
         let input = b"*0\r\n";
         let expected = vec![];
-        let (actual, _) = parse(input).unwrap();
-        assert_eq!(actual, RESPData::Array(expected));
+        match parse(input) {
+            Ok((actual, _)) => assert_eq!(actual, RESPData::Array(expected)),
+            Err(err) => show(err),
+        }
     }
 
     #[test]
     fn should_parse_null_array() {
         let input = b"*-1\r\n";
         let expected = RESPData::Null;
-        let (actual, _) = parse(input).unwrap();
-        assert_eq!(actual, expected);
+        match parse(input) {
+            Ok((actual, _)) => assert_eq!(actual, expected),
+            Err(err) => show(err),
+        }
     }
 
     #[test]
@@ -193,8 +206,10 @@ mod tests {
             RESPData::SimpleString("OK".to_string()),
             RESPData::BulkString("foobar".to_string()),
         ];
-        let (actual, _) = parse(input).unwrap();
-        assert_eq!(actual, RESPData::Array(expected));
+        match parse(input) {
+            Ok((actual, _)) => assert_eq!(actual, RESPData::Array(expected)),
+            Err(err) => show(err),
+        }
     }
 
     #[test]
@@ -212,7 +227,9 @@ mod tests {
                 RESPData::SimpleError("world".to_string()),
             ]),
         ];
-        let (actual, _) = parse(input).unwrap();
-        assert_eq!(actual, RESPData::Array(expected));
+        match parse(input) {
+            Ok((actual, _)) => assert_eq!(actual, RESPData::Array(expected)),
+            Err(err) => show(err),
+        }
     }
 }

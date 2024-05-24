@@ -90,7 +90,7 @@ impl std::fmt::Display for BulkStringParserError {
             BulkStringParserError::InvalidFirstByte(byte) => {
                 write!(
                     f,
-                    "Invalid input. Expecting a dollar sign but got {}",
+                    "Invalid input. Expecting the first byte to be a $ but got {}",
                     *byte as char
                 )
             }
@@ -116,28 +116,39 @@ impl std::error::Error for BulkStringParserError {}
 mod tests {
     use super::*;
 
+    /// Helper function to display errors in the test output
+    fn show(err: Box<dyn std::error::Error>) {
+        panic!("\u{001b}[31mERROR [{:?}]: {}\u{001b}[0m", err, err);
+    }
+
     #[test]
     fn should_parse_bulk_string() {
         let input = b"$6\r\nfoobar\r\n";
         let expected = RESPData::BulkString("foobar".to_string());
-        let (actual, _) = parse(input).unwrap();
-        assert_eq!(actual, expected);
+        match parse(input) {
+            Ok((actual, _)) => assert_eq!(actual, expected),
+            Err(error) => show(error),
+        }
     }
 
     #[test]
     fn should_parse_empty_bulk_string() {
         let input = b"$0\r\n\r\n";
         let expected = RESPData::BulkString("".to_string());
-        let (actual, _) = parse(input).unwrap();
-        assert_eq!(actual, expected);
+        match parse(input) {
+            Ok((actual, _)) => assert_eq!(actual, expected),
+            Err(error) => show(error),
+        }
     }
 
     #[test]
     fn should_parse_null_bulk_string() {
         let input = b"$-1\r\n";
         let expected = RESPData::Null;
-        let (actual, _) = parse(input).unwrap();
-        assert_eq!(actual, expected);
+        match parse(input) {
+            Ok((actual, _)) => assert_eq!(actual, expected),
+            Err(error) => show(error),
+        }
     }
 
     #[test]

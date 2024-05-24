@@ -100,6 +100,11 @@ impl std::error::Error for BooleanParserError {}
 mod tests {
     use super::*;
 
+    /// Helper function to display errors in the test output
+    fn show(err: Box<dyn std::error::Error>) {
+        panic!("\u{001b}[31mERROR [{:?}]: {}\u{001b}[0m", err, err);
+    }
+
     #[test]
     fn should_error_on_insufficient_data() {
         let input = b"#t";
@@ -118,16 +123,20 @@ mod tests {
     fn should_parse_true_boolean() {
         let input = b"#t\r\n";
         let expected = (RESPData::Boolean(true), &b""[..]);
-        let result = parse(input).unwrap();
-        assert_eq!(result, expected);
+        match parse(input) {
+            Ok((actual, _)) => assert_eq!(actual, expected.0),
+            Err(err) => show(err),
+        }
     }
 
     #[test]
     fn should_parse_false_boolean() {
         let input = b"#f\r\n";
         let expected = (RESPData::Boolean(false), &b""[..]);
-        let result = parse(input).unwrap();
-        assert_eq!(result, expected);
+        match parse(input) {
+            Ok((actual, _)) => assert_eq!(actual, expected.0),
+            Err(err) => show(err),
+        }
     }
 
     #[test]
@@ -148,8 +157,10 @@ mod tests {
     fn should_return_remaining_bytes() {
         let input = b"#t\r\n+OK\r\n";
         let expected = (RESPData::Boolean(true), &b"+OK\r\n"[..]);
-        let result = parse(input).unwrap();
-        assert_eq!(result, expected);
+        match parse(input) {
+            Ok(res) => assert_eq!(res, expected),
+            Err(err) => show(err),
+        }
     }
 
 }

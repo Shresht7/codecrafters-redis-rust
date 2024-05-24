@@ -28,12 +28,19 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
 mod tests {
     use super::*;
 
+    /// Helper function to display errors in the test output
+    fn show(err: Box<dyn std::error::Error>) {
+        panic!("\u{001b}[31mERROR [{:?}]: {}\u{001b}[0m", err, err);
+    }
+
     #[test]
     fn should_parse_simple_string() {
         let input = b"hello world\r\n";
         let expected = RESPData::SimpleString("hello world".to_string());
-        let (actual, _) = parse(input).unwrap();
-        assert_eq!(actual, expected);
+        match parse(input) {
+            Ok((actual, _)) => assert_eq!(actual, expected),
+            Err(err) => show(err),
+        }
     }
 
     #[test]
@@ -46,16 +53,22 @@ mod tests {
     fn should_parse_empty_input() {
         let input = b"\r\n";
         let expected = RESPData::SimpleString("".to_string());
-        let (actual, _) = parse(input).unwrap();
-        assert_eq!(actual, expected);
+        match parse(input) {
+            Ok((actual, _)) => assert_eq!(actual, expected),
+            Err(err) => show(err),
+        }
     }
 
     #[test]
     fn should_return_the_remaining_input() {
         let input = b"hello world\r\nextra data";
         let expected = RESPData::SimpleString("hello world".to_string());
-        let (actual, remaining) = parse(input).unwrap();
-        assert_eq!(actual, expected);
-        assert_eq!(remaining, b"extra data");
+        match parse(input) {
+            Ok((actual, remaining)) => {
+                assert_eq!(actual, expected);
+                assert_eq!(remaining, b"extra data");
+            }
+            Err(err) => show(err),
+        }
     }
 }
