@@ -1,8 +1,20 @@
+/// The `reader` module provides a `BytesReader` struct to read bytes from a byte slice.
+/// This is used to extract information from the input byte slice in the parser functions.
+///
+/// To create a new `BytesReader` instance, use the `read` function.
+/// ```rs
+/// let input: &[u8] = b"hello world\r\n"; // Input byte slice
+/// let mut bytes = reader::read(input); // Create a new BytesReader instance
+/// // Read the first 5 bytes from the input
+/// let str = bytes.to(5).as_str().unwrap(); // => "hello"
+/// ```
+
 // ---------
 // CONSTANTS
 // ---------
 
-/// The Carriage Return Line Feed (CRLF) sequence
+/// The Carriage Return Line Feed (CRLF) sequence.
+/// This is used as the terminator in the Redis Serialization Protocol (RESP)
 pub const CRLF: &[u8] = b"\r\n";
 
 // ------------
@@ -29,6 +41,12 @@ impl<'a> BytesReader<'a> {
     /// Find the position of the first CRLF sequence in the byte slice.
     /// Respects the current start and end positions of the reader.
     /// If the CRLF sequence is not found, return an error.
+    ///
+    /// ```rs
+    /// let input: &[u8] = b"hello world\r\n"; // Input byte slice
+    /// let mut bytes = reader::read(input);   // Create a new BytesReader instance
+    /// let pos = bytes.find_crlf().unwrap();  // => 11
+    /// ```
     pub fn find_crlf(&mut self) -> Result<usize, Box<dyn std::error::Error>> {
         self.slice
             .windows(CRLF.len())
@@ -36,13 +54,15 @@ impl<'a> BytesReader<'a> {
             .ok_or("Invalid input. Expecting a CRLF sequence".into())
     }
 
-    /// Set the start position of the reader
+    /// Set the start position of the reader.
+    /// When you call `as_bytes`, the reader will extract bytes from the start position to the end position.
     pub fn from(&mut self, pos: usize) -> &mut Self {
         self.start_pos = pos;
         self
     }
 
-    /// Set the end position of the reader
+    /// Set the end position of the reader.
+    /// When you call `as_bytes`, the reader will extract bytes from the start position to the end position.
     pub fn to(&mut self, pos: usize) -> &mut Self {
         self.end_pos = pos;
         self
