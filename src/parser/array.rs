@@ -37,17 +37,17 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
     let (len_end_pos, data_start_pos) = bytes.find_crlf()?;
 
     // Extract the "length" of the array
-    let length = bytes.from(1).to(len_end_pos).parse::<i64>()?;
+    let length = bytes.slice(1, len_end_pos).parse::<i64>()?;
 
-    // Check if the array is empty or null
+    // If the length is -1, the array is null
+    if length == -1 {
+        return Ok((RESPData::Null, &input[data_start_pos..]));
+    }
+
+    // If the length is 0, the array is empty
     if length <= 0 {
-        let result = if length == -1 {
-            RESPData::Null // Null array
-        } else {
-            RESPData::Array(Vec::new()) // Empty array
-        };
         return Ok((
-            result,
+            RESPData::Array(Vec::new()),
             &input[data_start_pos..], // Remaining bytes
         ));
     }
