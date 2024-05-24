@@ -23,7 +23,7 @@ fn _parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>>
         b'-' => simple_error::parse(&input[1..]),
         b':' => integer::parse(&input[1..]),
         b'$' => bulk_string::parse(&input[1..]),
-        b'*' => array::parse(&input[1..]),
+        b'*' => array::parse(&input),
         b'_' => null::parse(&input),
         b'#' => boolean::parse(&input),
         _ => Err("Invalid data type".into()),
