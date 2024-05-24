@@ -52,7 +52,7 @@ impl<'a> BytesReader<'a> {
             .slice
             .windows(CRLF.len())
             .position(|window| window == CRLF)
-            .ok_or_else(|| "Invalid input. Expecting a CRLF sequence")?;
+            .ok_or(BytesReaderError::NonTerminating(self.slice.len()))?;
         let end_pos = start_pos + CRLF.len();
         Ok((start_pos, end_pos))
     }
@@ -105,3 +105,32 @@ impl<'a> BytesReader<'a> {
         Ok(self.as_str()?.parse::<T>()?)
     }
 }
+
+// ------
+// ERRORS
+// ------
+
+/// Errors that can occur while reading bytes from a byte slice
+#[derive(Debug)]
+pub enum BytesReaderError {
+    /// The CRLF sequence was not found in the byte slice
+    NonTerminating(usize),
+}
+
+// Implement the `Display` trait for the `BytesReaderError` type
+impl std::fmt::Display for BytesReaderError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            BytesReaderError::NonTerminating(len) => {
+                write!(
+                    f,
+                    "Non-terminating byte slice: Expected CRLF sequence at position {}",
+                    len
+                )
+            }
+        }
+    }
+}
+
+// Implement the `Error` trait for the `BytesReaderError` type
+impl std::error::Error for BytesReaderError {}
