@@ -1,6 +1,6 @@
 // Library
-use super::errors::ParserError;
 use super::{
+    errors::ParserError,
     reader::{self, CRLF},
     RESPData,
 };

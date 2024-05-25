@@ -1,6 +1,5 @@
 // Library
-use super::errors::ParserError;
-use super::{reader, RESPData};
+use super::{errors::ParserError, reader, RESPData};
 
 /// The first byte of a simple string
 const FIRST_BYTE: u8 = b'+';

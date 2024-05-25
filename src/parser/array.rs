@@ -1,6 +1,5 @@
 // Library
-use super::errors::ParserError;
-use super::{reader, RESPData};
+use super::{errors::ParserError, reader, RESPData};
 
 /// The first byte of an array value.
 const FIRST_BYTE: u8 = b'*';
