@@ -1,5 +1,6 @@
 // Library
 mod array;
+mod big_number;
 mod boolean;
 mod bulk_string;
 mod data_types;
@@ -29,6 +30,7 @@ fn _parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>>
         b'_' => null::parse(&input),
         b'#' => boolean::parse(&input),
         b',' => double::parse(&input),
+        b'(' => big_number::parse(&input),
         _ => Err("Invalid data type".into()),
     }
 }

@@ -157,4 +157,18 @@ pub enum RESPData {
     /// ,nan\r\n // NaN
     /// ```
     Double(f64),
+
+    /// A *Big Number* is a simple data type that represents a big number.
+    /// A big number is represented by the left parenthesis `(` character followed by the big number itself.
+    /// The big number is terminated by the CRLF sequence.
+    /// A big number is a signed, base-10, 64-bit integer.
+    /// The big number can be positive or negative.
+    /// The big number is used to represent large integers that can't be represented by the integer data type.
+    ///
+    /// Example:
+    /// ```sh
+    /// (1234567890\r\n // 1234567890
+    /// (-1234567890\r\n // -1234567890
+    /// ```
+    BigNumber(i64),
 }
