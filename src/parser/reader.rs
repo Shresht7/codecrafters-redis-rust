@@ -1,17 +1,9 @@
-/// The `reader` module provides a `BytesReader` struct to read bytes from a byte slice.
-/// This is used to extract information from the input byte slice in the parser functions.
-///
-/// To create a new `BytesReader` instance, use the `read` function.
-/// ```rs
-/// let input: &[u8] = b"hello world\r\n"; // Input byte slice
-/// let mut bytes = reader::read(input); // Create a new BytesReader instance
-/// // Read the first 5 bytes from the input
-/// let str = bytes.to(5).as_str().unwrap(); // => "hello"
-/// ```
+// Library
+use super::errors::ParserError;
+
 // ---------
 // CONSTANTS
 // ---------
-use super::errors::ParserError;
 
 /// The Carriage Return Line Feed (CRLF) sequence.
 /// This is used as the terminator in the Redis Serialization Protocol (RESP)
