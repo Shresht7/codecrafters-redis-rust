@@ -57,8 +57,10 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
 
     // Check if the number is an integer
     if !bytes.contains(&b'.') {
-        // Parse the double value as an integer
-        let integer = bytes.slice(1, crlf_pos).parse::<i64>()?;
+        // Parse the double value so that it handles the exponents
+        let double = bytes.slice(1, crlf_pos).parse::<f64>()?;
+        // Convert the double to an integer
+        let integer = double as i64;
         return Ok((RESPData::Integer(integer), &input[rest_pos..]));
     }
 
@@ -131,7 +133,7 @@ mod tests {
     fn test_parse_integer_with_exponent() {
         let input = b",3e2\r\n";
         match parse(input) {
-            Ok((actual, _)) => assert_eq!(actual, RESPData::Double(300.0)),
+            Ok((actual, _)) => assert_eq!(actual, RESPData::Integer(300)),
             Err(err) => show(err),
         }
     }
