@@ -1,4 +1,5 @@
 // Library
+use super::errors::ParserError;
 use super::{
     reader::{self, CRLF},
     RESPData,
@@ -28,13 +29,16 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
         return Err(BulkStringParserError::InsufficientData(input.len()).into());
     }
 
-    // Check if the input starts with the dollar `$` character
-    if input[0] != FIRST_BYTE {
-        return Err(BulkStringParserError::InvalidFirstByte(input[0]).into());
-    }
-
     // Create a reader to help extract information from the input byte slice
     let mut bytes = reader::read(input);
+
+    // Check if the input starts with the dollar `$` character
+    let first_byte = bytes.first()?;
+    if first_byte != FIRST_BYTE {
+        return Err(Box::new(ParserError::InvalidFirstByte(
+            first_byte, FIRST_BYTE,
+        )));
+    }
 
     // Find the position of the first CRLF sequence and the start of the bulk string data
     let (len_end_pos, data_start_pos) = bytes.find_crlf()?;
@@ -76,7 +80,6 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
 #[derive(Debug)]
 pub enum BulkStringParserError {
     InsufficientData(usize),
-    InvalidFirstByte(u8),
     InvalidLength(usize, usize),
 }
 
@@ -86,13 +89,6 @@ impl std::fmt::Display for BulkStringParserError {
         match self {
             BulkStringParserError::InsufficientData(len) => {
                 write!(f, "Invalid input. Insufficient data: {}", len)
-            }
-            BulkStringParserError::InvalidFirstByte(byte) => {
-                write!(
-                    f,
-                    "Invalid input. Expecting the first byte to be a $ but got {}",
-                    *byte as char
-                )
             }
             BulkStringParserError::InvalidLength(expected, actual) => {
                 write!(

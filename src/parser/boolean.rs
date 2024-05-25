@@ -1,4 +1,5 @@
 // Library
+use super::errors::ParserError;
 use super::{
     reader::{self, CRLF},
     RESPData,
@@ -27,10 +28,16 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
     if input.len() < 4 {
         return Err(BooleanParserError::InsufficientData(input.len()).into());
     }
+    
+    // Create a reader to help extract information from the input byte slice
+    let bytes = reader::read(input);
 
     // Check if the input starts with the hash `#` character
-    if !input[0] == FIRST_BYTE {
-        return Err(BooleanParserError::InvalidFirstByte(input[0]).into());
+    let first_byte = bytes.first()?;
+    if first_byte != FIRST_BYTE {
+        return Err(Box::new(ParserError::InvalidFirstByte(
+            first_byte, FIRST_BYTE,
+        )));
     }
 
     // Create a reader to extract information from the bytes
@@ -68,7 +75,6 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
 #[derive(Debug)]
 pub enum BooleanParserError {
     InsufficientData(usize),
-    InvalidFirstByte(u8),
     InvalidBooleanCharacter(u8),
     InvalidTerminator(Vec<u8>),
 }
@@ -79,8 +85,6 @@ impl std::fmt::Display for BooleanParserError {
         match self {
             BooleanParserError::InsufficientData(len) => 
                 write!(f, "Insufficient data. The input length is {} but it should contain at least 4 bytes to represent boolean values", len),
-            BooleanParserError::InvalidFirstByte(byte) => 
-                write!(f, "Invalid first byte. Expected boolean value to start with # but got {}", *byte as char),
             BooleanParserError::InvalidBooleanCharacter(byte) => 
                 write!(f, "Invalid boolean value. Expected 't' or 'f' but got {}", *byte as char),
             BooleanParserError::InvalidTerminator(terminator) => 

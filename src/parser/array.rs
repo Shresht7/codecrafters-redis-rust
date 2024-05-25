@@ -1,4 +1,5 @@
 // Library
+use super::errors::ParserError;
 use super::{reader, RESPData};
 
 /// The first byte of an array value.
@@ -25,13 +26,16 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
         return Err(ArrayParserError::InsufficientData(input.len()).into());
     }
 
-    // Check if the input starts with the asterisk `*` character
-    if input[0] != FIRST_BYTE {
-        return Err(ArrayParserError::InvalidFirstByte(input[0]).into());
-    }
-
     // Create a reader to help extract information from the input byte slice
     let mut bytes = reader::read(input);
+
+    // Check if the input starts with the asterisk `*` character
+    let first_byte = bytes.first()?;
+    if first_byte != FIRST_BYTE {
+        return Err(Box::new(ParserError::InvalidFirstByte(
+            first_byte, FIRST_BYTE,
+        )));
+    }
 
     // Find the position of the first CRLF sequence and the start of the array data
     let (len_end_pos, data_start_pos) = bytes.find_crlf()?;
@@ -79,7 +83,6 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
 #[derive(Debug)]
 pub enum ArrayParserError {
     InsufficientData(usize),
-    InvalidFirstByte(u8),
 }
 
 // Implement the `Display` trait for the array parser error
@@ -90,11 +93,6 @@ impl std::fmt::Display for ArrayParserError {
                 f,
                 "Insufficient data. The input length is {} but it should contain at least 4 bytes to represent array values",
                 len
-            ),
-            ArrayParserError::InvalidFirstByte(byte) => write!(
-                f,
-                "Invalid first byte. Expected array value to start with * but got {}",
-                *byte as char
             ),
         }
     }

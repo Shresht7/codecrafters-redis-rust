@@ -20,13 +20,16 @@ const FIRST_BYTE: u8 = b'-';
 /// -Error message\r\n => "Error message"
 /// ```
 pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
-    // Check if the input starts with the minus `-` character
-    if input.first() != Some(&FIRST_BYTE) {
-        return Err(ParserError::InvalidFirstByte(input[0], FIRST_BYTE).into());
-    }
-
     // Create a reader to help extract information from the input byte slice
     let mut bytes = reader::read(input);
+
+    // Check if the input starts with the minus `-` character
+    let first_byte = bytes.first()?;
+    if first_byte != FIRST_BYTE {
+        return Err(Box::new(ParserError::InvalidFirstByte(
+            first_byte, FIRST_BYTE,
+        )));
+    }
 
     // Find the position of the CRLF sequence in the input
     let (end_pos, rest_pos) = bytes.find_crlf()?;
