@@ -171,4 +171,20 @@ pub enum RESPData {
     /// (-1234567890\r\n // -1234567890
     /// ```
     BigNumber(i64),
+
+    /// A *Bulk Error* is a data type that represents an error message.
+    /// A bulk error is encoded as follows:
+    /// - A prefix of `!`
+    /// - One or more decimal for the error's length
+    /// - CRLF terminator sequence
+    /// - The error message
+    /// - A final CRLF terminator sequence
+    ///
+    /// Example:
+    /// ```sh
+    /// !13\r\nError message\r\n => "Error message"
+    /// ```
+    ///
+    /// As a convention the error begins with an uppercase word denoting the error type.
+    BulkError(String),
 }
