@@ -188,3 +188,118 @@ impl std::fmt::Display for BytesReaderError {
 
 // Implement the `Error` trait for the `BytesReaderError` type
 impl std::error::Error for BytesReaderError {}
+
+// -----
+// TESTS
+// -----
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Helper function to display errors in the test output
+    fn show(err: Box<dyn std::error::Error>) {
+        panic!("\u{001b}[31mERROR [{:?}]: {}\u{001b}[0m", err, err);
+    }
+
+    #[test]
+    fn should_contain_byte() {
+        let input = b"hello world";
+        let mut bytes = read(input);
+        assert!(bytes.contains(&b'h'));
+    }
+
+    #[test]
+    fn should_not_contain_byte() {
+        let input = b"hello world";
+        let mut bytes = read(input);
+        assert!(!bytes.contains(&b'z'));
+    }
+
+    #[test]
+    fn should_find_byte() {
+        let input = b"hello world";
+        let mut bytes = read(input);
+        match bytes.find(b'w') {
+            Some(pos) => assert_eq!(pos, 6),
+            None => panic!("Byte {:?} not found in {:?}", b'w', input,),
+        }
+    }
+
+    #[test]
+    fn should_not_find_byte() {
+        let input = b"hello world";
+        let mut bytes = read(input);
+        let pos = bytes.find(b'z');
+        assert!(pos.is_none());
+    }
+
+    #[test]
+    fn should_find_crlf() {
+        let input = b"hello world\r\n";
+        let mut bytes = read(input);
+        match bytes.find_crlf() {
+            Ok((start, end)) => {
+                assert_eq!(start, 11);
+                assert_eq!(end, 13);
+            }
+            Err(err) => show(err),
+        }
+    }
+
+    #[test]
+    fn should_error_on_missing_crlf() {
+        let input = b"hello world";
+        let mut bytes = read(input);
+        let result = bytes.find_crlf();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn should_get_the_first_byte() {
+        let input = b"hello world";
+        let bytes = read(input);
+        match bytes.first() {
+            Ok(byte) => assert_eq!(byte, b'h'),
+            Err(err) => show(err),
+        }
+    }
+
+    #[test]
+    fn should_slice_bytes() {
+        let input = b"hello world";
+        let mut bytes = read(input);
+        let slice = bytes.slice(1, 6).as_bytes();
+        assert_eq!(slice, b"ello ");
+    }
+
+    #[test]
+    fn should_parse_integer() {
+        let input = b":12345\r\n";
+        let mut bytes = read(input);
+        match bytes.slice(1, 6).parse::<i64>() {
+            Ok(integer) => assert_eq!(integer, 12345),
+            Err(err) => show(err),
+        }
+    }
+
+    #[test]
+    fn should_parse_double() {
+        let input = b",3.14\r\n";
+        let mut bytes = read(input);
+        match bytes.slice(1, 5).parse::<f64>() {
+            Ok(double) => assert_eq!(double, 3.14),
+            Err(err) => show(err),
+        }
+    }
+
+    #[test]
+    fn should_parse_string() {
+        let input = b"+hello world\r\n";
+        let mut bytes = read(input);
+        match bytes.slice(1, 12).as_string() {
+            Ok(string) => assert_eq!(string, "hello world"),
+            Err(err) => panic!("Error: {}", err),
+        }
+    }
+}
