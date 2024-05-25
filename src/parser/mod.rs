@@ -22,7 +22,7 @@ fn _parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>>
     match first_byte {
         b'+' => simple_string::parse(&input),
         b'-' => simple_error::parse(&input),
-        b':' => integer::parse(&input[1..]),
+        b':' => integer::parse(&input),
         b'$' => bulk_string::parse(&input),
         b'*' => array::parse(&input),
         b'_' => null::parse(&input),
