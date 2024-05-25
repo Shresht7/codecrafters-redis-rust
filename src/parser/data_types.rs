@@ -134,4 +134,27 @@ pub enum RESPData {
     /// #f\r\n // false
     /// ```
     Boolean(bool),
+
+    /// A *Double* value is a simple data type that represents a double-precision floating-point number.
+    /// A double value is represented by the comma `,` character followed by the double value itself.
+    /// The double value is terminated by the CRLF sequence.
+    ///
+    /// The doubles contain an optional sign, integer part, fractional part, and an optional exponent part.
+    ///
+    /// Example:
+    /// ```sh
+    /// ,3.14\r\n // 3.14
+    /// ,-3.14e-2\r\n // -0.0314
+    /// ```
+    ///
+    /// Because the fractional part is optional, integers can be encoded as doubles. In such cases,
+    /// the Redis client should return native integer and double values.
+    ///
+    /// The positive infinity, negative infinity, and NaN are encoded as:
+    /// ```sh
+    /// ,inf\r\n // +inf
+    /// ,-inf\r\n // -inf
+    /// ,nan\r\n // NaN
+    /// ```
+    Double(f64),
 }
