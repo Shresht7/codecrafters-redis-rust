@@ -85,6 +85,13 @@ impl<'a> BytesReader<'a> {
     }
 
     /// Return the first byte in the byte slice
+    /// If the byte slice is empty, return an error.
+    ///
+    /// ```rs
+    /// let input: &[u8] = b"hello world"; // Input byte slice
+    /// let bytes = reader::read(input);   // Create a new BytesReader instance
+    /// let first_byte = bytes.first().unwrap(); // => b'h'
+    /// ```
     pub fn first(&self) -> Result<u8, Box<dyn std::error::Error>> {
         match self.slice.get(0) {
             Some(b) => Ok(b.clone()),
@@ -92,7 +99,8 @@ impl<'a> BytesReader<'a> {
         }
     }
 
-    /// Set the start and end positions of the reader.
+    /// Set the start and end positions of the reader to extract a byte slice.
+    /// The start position is inclusive and the end position is exclusive.
     pub fn slice(&mut self, start: usize, end: usize) -> &mut Self {
         self.start_pos = start;
         self.end_pos = end;
@@ -101,6 +109,12 @@ impl<'a> BytesReader<'a> {
 
     /// Extract a byte slice from the current start position to the current end position.
     /// Reset the start and end positions of the reader.
+    ///
+    /// ```rs
+    /// let input: &[u8] = b"hello world"; // Input byte slice
+    /// let mut bytes = reader::read(input); // Create a new BytesReader instance
+    /// let slice = bytes.slice(1, 6).as_bytes(); // => b"ello "
+    /// ```
     pub fn as_bytes(&mut self) -> &[u8] {
         let byte_slice = &self.slice[self.start_pos..self.end_pos];
         self.start_pos = 0;
@@ -109,16 +123,35 @@ impl<'a> BytesReader<'a> {
     }
 
     /// Return the byte slice as a string slice
+    /// If the byte slice is not a valid UTF-8 sequence, return an error.
+    /// ```rs
+    /// let input: &[u8] = b"hello world"; // Input byte slice
+    /// let mut bytes = reader::read(input); // Create a new BytesReader instance
+    /// let string = bytes.as_str().unwrap(); // => "hello world"
+    /// ```
     pub fn as_str(&mut self) -> Result<&str, std::str::Utf8Error> {
         std::str::from_utf8(self.as_bytes())
     }
 
     /// Return the byte slice as a String
+    /// If the byte slice is not a valid UTF-8 sequence, return an error.
+    /// ```rs
+    /// let input: &[u8] = b"hello world"; // Input byte slice
+    /// let mut bytes = reader::read(input); // Create a new BytesReader instance
+    /// let string = bytes.as_string().unwrap(); // => "hello world"
+    /// ```
     pub fn as_string(&mut self) -> Result<String, std::str::Utf8Error> {
         Ok(self.as_str()?.to_string())
     }
 
     /// Parse the byte slice as a type that implements the `FromStr` trait
+    /// If the byte slice is not a valid UTF-8 sequence, return an error.
+    /// If the type cannot be parsed from the byte slice, return an error.
+    /// ```rs
+    /// let input: &[u8] = b":12345\r\n"; // Input byte slice
+    /// let mut bytes = reader::read(input); // Create a new BytesReader instance
+    /// let integer = bytes.slice(1, 6).parse::<i64>().unwrap(); // => 12345
+    /// ```
     pub fn parse<T: std::str::FromStr>(&mut self) -> Result<T, Box<dyn std::error::Error>>
     where
         T::Err: std::error::Error + 'static,
