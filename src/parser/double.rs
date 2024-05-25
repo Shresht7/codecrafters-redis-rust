@@ -55,6 +55,14 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
     // Find the position of the CRLF sequence
     let (crlf_pos, rest_pos) = bytes.find_crlf()?;
 
+    // // Handle the special cases for positive infinity, negative infinity and NaN
+    match bytes.slice(1, crlf_pos).as_str()? {
+        "inf" => return Ok((RESPData::Double(f64::INFINITY), &input[rest_pos..])),
+        "-inf" => return Ok((RESPData::Double(f64::NEG_INFINITY), &input[rest_pos..])),
+        "nan" => return Ok((RESPData::Double(f64::NAN), &input[rest_pos..])),
+        _ => (),
+    }
+
     // Check if the number is an integer
     if !bytes.contains(&b'.') {
         // Parse the double value so that it handles the exponents
@@ -139,7 +147,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_parse_positive_infinity() {
         let input = b",inf\r\n";
         match parse(input) {
@@ -149,7 +156,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_parse_negative_infinity() {
         let input = b",-inf\r\n";
         match parse(input) {
@@ -158,12 +164,21 @@ mod tests {
         }
     }
 
+    // Helper function to check if a double value is NaN
+    impl RESPData {
+        pub fn is_nan(&self) -> bool {
+            match self {
+                RESPData::Double(value) => value.is_nan(),
+                _ => false,
+            }
+        }
+    }
+
     #[test]
-    #[ignore]
     fn test_parse_nan() {
         let input = b",nan\r\n";
         match parse(input) {
-            Ok((actual, _)) => assert_eq!(actual, RESPData::Double(f64::NAN)),
+            Ok((actual, _)) => assert!(actual.is_nan()),
             Err(err) => show(err),
         }
     }
