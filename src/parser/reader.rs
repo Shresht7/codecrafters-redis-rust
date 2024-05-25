@@ -57,20 +57,6 @@ impl<'a> BytesReader<'a> {
         }
     }
 
-    /// Set the start position of the reader.
-    /// When you call `as_bytes`, the reader will extract bytes from the start position to the end position.
-    pub fn from(&mut self, pos: usize) -> &mut Self {
-        self.start_pos = pos;
-        self
-    }
-
-    /// Set the end position of the reader.
-    /// When you call `as_bytes`, the reader will extract bytes from the start position to the end position.
-    pub fn to(&mut self, pos: usize) -> &mut Self {
-        self.end_pos = pos;
-        self
-    }
-
     /// Set the start and end positions of the reader.
     pub fn slice(&mut self, start: usize, end: usize) -> &mut Self {
         self.start_pos = start;
