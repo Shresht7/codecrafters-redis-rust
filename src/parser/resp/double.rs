@@ -1,5 +1,6 @@
 // Library
-use super::{errors::ParserError, reader, RESPData};
+use super::Type;
+use crate::parser::{errors::ParserError, reader};
 
 /// The first byte of a double value
 const FIRST_BYTE: u8 = b',';
@@ -40,7 +41,7 @@ const FIRST_BYTE: u8 = b',';
 /// ,-inf\r\n // -inf
 /// ,nan\r\n // NaN
 /// ```
-pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
+pub fn parse(input: &[u8]) -> Result<(Type, &[u8]), Box<dyn std::error::Error>> {
     // Create a reader to help extract information from the input byte slice
     let mut bytes = reader::read(input);
 
@@ -57,9 +58,9 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
 
     // // Handle the special cases for positive infinity, negative infinity and NaN
     match bytes.slice(1, crlf_pos).as_str()? {
-        "inf" => return Ok((RESPData::Double(f64::INFINITY), &input[rest_pos..])),
-        "-inf" => return Ok((RESPData::Double(f64::NEG_INFINITY), &input[rest_pos..])),
-        "nan" => return Ok((RESPData::Double(f64::NAN), &input[rest_pos..])),
+        "inf" => return Ok((Type::Double(f64::INFINITY), &input[rest_pos..])),
+        "-inf" => return Ok((Type::Double(f64::NEG_INFINITY), &input[rest_pos..])),
+        "nan" => return Ok((Type::Double(f64::NAN), &input[rest_pos..])),
         _ => (),
     }
 
@@ -69,14 +70,14 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
         let double = bytes.slice(1, crlf_pos).parse::<f64>()?;
         // Convert the double to an integer
         let integer = double as i64;
-        return Ok((RESPData::Integer(integer), &input[rest_pos..]));
+        return Ok((Type::Integer(integer), &input[rest_pos..]));
     }
 
     // Parse the double value
     let double = bytes.slice(1, crlf_pos).parse::<f64>()?;
 
     // Return the double value and the remaining bytes
-    Ok((RESPData::Double(double), &input[rest_pos..]))
+    Ok((Type::Double(double), &input[rest_pos..]))
 }
 
 // -----
@@ -96,7 +97,7 @@ mod tests {
     fn test_parse_double() {
         let input = b",3.14\r\n";
         match parse(input) {
-            Ok((actual, _)) => assert_eq!(actual, RESPData::Double(3.14)),
+            Ok((actual, _)) => assert_eq!(actual, Type::Double(3.14)),
             Err(err) => show(err),
         }
     }
@@ -105,7 +106,7 @@ mod tests {
     fn test_parse_negative_double() {
         let input = b",-3.14\r\n";
         match parse(input) {
-            Ok((actual, _)) => assert_eq!(actual, RESPData::Double(-3.14)),
+            Ok((actual, _)) => assert_eq!(actual, Type::Double(-3.14)),
             Err(err) => show(err),
         }
     }
@@ -114,7 +115,7 @@ mod tests {
     fn test_parse_double_with_exponent() {
         let input = b",3.14e2\r\n";
         match parse(input) {
-            Ok((actual, _)) => assert_eq!(actual, RESPData::Double(314.0)),
+            Ok((actual, _)) => assert_eq!(actual, Type::Double(314.0)),
             Err(err) => show(err),
         }
     }
@@ -123,7 +124,7 @@ mod tests {
     fn test_parse_negative_double_with_exponent() {
         let input = b",-3.14e2\r\n";
         match parse(input) {
-            Ok((actual, _)) => assert_eq!(actual, RESPData::Double(-314.0)),
+            Ok((actual, _)) => assert_eq!(actual, Type::Double(-314.0)),
             Err(err) => show(err),
         }
     }
@@ -132,7 +133,7 @@ mod tests {
     fn test_parse_integer_as_double() {
         let input = b",3\r\n";
         match parse(input) {
-            Ok((actual, _)) => assert_eq!(actual, RESPData::Integer(3)),
+            Ok((actual, _)) => assert_eq!(actual, Type::Integer(3)),
             Err(err) => show(err),
         }
     }
@@ -141,7 +142,7 @@ mod tests {
     fn test_parse_integer_with_exponent() {
         let input = b",3e2\r\n";
         match parse(input) {
-            Ok((actual, _)) => assert_eq!(actual, RESPData::Integer(300)),
+            Ok((actual, _)) => assert_eq!(actual, Type::Integer(300)),
             Err(err) => show(err),
         }
     }
@@ -150,7 +151,7 @@ mod tests {
     fn test_parse_positive_infinity() {
         let input = b",inf\r\n";
         match parse(input) {
-            Ok((actual, _)) => assert_eq!(actual, RESPData::Double(f64::INFINITY)),
+            Ok((actual, _)) => assert_eq!(actual, Type::Double(f64::INFINITY)),
             Err(err) => show(err),
         }
     }
@@ -159,16 +160,16 @@ mod tests {
     fn test_parse_negative_infinity() {
         let input = b",-inf\r\n";
         match parse(input) {
-            Ok((actual, _)) => assert_eq!(actual, RESPData::Double(f64::NEG_INFINITY)),
+            Ok((actual, _)) => assert_eq!(actual, Type::Double(f64::NEG_INFINITY)),
             Err(err) => show(err),
         }
     }
 
     // Helper function to check if a double value is NaN
-    impl RESPData {
+    impl Type {
         pub fn is_nan(&self) -> bool {
             match self {
-                RESPData::Double(value) => value.is_nan(),
+                Type::Double(value) => value.is_nan(),
                 _ => false,
             }
         }

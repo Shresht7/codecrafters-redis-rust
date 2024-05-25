@@ -1,5 +1,6 @@
 // Library
-use super::{errors::ParserError, reader, RESPData};
+use super::Type;
+use crate::parser::{errors::ParserError, reader};
 
 /// The first byte of a simple error
 const FIRST_BYTE: u8 = b'-';
@@ -18,7 +19,7 @@ const FIRST_BYTE: u8 = b'-';
 /// ```sh
 /// -Error message\r\n => "Error message"
 /// ```
-pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
+pub fn parse(input: &[u8]) -> Result<(Type, &[u8]), Box<dyn std::error::Error>> {
     // Create a reader to help extract information from the input byte slice
     let mut bytes = reader::read(input);
 
@@ -37,7 +38,7 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
     let error_message = bytes.slice(1, end_pos).as_string()?;
 
     // Return the parsed error message and the remaining input
-    Ok((RESPData::SimpleError(error_message), &input[rest_pos..]))
+    Ok((Type::SimpleError(error_message), &input[rest_pos..]))
 }
 
 // -----
@@ -56,7 +57,7 @@ mod tests {
     #[test]
     fn should_parse_simple_error() {
         let input = b"-Error message\r\n";
-        let expected = RESPData::SimpleError("Error message".to_string());
+        let expected = Type::SimpleError("Error message".to_string());
         match parse(input) {
             Ok((actual, _)) => assert_eq!(actual, expected),
             Err(err) => show(err),
@@ -66,7 +67,7 @@ mod tests {
     #[test]
     fn should_parse_empty_simple_error() {
         let input = b"-\r\n";
-        let expected = RESPData::SimpleError("".to_string());
+        let expected = Type::SimpleError("".to_string());
         match parse(input) {
             Ok((actual, _)) => assert_eq!(actual, expected),
             Err(err) => show(err),
@@ -77,7 +78,7 @@ mod tests {
     fn should_parse_simple_error_with_special_characters() {
         let input = b"-Error message with special characters: !@#$%^&*()\r\n";
         let expected =
-            RESPData::SimpleError("Error message with special characters: !@#$%^&*()".to_string());
+            Type::SimpleError("Error message with special characters: !@#$%^&*()".to_string());
         match parse(input) {
             Ok((actual, _)) => assert_eq!(actual, expected),
             Err(err) => show(err),

@@ -1,5 +1,6 @@
 // Library
-use super::{errors::ParserError, reader, RESPData};
+use super::Type;
+use crate::parser::{errors::ParserError, reader};
 
 /// The first byte of a integer
 const FIRST_BYTE: u8 = b':';
@@ -18,7 +19,7 @@ const FIRST_BYTE: u8 = b':';
 /// ```sh
 /// :5\r\n => 5
 /// ```
-pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
+pub fn parse(input: &[u8]) -> Result<(Type, &[u8]), Box<dyn std::error::Error>> {
     // Create a reader to help extract information from the input byte slice
     let mut bytes = reader::read(input);
 
@@ -37,7 +38,7 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
     let integer = bytes.slice(1, end_pos).parse::<i64>()?;
 
     // Return the parsed integer and the remaining input
-    Ok((RESPData::Integer(integer), &input[rest_start_pos..]))
+    Ok((Type::Integer(integer), &input[rest_start_pos..]))
 }
 
 // -----
@@ -56,7 +57,7 @@ mod tests {
     #[test]
     fn should_parse_integer() {
         let input = b":123\r\n";
-        let expected = RESPData::Integer(123);
+        let expected = Type::Integer(123);
         match parse(input) {
             Ok((actual, _)) => assert_eq!(actual, expected),
             Err(err) => show(err),
@@ -66,7 +67,7 @@ mod tests {
     #[test]
     fn should_parse_negative_integer() {
         let input = b":-123\r\n";
-        let expected = RESPData::Integer(-123);
+        let expected = Type::Integer(-123);
         match parse(input) {
             Ok((actual, _)) => assert_eq!(actual, expected),
             Err(err) => show(err),
@@ -76,7 +77,7 @@ mod tests {
     #[test]
     fn should_parse_zero() {
         let input = b":0\r\n";
-        let expected = RESPData::Integer(0);
+        let expected = Type::Integer(0);
         match parse(input) {
             Ok((actual, _)) => assert_eq!(actual, expected),
             Err(err) => show(err),

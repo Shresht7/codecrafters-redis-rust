@@ -1,8 +1,8 @@
 // Library
-use super::{
+use super::Type;
+use crate::parser::{
     errors::ParserError,
     reader::{self, CRLF},
-    RESPData,
 };
 
 /// The first byte of a bulk string value.
@@ -23,7 +23,7 @@ const FIRST_BYTE: u8 = b'$';
 /// ```sh
 /// 6\r\nfoobar\r\n => "foobar"
 /// ```
-pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
+pub fn parse(input: &[u8]) -> Result<(Type, &[u8]), Box<dyn std::error::Error>> {
     // Check if the input is long enough to contain the bulk string
     if input.len() < 4 {
         return Err(BulkStringParserError::InsufficientData(input.len()).into());
@@ -49,7 +49,7 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
     // Check if the bulk string is null
     if length == -1 {
         return Ok((
-            RESPData::Null,
+            Type::Null,
             &input[data_start_pos..], // Remaining bytes
         ));
     }
@@ -67,7 +67,7 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
 
     // Return the parsed bulk string and the remaining input
     Ok((
-        RESPData::BulkString(bulk_string),
+        Type::BulkString(bulk_string),
         &input[data_end_pos + CRLF.len()..], // Remaining bytes
     ))
 }
@@ -120,7 +120,7 @@ mod tests {
     #[test]
     fn should_parse_bulk_string() {
         let input = b"$6\r\nfoobar\r\n";
-        let expected = RESPData::BulkString("foobar".to_string());
+        let expected = Type::BulkString("foobar".to_string());
         match parse(input) {
             Ok((actual, _)) => assert_eq!(actual, expected),
             Err(error) => show(error),
@@ -130,7 +130,7 @@ mod tests {
     #[test]
     fn should_parse_empty_bulk_string() {
         let input = b"$0\r\n\r\n";
-        let expected = RESPData::BulkString("".to_string());
+        let expected = Type::BulkString("".to_string());
         match parse(input) {
             Ok((actual, _)) => assert_eq!(actual, expected),
             Err(error) => show(error),
@@ -140,7 +140,7 @@ mod tests {
     #[test]
     fn should_parse_null_bulk_string() {
         let input = b"$-1\r\n";
-        let expected = RESPData::Null;
+        let expected = Type::Null;
         match parse(input) {
             Ok((actual, _)) => assert_eq!(actual, expected),
             Err(error) => show(error),

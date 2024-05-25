@@ -1,5 +1,6 @@
 // Library
-use super::{errors::ParserError, reader, RESPData};
+use super::Type;
+use crate::parser::{_parse, errors::ParserError, reader};
 
 /// The first byte of an array value.
 const FIRST_BYTE: u8 = b'*';
@@ -19,7 +20,7 @@ const FIRST_BYTE: u8 = b'*';
 /// ```sh
 /// *3\r\n:1\r\n:2\r\n:3\r\n => [1, 2, 3]
 /// ```
-pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
+pub fn parse(input: &[u8]) -> Result<(Type, &[u8]), Box<dyn std::error::Error>> {
     // Check if the input is long enough to contain the array value
     if input.len() < 4 {
         return Err(ArrayParserError::InsufficientData(input.len()).into());
@@ -44,13 +45,13 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
 
     // If the length is -1, the array is null
     if length == -1 {
-        return Ok((RESPData::Null, &input[data_start_pos..]));
+        return Ok((Type::Null, &input[data_start_pos..]));
     }
 
     // If the length is 0, the array is empty
     if length <= 0 {
         return Ok((
-            RESPData::Array(Vec::new()),
+            Type::Array(Vec::new()),
             &input[data_start_pos..], // Remaining bytes
         ));
     }
@@ -60,14 +61,14 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
     let mut remaining = &input[data_start_pos..];
     // Iterate for the length of the array
     for _ in 0..length {
-        let (element, rest) = super::_parse(remaining)?;
+        let (element, rest) = _parse(remaining)?;
         elements.push(element);
         remaining = rest;
     }
 
     // Return the parsed array and the remaining input
     Ok((
-        RESPData::Array(elements),
+        Type::Array(elements),
         remaining, // Remaining bytes
     ))
 }
@@ -116,13 +117,9 @@ mod tests {
     #[test]
     fn should_parse_array() {
         let input = b"*3\r\n:1\r\n:2\r\n:3\r\n";
-        let expected = vec![
-            RESPData::Integer(1),
-            RESPData::Integer(2),
-            RESPData::Integer(3),
-        ];
+        let expected = vec![Type::Integer(1), Type::Integer(2), Type::Integer(3)];
         match parse(input) {
-            Ok((actual, _)) => assert_eq!(actual, RESPData::Array(expected)),
+            Ok((actual, _)) => assert_eq!(actual, Type::Array(expected)),
             Err(err) => show(err),
         }
     }
@@ -131,11 +128,11 @@ mod tests {
     fn should_parse_bulk_string_array() {
         let input = b"*2\r\n$5\r\nhello\r\n$5\r\nworld\r\n";
         let expected = vec![
-            RESPData::BulkString("hello".to_string()),
-            RESPData::BulkString("world".to_string()),
+            Type::BulkString("hello".to_string()),
+            Type::BulkString("world".to_string()),
         ];
         match parse(input) {
-            Ok((actual, _)) => assert_eq!(actual, RESPData::Array(expected)),
+            Ok((actual, _)) => assert_eq!(actual, Type::Array(expected)),
             Err(err) => show(err),
         }
     }
@@ -145,7 +142,7 @@ mod tests {
         let input = b"*0\r\n";
         let expected = vec![];
         match parse(input) {
-            Ok((actual, _)) => assert_eq!(actual, RESPData::Array(expected)),
+            Ok((actual, _)) => assert_eq!(actual, Type::Array(expected)),
             Err(err) => show(err),
         }
     }
@@ -153,7 +150,7 @@ mod tests {
     #[test]
     fn should_parse_null_array() {
         let input = b"*-1\r\n";
-        let expected = RESPData::Null;
+        let expected = Type::Null;
         match parse(input) {
             Ok((actual, _)) => assert_eq!(actual, expected),
             Err(err) => show(err),
@@ -199,12 +196,12 @@ mod tests {
     fn should_parse_mixed_data_types() {
         let input = b"*3\r\n:1\r\n+OK\r\n$6\r\nfoobar\r\n";
         let expected = vec![
-            RESPData::Integer(1),
-            RESPData::SimpleString("OK".to_string()),
-            RESPData::BulkString("foobar".to_string()),
+            Type::Integer(1),
+            Type::SimpleString("OK".to_string()),
+            Type::BulkString("foobar".to_string()),
         ];
         match parse(input) {
-            Ok((actual, _)) => assert_eq!(actual, RESPData::Array(expected)),
+            Ok((actual, _)) => assert_eq!(actual, Type::Array(expected)),
             Err(err) => show(err),
         }
     }
@@ -213,19 +210,15 @@ mod tests {
     fn should_support_nesting() {
         let input = b"*3\r\n:-23\r\n*3\r\n:1\r\n:2\r\n:3\r\n*2\r\n$5\r\nhello\r\n-world\r\n";
         let expected = vec![
-            RESPData::Integer(-23),
-            RESPData::Array(vec![
-                RESPData::Integer(1),
-                RESPData::Integer(2),
-                RESPData::Integer(3),
-            ]),
-            RESPData::Array(vec![
-                RESPData::BulkString("hello".to_string()),
-                RESPData::SimpleError("world".to_string()),
+            Type::Integer(-23),
+            Type::Array(vec![Type::Integer(1), Type::Integer(2), Type::Integer(3)]),
+            Type::Array(vec![
+                Type::BulkString("hello".to_string()),
+                Type::SimpleError("world".to_string()),
             ]),
         ];
         match parse(input) {
-            Ok((actual, _)) => assert_eq!(actual, RESPData::Array(expected)),
+            Ok((actual, _)) => assert_eq!(actual, Type::Array(expected)),
             Err(err) => show(err),
         }
     }

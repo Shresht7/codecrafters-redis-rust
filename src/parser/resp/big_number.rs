@@ -1,5 +1,6 @@
 // Library
-use super::{errors::ParserError, reader, RESPData};
+use super::Type;
+use crate::parser::{errors::ParserError, reader};
 
 /// The first byte of a big number
 const FIRST_BYTE: u8 = b'(';
@@ -21,7 +22,7 @@ const FIRST_BYTE: u8 = b'(';
 /// (1234567890\r\n // 1234567890
 /// (-1234567890\r\n // -1234567890
 /// ```
-pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
+pub fn parse(input: &[u8]) -> Result<(Type, &[u8]), Box<dyn std::error::Error>> {
     // Create a reader to help extract information from the input byte slice
     let mut bytes = reader::read(input);
 
@@ -40,7 +41,7 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
     let big_number = bytes.slice(1, crlf_pos).as_str()?.parse::<i64>()?;
 
     // Return the big number and the remaining input byte slice
-    Ok((RESPData::BigNumber(big_number), &input[rest_pos..]))
+    Ok((Type::BigNumber(big_number), &input[rest_pos..]))
 }
 
 // -----
@@ -59,7 +60,7 @@ mod tests {
     #[test]
     fn should_parse_big_number() {
         let input = b"(1234567890\r\n";
-        let expected = RESPData::BigNumber(1234567890);
+        let expected = Type::BigNumber(1234567890);
         match parse(input) {
             Ok((actual, _)) => assert_eq!(actual, expected),
             Err(err) => show(err),
@@ -69,7 +70,7 @@ mod tests {
     #[test]
     fn should_parse_negative_big_number() {
         let input = b"(-1234567890\r\n";
-        let expected = RESPData::BigNumber(-1234567890);
+        let expected = Type::BigNumber(-1234567890);
         match parse(input) {
             Ok((actual, _)) => assert_eq!(actual, expected),
             Err(err) => show(err),

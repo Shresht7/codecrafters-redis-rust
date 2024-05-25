@@ -1,38 +1,25 @@
 // Library
-mod array;
-mod big_number;
-mod boolean;
-mod bulk_error;
-mod bulk_string;
-mod data_types;
-mod double;
 mod errors;
-mod integer;
-mod null;
 mod reader;
-mod simple_error;
-mod simple_string;
-
-// Use statements
-use data_types::RESPData;
+mod resp;
 
 /// Parses the given input data and returns the corresponding `RESPData` and the remaining input
-fn _parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
+fn _parse(input: &[u8]) -> Result<(resp::Type, &[u8]), Box<dyn std::error::Error>> {
     // Extract the first byte from the input, which indicates the data type
     let first_byte = input.first().ok_or("Empty input")?;
 
     // Match on the first_byte to determine the data type and parse the input accordingly
     match first_byte {
-        b'+' => simple_string::parse(&input),
-        b'-' => simple_error::parse(&input),
-        b':' => integer::parse(&input),
-        b'$' => bulk_string::parse(&input),
-        b'*' => array::parse(&input),
-        b'_' => null::parse(&input),
-        b'#' => boolean::parse(&input),
-        b',' => double::parse(&input),
-        b'(' => big_number::parse(&input),
-        b'!' => bulk_error::parse(&input),
+        b'+' => resp::simple_string::parse(&input),
+        b'-' => resp::simple_error::parse(&input),
+        b':' => resp::integer::parse(&input),
+        b'$' => resp::bulk_string::parse(&input),
+        b'*' => resp::array::parse(&input),
+        b'_' => resp::null::parse(&input),
+        b'#' => resp::boolean::parse(&input),
+        b',' => resp::double::parse(&input),
+        b'(' => resp::big_number::parse(&input),
+        b'!' => resp::bulk_error::parse(&input),
         _ => Err("Invalid data type".into()),
     }
 }
@@ -42,7 +29,7 @@ fn _parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>>
 // -----
 
 /// Parses the given input data and returns the corresponding `RESPData`
-pub fn parse(input: &[u8]) -> Result<Vec<RESPData>, Box<dyn std::error::Error>> {
+pub fn parse(input: &[u8]) -> Result<Vec<resp::Type>, Box<dyn std::error::Error>> {
     // The parsed data
     let mut data = Vec::new();
 
@@ -77,7 +64,7 @@ mod tests {
     #[test]
     fn should_parse_simple_string() {
         let input = b"+hello world\r\n";
-        let expected = vec![RESPData::SimpleString("hello world".to_string())];
+        let expected = vec![resp::Type::SimpleString("hello world".to_string())];
         match parse(input) {
             Ok(actual) => assert_eq!(actual, expected),
             Err(err) => show(err),
@@ -94,8 +81,8 @@ mod tests {
     fn should_parse_multiple_elements() {
         let input = b"+hello world\r\n:-123\r\n";
         let expected = vec![
-            RESPData::SimpleString("hello world".to_string()),
-            RESPData::Integer(-123),
+            resp::Type::SimpleString("hello world".to_string()),
+            resp::Type::Integer(-123),
         ];
         match parse(input) {
             Ok(actual) => assert_eq!(actual, expected),
@@ -108,9 +95,9 @@ mod tests {
     fn should_parse_echo_command() {
         let input = ["*2\r\n", "$4\r\n", "ECHO\r\n", "$9\r\n", "pineapple\r\n"];
         let expected = vec![
-            RESPData::Integer(2),
-            RESPData::SimpleString("ECHO".to_string()),
-            RESPData::SimpleString("pineapple".to_string()),
+            resp::Type::Integer(2),
+            resp::Type::SimpleString("ECHO".to_string()),
+            resp::Type::SimpleString("pineapple".to_string()),
         ];
         match parse(input.concat().as_bytes()) {
             Ok(actual) => assert_eq!(actual, expected),
@@ -121,7 +108,7 @@ mod tests {
     #[test]
     fn should_parse_null() {
         let input = b"_\r\n";
-        let expected = vec![RESPData::Null];
+        let expected = vec![resp::Type::Null];
         match parse(input) {
             Ok(actual) => assert_eq!(actual, expected),
             Err(err) => show(err),
@@ -131,7 +118,7 @@ mod tests {
     #[test]
     fn should_parse_null_array() {
         let input = b"*-1\r\n";
-        let expected = vec![RESPData::Null];
+        let expected = vec![resp::Type::Null];
         match parse(input) {
             Ok(actual) => assert_eq!(actual, expected),
             Err(err) => show(err),
@@ -141,7 +128,7 @@ mod tests {
     #[test]
     fn should_parse_null_bulk_string() {
         let input = b"$-1\r\n";
-        let expected = vec![RESPData::Null];
+        let expected = vec![resp::Type::Null];
         match parse(input) {
             Ok(actual) => assert_eq!(actual, expected),
             Err(err) => show(err),

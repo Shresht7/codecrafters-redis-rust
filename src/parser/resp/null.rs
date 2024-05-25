@@ -1,5 +1,6 @@
 // Library
-use super::{errors::ParserError, reader, RESPData};
+use super::Type;
+use crate::parser::{errors::ParserError, reader};
 
 // The first byte of a null value
 const FIRST_BYTE: u8 = b'_';
@@ -18,7 +19,7 @@ const FIRST_BYTE: u8 = b'_';
 /// ```sh
 /// _\r\n
 /// ```
-pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
+pub fn parse(input: &[u8]) -> Result<(Type, &[u8]), Box<dyn std::error::Error>> {
     // Create a reader to help extract information from the input byte slice
     let mut bytes = reader::read(input);
 
@@ -39,7 +40,7 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
     }
 
     // Return the parsed null value and the remaining input
-    Ok((RESPData::Null, &input[rest_pos..]))
+    Ok((Type::Null, &input[rest_pos..]))
 }
 
 // ------
@@ -87,7 +88,7 @@ mod tests {
     #[test]
     fn should_parse_null() {
         let input = b"_\r\n";
-        let expected = (RESPData::Null, &b""[..]);
+        let expected = (Type::Null, &b""[..]);
         match parse(input) {
             Ok((actual, _)) => assert_eq!(actual, expected.0),
             Err(err) => show(err),

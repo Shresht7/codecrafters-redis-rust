@@ -1,8 +1,8 @@
 // Library
-use super::{
+use super::Type;
+use crate::parser::{
     errors::ParserError,
     reader::{self, CRLF},
-    RESPData,
 };
 
 /// The first_byte of a boolean value
@@ -23,7 +23,7 @@ const FIRST_BYTE: u8 = b'#';
 /// #t\r\n // true
 /// #f\r\n // false
 /// ```
-pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
+pub fn parse(input: &[u8]) -> Result<(Type, &[u8]), Box<dyn std::error::Error>> {
     // Check if the input is long enough to contain the boolean value
     if input.len() < 4 {
         return Err(BooleanParserError::InsufficientData(input.len()).into());
@@ -62,7 +62,7 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
 
     // Return the parsed boolean value and the remaining input
     Ok((
-        RESPData::Boolean(boolean),
+        Type::Boolean(boolean),
         &input[crlf_end_pos..], // Remaining bytes
     ))
 }
@@ -126,7 +126,7 @@ mod tests {
     #[test]
     fn should_parse_true_boolean() {
         let input = b"#t\r\n";
-        let expected = (RESPData::Boolean(true), &b""[..]);
+        let expected = (Type::Boolean(true), &b""[..]);
         match parse(input) {
             Ok((actual, _)) => assert_eq!(actual, expected.0),
             Err(err) => show(err),
@@ -136,7 +136,7 @@ mod tests {
     #[test]
     fn should_parse_false_boolean() {
         let input = b"#f\r\n";
-        let expected = (RESPData::Boolean(false), &b""[..]);
+        let expected = (Type::Boolean(false), &b""[..]);
         match parse(input) {
             Ok((actual, _)) => assert_eq!(actual, expected.0),
             Err(err) => show(err),
@@ -160,7 +160,7 @@ mod tests {
     #[test]
     fn should_return_remaining_bytes() {
         let input = b"#t\r\n+OK\r\n";
-        let expected = (RESPData::Boolean(true), &b"+OK\r\n"[..]);
+        let expected = (Type::Boolean(true), &b"+OK\r\n"[..]);
         match parse(input) {
             Ok(res) => assert_eq!(res, expected),
             Err(err) => show(err),

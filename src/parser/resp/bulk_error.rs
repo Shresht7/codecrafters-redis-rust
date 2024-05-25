@@ -1,8 +1,8 @@
 // Library
-use super::{
+use super::Type;
+use crate::parser::{
     errors::ParserError,
     reader::{self, CRLF},
-    RESPData,
 };
 
 /// The first byte of the bulk error data type
@@ -27,7 +27,7 @@ const FIRST_BYTE: u8 = b'!';
 /// ```
 ///
 /// As a convention the error begins with an uppercase word denoting the error type.
-pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Error>> {
+pub fn parse(input: &[u8]) -> Result<(Type, &[u8]), Box<dyn std::error::Error>> {
     // Create a reader to help extract information from the input byte slice
     let mut bytes = reader::read(input);
 
@@ -56,7 +56,7 @@ pub fn parse(input: &[u8]) -> Result<(RESPData, &[u8]), Box<dyn std::error::Erro
 
     // Return the bulk error and the remaining input byte slice
     Ok((
-        RESPData::BulkError(error_message),
+        Type::BulkError(error_message),
         &input[error_end_pos + CRLF.len()..],
     ))
 }
@@ -77,7 +77,7 @@ mod tests {
     #[test]
     fn should_parse_bulk_error() {
         let input = b"!13\r\nError message\r\n";
-        let expected = RESPData::BulkError("Error message".to_string());
+        let expected = Type::BulkError("Error message".to_string());
         match parse(input) {
             Ok((data, _)) => assert_eq!(data, expected),
             Err(err) => show(err),

@@ -34,7 +34,7 @@
 /// | Sets              | RESP3  | Aggregate  | `~`        |
 /// | Pushes            | RESP3  | Aggregate  | `>`        |
 #[derive(Debug, PartialEq)]
-pub enum RESPData {
+pub enum Type {
     /// Simple Strings are encoded with a leading `+` character followed by the string itself.
     /// The string is terminated by the CRLF sequence (it mustn't contain CRLF or LF characters).
     /// Simple Strings are meant for short, non-binary strings with minimal overhead.
@@ -110,7 +110,7 @@ pub enum RESPData {
     ///
     /// Clients send commands to the Redis server as RESP arrays. Similarly
     /// some Redis commands that return a collection of elements use arrays as their replies.
-    Array(Vec<RESPData>),
+    Array(Vec<Type>),
 
     /// A _Null_ value is a simple data type that represents a null value.
     /// This can be used in bulk strings, arrays, etc.
