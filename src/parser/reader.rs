@@ -30,6 +30,41 @@ pub fn read(input: &[u8]) -> BytesReader {
 }
 
 impl<'a> BytesReader<'a> {
+    /// Check if the byte slice contains the given byte.
+    ///
+    /// ```rs
+    /// let input: &[u8] = b"hello world"; // Input byte slice
+    /// let mut bytes = reader::read(input); // Create a new BytesReader instance
+    /// let has_byte = bytes.contains(&b'h'); // => true
+    /// ```
+    pub fn contains(&mut self, byte: &u8) -> bool {
+        self.slice.contains(byte)
+    }
+
+    /// Find the position of the first occurrence of the given byte in the byte slice.
+    /// Respects the current start and end positions of the reader.
+    /// If the byte is not found, return `None`.
+    /// Otherwise, return the position of the byte.
+    ///
+    /// ```rs
+    /// let input: &[u8] = b"hello world"; // Input byte slice
+    /// let mut bytes = reader::read(input); // Create a new BytesReader instance
+    /// let pos = bytes.find(&b'w').unwrap(); // => 6
+    /// ```
+    pub fn find(&mut self, byte: u8) -> Option<usize> {
+        let position;
+        for (i, &b) in self.slice.iter().enumerate() {
+            if i < self.start_pos {
+                continue;
+            }
+            if b == byte {
+                position = i;
+                return Some(position);
+            }
+        }
+        None
+    }
+
     /// Find the position of the first CRLF sequence in the byte slice.
     /// Respects the current start and end positions of the reader.
     /// If the CRLF sequence is not found, return an error.
