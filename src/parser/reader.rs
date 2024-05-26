@@ -123,7 +123,7 @@ impl<'a> BytesReader<'a> {
     /// The start position is inclusive and the end position is exclusive.
     pub fn slice(&mut self, start: usize, end: usize) -> &mut Self {
         // Swap the start and end positions if the start position is greater than the end position
-        if start >= end {
+        if start > end {
             // Swap the start and end positions and re-call the slice method
             return self.slice(end, start);
         }
