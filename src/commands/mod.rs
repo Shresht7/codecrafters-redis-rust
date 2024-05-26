@@ -35,7 +35,7 @@ pub fn handle(
         "PING" => ping::command(&array[1..]),
         "ECHO" => Ok(echo::command(&array[1..]).to_string()),
         "SET" => Ok(set::command(&array[1..], db).to_string()),
-        "GET" => get::command(&array[1..], db),
+        "GET" => Ok(get::command(&array[1..], db).to_string()),
         _ => Ok("-ERR unknown command\r\n".into()),
     }
 }
