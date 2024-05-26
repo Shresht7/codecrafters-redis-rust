@@ -1,7 +1,7 @@
 // Library
 mod errors;
 mod reader;
-mod resp;
+pub mod resp;
 
 /// Parses the given input data and returns the corresponding `RESPData` and the remaining input
 fn _parse(input: &[u8]) -> Result<(resp::Type, &[u8]), Box<dyn std::error::Error>> {
