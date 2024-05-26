@@ -8,11 +8,10 @@ use crate::{database::Database, parser::resp::Type};
 /// The command returns an error if the key does not exist.
 pub fn command(args: &[Type], db: &Database) -> Type {
     // Check the number of arguments
-    if args.len() != 1 {
+    if args.len() <= 1 {
         return Type::SimpleError(
             format!(
-                "ERR wrong number of arguments for 'GET' command. Expected {} but got {}",
-                1,
+                "ERR wrong number of arguments for 'GET' command. Expected at least 1 but got {}",
                 args.len()
             )
             .into(),
