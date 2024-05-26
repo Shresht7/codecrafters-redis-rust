@@ -45,23 +45,34 @@ pub fn parse(input: &[u8]) -> Result<(Type, &[u8]), Box<dyn std::error::Error>> 
     // Parse the length of the verbatim string
     let length = bytes.slice(1, len_end_pos).parse::<i64>()?;
 
+    // Calculate the total length of the verbatim string
+    // data_start_pos = (length of the prefix + length of the CRLF terminator sequence)
+    // 3 bytes for the encoding
+    // 1 byte for the colon separator
+    // `length` bytes for the verbatim string data
+    // 2 bytes for the CRLF terminator sequence
+    let total_length = data_start_pos + 3 + 1 + length as usize + CRLF.len();
+
     // Check if there is enough data to parse the verbatim string
-    if data_start_pos + length as usize > input.len() {
-        return Err(VerbatimStringParserError::InvalidLength(length as usize, input.len()).into());
+    if input.len() < total_length {
+        return Err(VerbatimStringParserError::InvalidLength(total_length, input.len()).into());
     }
 
     // Extract the verbatim string data
     let data = bytes.slice(data_start_pos, data_start_pos + length as usize);
 
     // Extract the encoding and the verbatim string data
-    let (mut encoding, mut verbatim_string) = data
+    let (mut encoding_part, mut verbatim_string_part) = data
         .split(b":")
         .map_err(|_| VerbatimStringParserError::MissingEncodingSeparator)?;
 
+    // Only take the length for verbatim string data
+    let verbatim_string = verbatim_string_part.slice(0, length as usize);
+
     // Return the verbatim string and the remaining input
     Ok((
-        Type::VerbatimString(encoding.as_string()?, verbatim_string.as_string()?),
-        &input[data_start_pos + 3 + 1 + length as usize + CRLF.len()..], // Remaining bytes
+        Type::VerbatimString(encoding_part.as_string()?, verbatim_string.as_string()?),
+        &input[total_length..], // Remaining bytes
     ))
 }
 
@@ -118,6 +129,38 @@ mod tests {
                 assert_eq!(encoding, "utf-8");
                 assert_eq!(verbatim_string, "foobar");
                 assert_eq!(remaining, b"");
+            }
+            Err(err) => show(err),
+            _ => panic!("Unexpected Type"),
+        }
+    }
+
+    #[test]
+    fn test_parse_invalid_first_byte() {
+        let input = b"6\r\nutf-8:foobar";
+        assert!(parse(input).is_err())
+    }
+
+    #[test]
+    fn test_parse_invalid_length() {
+        let input = b"=6\r\nutf-8:foo";
+        assert!(parse(input).is_err())
+    }
+
+    #[test]
+    fn test_parse_missing_encoding_separator() {
+        let input = b"=6\r\nutf-8foobar";
+        assert!(parse(input).is_err())
+    }
+
+    #[test]
+    fn test_parse_remaining() {
+        let input = b"=6\r\nutf-8:foobar\r\nremaining";
+        match parse(input) {
+            Ok((Type::VerbatimString(encoding, verbatim_string), remaining)) => {
+                assert_eq!(encoding, "utf-8");
+                assert_eq!(verbatim_string, "foobar");
+                assert_eq!(remaining, b"\r\nremaining");
             }
             Err(err) => show(err),
             _ => panic!("Unexpected Type"),
