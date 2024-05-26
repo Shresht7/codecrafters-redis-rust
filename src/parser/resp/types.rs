@@ -306,7 +306,13 @@ impl std::fmt::Display for Type {
 
             Type::Integer(i) => write!(f, ":{}\r\n", i),
 
-            Type::BulkString(s) => write!(f, "${}\r\n{}\r\n", s.len(), s),
+            Type::BulkString(s) => {
+                if s.is_empty() {
+                    write!(f, "$-1\r\n")
+                } else {
+                    write!(f, "${}\r\n{}\r\n", s.len(), s)
+                }
+            }
 
             Type::Array(arr) => {
                 write!(f, "*{}\r\n", arr.len())?;

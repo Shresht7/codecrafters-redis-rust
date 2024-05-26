@@ -28,6 +28,6 @@ pub fn command(args: &[Type], db: &Database) -> Type {
     // Get the value from the database
     match db.get(key) {
         Some(value) => value.clone(),
-        None => Type::SimpleError("ERR key not found".into()),
+        None => Type::BulkString("".into()),
     }
 }
