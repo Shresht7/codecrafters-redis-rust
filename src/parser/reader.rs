@@ -25,7 +25,7 @@ pub fn read(input: &[u8]) -> BytesReader {
     BytesReader {
         slice: input,
         start_pos: 0,
-        end_pos: 0,
+        end_pos: input.len(),
     }
 }
 
@@ -51,18 +51,28 @@ impl<'a> BytesReader<'a> {
     /// let mut bytes = reader::read(input); // Create a new BytesReader instance
     /// let pos = bytes.find(&b'w').unwrap(); // => 6
     /// ```
-    pub fn find(&mut self, byte: u8) -> Option<usize> {
-        let position;
-        for (i, &b) in self.slice.iter().enumerate() {
-            if i < self.start_pos {
-                continue;
-            }
-            if b == byte {
-                position = i;
-                return Some(position);
-            }
-        }
-        None
+    pub fn find(&mut self, bytes: &[u8]) -> Option<usize> {
+        self.slice
+            .windows(bytes.len())
+            .position(|window| window == bytes)
+    }
+
+    /// Split the byte slice at the first occurrence of the given byte.
+    /// Return the byte slices before and after the byte.
+    /// If the byte is not found, return an error.
+    /// ```rs
+    /// let input: &[u8] = b"hello world"; // Input byte slice
+    /// let mut bytes = reader::read(input); // Create a new BytesReader instance
+    /// let (first, rest) = bytes.split(b'w').unwrap(); // => (b"hello ", b"world")
+    /// ```   
+    pub fn split(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<(BytesReader, BytesReader), Box<dyn std::error::Error>> {
+        let position = self.find(bytes).unwrap();
+        let (first, rest) = self.slice.split_at(position);
+        let (_, rest) = rest.split_at(bytes.len());
+        Ok((read(first), read(rest)))
     }
 
     /// Find the position of the first CRLF sequence in the byte slice.
@@ -82,6 +92,15 @@ impl<'a> BytesReader<'a> {
             .ok_or(BytesReaderError::NonTerminating(self.slice.len()))?;
         let end_pos = start_pos + CRLF.len();
         Ok((start_pos, end_pos))
+    }
+
+    /// Split at the first CRLF sequence in the byte slice.
+    /// Return the byte slices before and after the CRLF sequence.
+    pub fn split_crlf(&mut self) -> Result<(BytesReader, BytesReader), Box<dyn std::error::Error>> {
+        let (start, _) = self.find_crlf()?;
+        let (first, rest) = self.slice.split_at(start);
+        let (_, rest) = rest.split_at(CRLF.len());
+        Ok((read(first), read(rest)))
     }
 
     /// Return the first byte in the byte slice
@@ -220,7 +239,7 @@ mod tests {
     fn should_find_byte() {
         let input = b"hello world";
         let mut bytes = read(input);
-        match bytes.find(b'w') {
+        match bytes.find(b"w") {
             Some(pos) => assert_eq!(pos, 6),
             None => panic!("Byte {:?} not found in {:?}", b'w', input,),
         }
@@ -230,8 +249,23 @@ mod tests {
     fn should_not_find_byte() {
         let input = b"hello world";
         let mut bytes = read(input);
-        let pos = bytes.find(b'z');
+        let pos = bytes.find(b"z");
         assert!(pos.is_none());
+    }
+
+    #[test]
+    fn should_split_bytes() {
+        let input = b"hello world";
+        let mut bytes = read(input);
+        match bytes.split(b" ") {
+            Ok((mut first, mut rest)) => {
+                let first = first.as_bytes();
+                let rest = rest.as_bytes();
+                assert_eq!(first, b"hello");
+                assert_eq!(rest, b"world");
+            }
+            Err(err) => show(err),
+        }
     }
 
     #[test]
@@ -253,6 +287,19 @@ mod tests {
         let mut bytes = read(input);
         let result = bytes.find_crlf();
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn should_split_crlf() {
+        let input = b"hello\r\nworld";
+        let mut bytes = read(input);
+        match bytes.split_crlf() {
+            Ok((mut first, mut rest)) => {
+                assert_eq!(first.as_bytes(), b"hello");
+                assert_eq!(rest.as_bytes(), b"world");
+            }
+            Err(err) => show(err),
+        }
     }
 
     #[test]
