@@ -1,5 +1,5 @@
 // Library
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 
 // ---------------------------------------
@@ -221,6 +221,22 @@ pub enum Type {
     /// %2\r\n+key1\r\n:1\r\n+key2\r\n:2\r\n => {"key1": 1, "key2": 2}
     /// ```
     Map(HashMap<Type, Type>),
+
+    /// A *Set* is a data type that represents a collection of unique elements.
+    /// A set is encoded as follows:
+    /// - A prefix of `~`
+    /// - The number of elements in the set
+    /// - CRLF terminator sequence
+    /// - Each element in the set is encoded according to the rules of the RESP protocol
+    /// - A final CRLF terminator sequence
+    ///
+    /// Example:
+    /// ```sh
+    /// ~3\r\n:1\r\n:2\r\n:3\r\n => {1, 2, 3}
+    /// ```
+    ///
+    /// Sets are similar to arrays but with the distinction that sets contain unique elements.
+    Set(HashSet<Type>),
 }
 
 impl Eq for Type {
@@ -236,6 +252,12 @@ impl Eq for Type {
                 // Check if the map is empty
                 if map.is_empty() {
                     panic!("Map is empty");
+                }
+            }
+            Type::Set(set) => {
+                // Check if the set is empty
+                if set.is_empty() {
+                    panic!("Set is empty");
                 }
             }
             _ => {}
@@ -257,6 +279,12 @@ impl Hash for Type {
                 for (key, value) in map {
                     key.hash(state);
                     value.hash(state);
+                }
+            }
+            Type::Set(set) => {
+                // Hash the set by hashing each element
+                for element in set {
+                    element.hash(state);
                 }
             }
             _ => {
