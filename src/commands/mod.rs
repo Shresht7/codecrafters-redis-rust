@@ -27,9 +27,6 @@ pub fn handle(
         _ => Err(Box::new(CommandError::InvalidCommand))?,
     };
 
-    println!("Command: {:?}", command);
-    println!("Arguments: {:?}", &array[1..]);
-
     // Handle the command
     match command.to_uppercase().as_str() {
         "PING" => ping::command(&array[1..]),

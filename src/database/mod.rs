@@ -1,9 +1,16 @@
 // Library
 use crate::parser::resp::Type;
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Instant};
+
+#[derive(Debug)]
+pub struct Item {
+    value: Type,
+    created_at: Instant,
+    expires_at: Option<usize>,
+}
 
 pub struct Database {
-    data: HashMap<Type, Type>,
+    data: HashMap<Type, Item>,
 }
 
 impl Database {
@@ -15,13 +22,27 @@ impl Database {
     }
 
     /// Sets the value of a key in the database.
-    pub fn set(&mut self, key: Type, value: Type) {
-        self.data.insert(key, value);
+    pub fn set(&mut self, key: Type, value: Type, expires_at: Option<usize>) {
+        self.data.insert(
+            key,
+            Item {
+                value,
+                created_at: Instant::now(),
+                expires_at,
+            },
+        );
     }
 
     /// Gets the value of a key in the database.
     pub fn get(&self, key: &Type) -> Option<&Type> {
-        self.data.get(key)
+        let item = self.data.get(key)?;
+        println!("Item: {:?}", item);
+        if item.expires_at.is_some() {
+            if item.created_at.elapsed().as_millis() as usize >= item.expires_at? {
+                return None;
+            }
+        }
+        Some(&item.value)
     }
 
     /// Removes a key from the database.

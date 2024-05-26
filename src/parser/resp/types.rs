@@ -307,7 +307,7 @@ impl std::fmt::Display for Type {
             Type::Integer(i) => write!(f, ":{}\r\n", i),
 
             Type::BulkString(s) => {
-                if s.is_empty() {
+                if s == "" {
                     write!(f, "$-1\r\n")
                 } else {
                     write!(f, "${}\r\n{}\r\n", s.len(), s)
@@ -322,7 +322,7 @@ impl std::fmt::Display for Type {
                 Ok(())
             }
 
-            Type::Null => write!(f, "_\r\n"),
+            Type::Null => write!(f, "$-1\r\n"),
 
             Type::Boolean(b) => write!(f, "#{}\r\n", if *b { 't' } else { 'f' }),
 

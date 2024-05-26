@@ -32,8 +32,28 @@ pub fn command(args: &[resp::Type], db: &mut Database) -> Type {
         _ => return Type::SimpleError("ERR invalid value".into()),
     };
 
+    if args.len() == 2 {
+        // Set the value in the database
+        db.set(key.clone(), value.clone(), None);
+
+        // Respond with OK
+        return Type::SimpleString("OK".into());
+    }
+
+    // Extract the expiration time from the arguments
+    let milliseconds = match args.get(2).unwrap().to_string().to_uppercase().as_str() {
+        "PX" => match args.get(3) {
+            Some(Type::BulkString(time)) => match time.parse::<usize>() {
+                Ok(time) => Some(time),
+                _ => return Type::SimpleError("ERR invalid time".into()),
+            },
+            _ => return Type::SimpleError("ERR invalid time".into()),
+        },
+        _ => Some(7),
+    };
+
     // Set the value in the database
-    db.set(key.clone(), value.clone());
+    db.set(key.clone(), value.clone(), milliseconds);
 
     // Respond with OK
     Type::SimpleString("OK".into())

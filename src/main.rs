@@ -62,12 +62,10 @@ async fn handle_connection(
         }
 
         // Print the incoming data
-        println!("Request:\n{}\n\n", String::from_utf8_lossy(&buffer));
         let cmd = parser::parse(&buffer[..bytes_read])?;
 
         // Handle the parsed data and get a response
         let response = commands::handle(cmd, &mut db)?;
-        println!("Response:\n{}\n\n", response);
 
         // Write a response back to the stream
         stream.write_all(response.as_bytes()).await?;
