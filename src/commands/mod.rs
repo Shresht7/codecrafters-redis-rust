@@ -33,7 +33,7 @@ pub fn handle(
     // Handle the command
     match command.to_uppercase().as_str() {
         "PING" => ping::command(&array[1..]),
-        "ECHO" => echo::command(&array[1..]),
+        "ECHO" => Ok(echo::command(&array[1..]).to_string()),
         "SET" => set::command(&array[1..], db),
         "GET" => get::command(&array[1..], db),
         _ => Ok("-ERR unknown command\r\n".into()),

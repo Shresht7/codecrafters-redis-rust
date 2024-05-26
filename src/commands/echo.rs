@@ -1,22 +1,18 @@
 // Library
-use super::errors::CommandError;
-use crate::parser::resp;
+use crate::parser::resp::Type;
 
 /// Handles the ECHO command.
 /// The ECHO command simply returns the argument provided to it.
-pub fn command(args: &[resp::Type]) -> Result<String, Box<dyn std::error::Error>> {
+pub fn command(args: &[Type]) -> Type {
     // Check the number of arguments
     if args.len() < 1 {
-        return Err(Box::new(CommandError::InvalidArgumentCount(1, args.len())));
+        return Type::SimpleError("ERR wrong number of arguments for 'ECHO' command".into());
     }
 
     // Respond with the argument
-    if let Some(resp::Type::BulkString(arg)) = args.get(0) {
-        Ok(format!("${}\r\n{}\r\n", arg.len(), arg))
+    if let Some(Type::BulkString(arg)) = args.get(0) {
+        Type::BulkString(arg.clone())
     } else {
-        Err(Box::new(CommandError::InvalidArgument(format!(
-            "Expected BulkString but got: {:?}",
-            args.get(0)
-        ))))
+        Type::SimpleError("ERR invalid argument for 'ECHO' command".into())
     }
 }

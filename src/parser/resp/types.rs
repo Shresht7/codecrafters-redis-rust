@@ -1,6 +1,7 @@
 // Library
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
+use std::path::Display;
 
 // ---------------------------------------
 // REDIS SERIALIZATION PROTOCOL DATA TYPES
@@ -291,6 +292,56 @@ impl Hash for Type {
             _ => {
                 // For other types, hash the discriminant value
                 std::mem::discriminant(self).hash(state);
+            }
+        }
+    }
+}
+
+impl std::fmt::Display for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Type::SimpleString(s) => write!(f, "+{}\r\n", s),
+
+            Type::SimpleError(e) => write!(f, "-{}\r\n", e),
+
+            Type::Integer(i) => write!(f, ":{}\r\n", i),
+
+            Type::BulkString(s) => write!(f, "${}\r\n{}\r\n", s.len(), s),
+
+            Type::Array(arr) => {
+                write!(f, "*{}\r\n", arr.len())?;
+                for elem in arr {
+                    write!(f, "{}", elem)?;
+                }
+                Ok(())
+            }
+
+            Type::Null => write!(f, "_\r\n"),
+
+            Type::Boolean(b) => write!(f, "#{}\r\n", if *b { 't' } else { 'f' }),
+
+            Type::Double(d) => write!(f, ",{}\r\n", d),
+
+            Type::BigNumber(n) => write!(f, "({}\r\n", n),
+
+            Type::BulkError(e) => write!(f, "!{}\r\n", e),
+
+            Type::VerbatimString(e, s) => write!(f, "={}\r\n{}:{}\r\n", s.len(), s, e),
+
+            Type::Map(map) => {
+                write!(f, "%{}\r\n", map.len())?;
+                for (key, value) in map {
+                    write!(f, "{}{}", key, value)?;
+                }
+                Ok(())
+            }
+
+            Type::Set(set) => {
+                write!(f, "~{}\r\n", set.len())?;
+                for elem in set {
+                    write!(f, "{}", elem)?;
+                }
+                Ok(())
             }
         }
     }
