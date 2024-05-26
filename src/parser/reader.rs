@@ -122,8 +122,24 @@ impl<'a> BytesReader<'a> {
     /// Set the start and end positions of the reader to extract a byte slice.
     /// The start position is inclusive and the end position is exclusive.
     pub fn slice(&mut self, start: usize, end: usize) -> &mut Self {
-        self.start_pos = start;
-        self.end_pos = end;
+        // Swap the start and end positions if the start position is greater than the end position
+        if start >= end {
+            // Swap the start and end positions and re-call the slice method
+            return self.slice(end, start);
+        }
+
+        // Set the start and end positions
+        if start >= self.slice.len() {
+            self.start_pos = self.end_pos;
+        } else {
+            self.start_pos = start;
+        }
+        if end > self.slice.len() {
+            self.end_pos = self.slice.len();
+        } else {
+            self.end_pos = end;
+        }
+
         self
     }
 
