@@ -1,3 +1,7 @@
+// Library
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
+
 // ---------------------------------------
 // REDIS SERIALIZATION PROTOCOL DATA TYPES
 // ---------------------------------------
@@ -203,4 +207,62 @@ pub enum Type {
     /// =6\r\nutf-8:foobar\r\n => "foobar"
     /// ```
     VerbatimString(String, String),
+
+    /// A *Map* is a data type that represents a collection of key-value pairs.
+    /// A map is encoded as follows:
+    /// - A prefix of `%`
+    /// - The number of key-value pairs in the map
+    /// - CRLF terminator sequence
+    /// - Each key-value pair is encoded according to the rules of the RESP protocol
+    /// - A final CRLF terminator sequence
+    ///
+    /// Example:
+    /// ```sh
+    /// %2\r\n+key1\r\n:1\r\n+key2\r\n:2\r\n => {"key1": 1, "key2": 2}
+    /// ```
+    Map(HashMap<Type, Type>),
+}
+
+impl Eq for Type {
+    fn assert_receiver_is_total_eq(&self) {
+        // Implement this method to assert that the receiver is `Eq`
+        // This method is called when you use the `assert_eq!` macro
+        // to compare two `Type` values
+        // You can use this method to perform additional checks
+        // before comparing the two values
+        // Modify the code below based on the structure of Type
+        match self {
+            Type::Map(map) => {
+                // Check if the map is empty
+                if map.is_empty() {
+                    panic!("Map is empty");
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+impl Hash for Type {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        // Implement the hash function for Type
+        // You can use any logic that uniquely identifies the Type
+        // For example, if Type is an enum, you can hash the discriminant value
+        // If Type is a struct, you can hash its fields
+        // If Type is a primitive type, you can hash its value directly
+        // Modify the code below based on the structure of Type
+        match self {
+            Type::Map(map) => {
+                // Hash the map by hashing each key-value pair
+                for (key, value) in map {
+                    key.hash(state);
+                    value.hash(state);
+                }
+            }
+            _ => {
+                // For other types, hash the discriminant value
+                std::mem::discriminant(self).hash(state);
+            }
+        }
+    }
 }

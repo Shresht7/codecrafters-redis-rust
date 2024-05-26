@@ -21,6 +21,7 @@ fn _parse(input: &[u8]) -> Result<(resp::Type, &[u8]), Box<dyn std::error::Error
         b'(' => resp::big_number::parse(&input),
         b'!' => resp::bulk_error::parse(&input),
         b'=' => resp::verbatim_string::parse(&input),
+        b'%' => resp::map::parse(&input),
         _ => Err("Invalid data type".into()),
     }
 }

@@ -6,6 +6,7 @@ pub(crate) mod bulk_error;
 pub(crate) mod bulk_string;
 pub(crate) mod double;
 pub(crate) mod integer;
+pub(crate) mod map;
 pub(crate) mod null;
 pub(crate) mod simple_error;
 pub(crate) mod simple_string;
