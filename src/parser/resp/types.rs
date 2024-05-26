@@ -187,4 +187,20 @@ pub enum Type {
     ///
     /// As a convention the error begins with an uppercase word denoting the error type.
     BulkError(String),
+
+    /// A *Verbatim String* is a data type similar to bulk string but with the addition of a hint about the data's encoding.
+    /// A verbatim string is encoded as follows:
+    /// - A prefix of `=`
+    /// - One or more decimal for the string's length
+    /// - CRLF terminator sequence
+    /// - Exactly 3 bytes representing the data's encoding
+    /// - The colon `:` character to separate the encoding from the data
+    /// - The string data
+    /// - A final CRLF terminator sequence
+    ///
+    /// Example:
+    /// ```sh
+    /// =6\r\nutf-8:foobar\r\n => "foobar"
+    /// ```
+    VerbatimString(String, String),
 }

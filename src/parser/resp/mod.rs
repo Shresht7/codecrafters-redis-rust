@@ -9,6 +9,7 @@ pub(crate) mod integer;
 pub(crate) mod null;
 pub(crate) mod simple_error;
 pub(crate) mod simple_string;
+pub(crate) mod verbatim_string;
 
 // Exports
 pub(crate) mod types;
