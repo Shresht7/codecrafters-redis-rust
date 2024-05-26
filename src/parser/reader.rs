@@ -52,9 +52,10 @@ impl<'a> BytesReader<'a> {
     /// let pos = bytes.find(&b'w').unwrap(); // => 6
     /// ```
     pub fn find(&mut self, bytes: &[u8]) -> Option<usize> {
-        self.slice
+        let pos = self.slice[self.start_pos..self.end_pos]
             .windows(bytes.len())
-            .position(|window| window == bytes)
+            .position(|window| window == bytes)?;
+        Some(pos)
     }
 
     /// Split the byte slice at the first occurrence of the given byte.
@@ -70,7 +71,7 @@ impl<'a> BytesReader<'a> {
         bytes: &[u8],
     ) -> Result<(BytesReader, BytesReader), Box<dyn std::error::Error>> {
         let position = self.find(bytes).unwrap();
-        let (first, rest) = self.slice.split_at(position);
+        let (first, rest) = self.slice[self.start_pos..].split_at(position);
         let (_, rest) = rest.split_at(bytes.len());
         Ok((read(first), read(rest)))
     }
