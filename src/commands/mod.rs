@@ -1,15 +1,19 @@
 // Library
-use crate::parser::resp;
+use crate::{database::Database, parser::resp};
 
 // Commands
 mod echo;
 mod ping;
+mod set;
 
 mod errors;
 use errors::CommandError;
 
 /// Handles the incoming command by parsing it and calling the appropriate command handler.
-pub fn handle(cmd: Vec<resp::Type>) -> Result<String, Box<dyn std::error::Error>> {
+pub fn handle(
+    cmd: Vec<resp::Type>,
+    db: &mut Database,
+) -> Result<String, Box<dyn std::error::Error>> {
     // Get command array from parsed data
     let array = match cmd.get(0) {
         Some(resp::Type::Array(array)) => array,
@@ -29,6 +33,7 @@ pub fn handle(cmd: Vec<resp::Type>) -> Result<String, Box<dyn std::error::Error>
     match command.to_uppercase().as_str() {
         "PING" => ping::command(&array[1..]),
         "ECHO" => echo::command(&array[1..]),
+        "SET" => set::command(&array[1..], db),
         _ => Ok("-ERR unknown command\r\n".into()),
     }
 }

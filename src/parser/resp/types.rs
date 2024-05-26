@@ -37,7 +37,7 @@ use std::hash::{Hash, Hasher};
 /// | Maps              | RESP3  | Aggregate  | `%`        |
 /// | Sets              | RESP3  | Aggregate  | `~`        |
 /// | Pushes            | RESP3  | Aggregate  | `>`        |
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     /// Simple Strings are encoded with a leading `+` character followed by the string itself.
     /// The string is terminated by the CRLF sequence (it mustn't contain CRLF or LF characters).

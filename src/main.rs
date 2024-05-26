@@ -4,6 +4,7 @@ use tokio::net::TcpListener;
 
 // Modules
 mod commands;
+mod database;
 mod parser;
 
 // ----
@@ -43,6 +44,9 @@ async fn run_server(addr: &str) -> Result<(), Box<dyn std::error::Error>> {
 async fn handle_connection(
     stream: &mut tokio::net::TcpStream,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // Database
+    let mut db = database::Database::new();
+
     /// The size of the buffer to read incoming data
     const BUFFER_SIZE: usize = 1024;
 
@@ -62,7 +66,7 @@ async fn handle_connection(
         let cmd = parser::parse(&buffer[..bytes_read])?;
 
         // Handle the parsed data and get a response
-        let response = commands::handle(cmd)?;
+        let response = commands::handle(cmd, &mut db)?;
         println!("Response:\n{}\n\n", response);
 
         // Write a response back to the stream
