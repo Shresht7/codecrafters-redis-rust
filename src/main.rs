@@ -2,6 +2,7 @@
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 
+mod commands;
 mod parser;
 
 // ----
@@ -62,7 +63,7 @@ async fn handle_connection(
         let parsed_data = parser::parse(&buffer[..bytes_read])?;
         println!("Parsed data: {:?}", parsed_data);
 
-        let response = handle_command(parsed_data)?;
+        let response = commands::handle_command(parsed_data)?;
         println!("Response: {}", response);
 
         // Write a response back to the stream
@@ -73,50 +74,4 @@ async fn handle_connection(
     }
 
     Ok(())
-}
-
-/// Handles the commands
-fn handle_command(
-    parsed_data: Vec<parser::resp::Type>,
-) -> Result<String, Box<dyn std::error::Error>> {
-    // Get command array from parsed data
-    let array = match parsed_data.get(0) {
-        Some(parser::resp::Type::Array(array)) => array,
-        _ => panic!("Invalid command"),
-    };
-
-    // Extract the command from the parsed data
-    let command = match array.get(0) {
-        Some(parser::resp::Type::BulkString(command)) => command,
-        err => panic!("Invalid command: {:?}", err),
-        // _ => return Err(Box::new(parser::errors::ParserError::InvalidCommand)),
-    };
-
-    println!("Command: {:?}", command);
-    println!("Arguments: {:?}", &array[1..]);
-
-    // Handle the command
-    match command.to_uppercase().as_str() {
-        "PING" => ping(&array[1..]),
-        "ECHO" => echo(&array[1..]),
-        _ => Ok("-ERR unknown command\r\n".into()),
-    }
-}
-
-/// Handles the PING command
-fn ping(_args: &[parser::resp::Type]) -> Result<String, Box<dyn std::error::Error>> {
-    Ok("+PONG\r\n".into())
-}
-
-/// Handles the ECHO command
-fn echo(args: &[parser::resp::Type]) -> Result<String, Box<dyn std::error::Error>> {
-    // Get the first argument of the ECHO command
-    let arg = match args.get(0) {
-        Some(parser::resp::Type::BulkString(arg)) => arg,
-        _ => panic!("Invalid argument"),
-        // _ => return Err(Box::new(parser::errors::ParserError::InvalidCommand)),
-    };
-
-    // Respond with the argument
-    Ok(format!("${}\r\n{}\r\n", arg.len(), arg))
 }
