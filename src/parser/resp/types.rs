@@ -237,6 +237,7 @@ pub enum Type {
     ///
     /// Sets are similar to arrays but with the distinction that sets contain unique elements.
     Set(HashSet<Type>),
+    // TODO: Pushes
 }
 
 impl Eq for Type {
