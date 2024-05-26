@@ -5,19 +5,21 @@ use crate::parser::resp;
 mod echo;
 mod ping;
 
+mod errors;
+use errors::CommandError;
+
 /// Handles the incoming command by parsing it and calling the appropriate command handler.
 pub fn handle(cmd: Vec<resp::Type>) -> Result<String, Box<dyn std::error::Error>> {
     // Get command array from parsed data
     let array = match cmd.get(0) {
         Some(resp::Type::Array(array)) => array,
-        _ => panic!("Invalid command"),
+        _ => Err(Box::new(CommandError::InvalidCommand))?,
     };
 
     // Extract the command from the parsed data
     let command = match array.get(0) {
         Some(resp::Type::BulkString(command)) => command,
-        err => panic!("Invalid command: {:?}", err),
-        // _ => return Err(Box::new(parser::errors::ParserError::InvalidCommand)),
+        _ => Err(Box::new(CommandError::InvalidCommand))?,
     };
 
     println!("Command: {:?}", command);
