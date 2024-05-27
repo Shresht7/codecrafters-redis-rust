@@ -110,7 +110,7 @@ async fn handle_connection(
         println!("Incoming Request: {:?}", cmd);
 
         // Handle the parsed data and get a response
-        let response = commands::handle(cmd, server);
+        let response = commands::handle(cmd, server).to_string();
 
         println!("Outgoing Response: {:?}", response);
 

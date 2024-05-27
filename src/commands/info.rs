@@ -7,7 +7,9 @@ use std::sync::{Arc, Mutex};
 pub fn command(args: &[Type], server: &Arc<Mutex<server::Server>>) -> Type {
     // Check the number of arguments
     if args.len() < 1 {
-        return Type::SimpleError("ERR wrong number of arguments for 'INFO' command".into());
+        return Type::SimpleError(
+            "ERR at least one argument is required for 'INFO' command".into(),
+        );
     }
 
     // Get the role of the server

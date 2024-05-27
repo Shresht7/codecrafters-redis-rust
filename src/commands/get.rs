@@ -13,13 +13,7 @@ use std::{
 pub fn command(args: &[Type], server: &Arc<Mutex<server::Server>>) -> Type {
     // Check the number of arguments
     if args.len() < 1 {
-        return Type::SimpleError(
-            format!(
-                "ERR wrong number of arguments for 'GET' command. Expected at least 1 but got {}",
-                args.len()
-            )
-            .into(),
-        );
+        return Type::SimpleError("ERR at least one argument is required for 'GET' command".into());
     }
 
     // Extract the key from the arguments
