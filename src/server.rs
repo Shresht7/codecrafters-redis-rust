@@ -1,4 +1,5 @@
 // Library
+use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 
@@ -10,15 +11,17 @@ use crate::{commands, database, parser};
 // ----------
 
 /// Struct to hold the server configuration and information
+#[derive(Clone)]
 pub struct Server {
     /// The full address to listen on
     addr: String,
-    role: Role,
+    pub role: Role,
 }
 
 /// Enum to represent the role of the server
 /// The server can be either a master or a replica
-enum Role {
+#[derive(Clone)]
+pub enum Role {
     Master,
     Replica(String),
 }
@@ -34,7 +37,7 @@ pub fn new(host: &str, port: u16) -> Server {
 impl Server {
     /// Runs the TCP server on the given address, listening for incoming connections.
     /// The server will handle each incoming connection in a separate thread.
-    pub async fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // Create a TCPListener and bind it to the given address and port
         // Note: 6379 is the default port that Redis uses (You may have to stop any running Redis instances)
         let listener = TcpListener::bind(&self.addr).await?;
@@ -44,8 +47,9 @@ impl Server {
             // Accept an incoming connection ...
             let (mut stream, _) = listener.accept().await?;
             // ... and spawn a new thread for each incoming connection
+            let server = Arc::new(Mutex::new(self.clone()));
             tokio::spawn(async move {
-                handle_connection(&mut stream).await.unwrap();
+                handle_connection(&server, &mut stream).await.unwrap();
             });
         }
     }
@@ -59,6 +63,7 @@ impl Server {
 /// Handles the incoming connection stream by reading the incoming data,
 /// parsing it, and writing a response back to the stream.
 async fn handle_connection(
+    server: &Arc<Mutex<Server>>,
     stream: &mut tokio::net::TcpStream,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Database // ? This may need to be moved to the main.rs file
@@ -82,7 +87,7 @@ async fn handle_connection(
         let cmd = parser::parse(&buffer[..bytes_read])?;
 
         // Handle the parsed data and get a response
-        let response = commands::handle(cmd, &mut db)?;
+        let response = commands::handle(cmd, server, &mut db)?;
 
         // Write a response back to the stream
         stream.write_all(response.as_bytes()).await?;

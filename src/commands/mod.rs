@@ -1,5 +1,6 @@
 // Library
-use crate::{database::Database, parser::resp};
+use crate::{database::Database, parser::resp, server::Server};
+use std::sync::{Arc, Mutex};
 
 // Commands
 mod echo;
@@ -14,6 +15,7 @@ use errors::CommandError;
 /// Handles the incoming command by parsing it and calling the appropriate command handler.
 pub fn handle(
     cmd: Vec<resp::Type>,
+    server: &Arc<Mutex<Server>>,
     db: &mut Database,
 ) -> Result<String, Box<dyn std::error::Error>> {
     // Get command array from parsed data
@@ -34,7 +36,7 @@ pub fn handle(
         "ECHO" => Ok(echo::command(&array[1..]).to_string()),
         "SET" => Ok(set::command(&array[1..], db).to_string()),
         "GET" => Ok(get::command(&array[1..], db).to_string()),
-        "INFO" => Ok(info::command(&array[1..]).to_string()),
+        "INFO" => Ok(info::command(&array[1..], &server).to_string()),
         _ => Ok("-ERR unknown command\r\n".into()),
     }
 }
