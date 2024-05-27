@@ -4,6 +4,7 @@ use crate::{database::Database, parser::resp};
 // Commands
 mod echo;
 mod get;
+mod info;
 mod ping;
 mod set;
 
@@ -33,6 +34,7 @@ pub fn handle(
         "ECHO" => Ok(echo::command(&array[1..]).to_string()),
         "SET" => Ok(set::command(&array[1..], db).to_string()),
         "GET" => Ok(get::command(&array[1..], db).to_string()),
+        "INFO" => Ok(info::command(&array[1..]).to_string()),
         _ => Ok("-ERR unknown command\r\n".into()),
     }
 }
