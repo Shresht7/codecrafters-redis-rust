@@ -2,11 +2,14 @@
 use crate::parser::resp::Type;
 use std::{collections::HashMap, time::Instant};
 
-/// Struct to hold the value and metadata of a key in the database.
+/// Struct to hold the value and metadata of a database item.
 #[derive(Clone, Debug)]
 pub struct Item {
+    /// The actual value of the item
     value: Type,
+    /// The instant at which the database item was created
     created_at: Instant,
+    /// The number of milliseconds since creation after which the item expires
     expires_at: Option<usize>,
 }
 
@@ -16,14 +19,14 @@ pub struct Database {
     data: HashMap<Type, Item>,
 }
 
-impl Database {
-    /// Creates a new instance of the database.
-    pub fn new() -> Self {
-        Self {
-            data: HashMap::new(),
-        }
+/// Creates a new instance of the database.
+pub fn new() -> Database {
+    Database {
+        data: HashMap::new(),
     }
+}
 
+impl Database {
     /// Sets the value of a key in the database.
     pub fn set(&mut self, key: Type, value: Type, expires_at: Option<usize>) {
         self.data.insert(

@@ -48,7 +48,7 @@ pub fn new(host: &str, port: u16) -> Server {
     Server {
         addr: format!("{}:{}", host, port),
         role: Role::Master,
-        db: database::Database::new(),
+        db: database::new(),
         master_replid: helpers::generate_id(40),
         master_repl_offset: 0,
     }
