@@ -13,12 +13,21 @@ use crate::{commands, database, parser};
 pub struct Server {
     /// The full address to listen on
     addr: String,
+    role: Role,
+}
+
+/// Enum to represent the role of the server
+/// The server can be either a master or a replica
+enum Role {
+    Master,
+    Replica(String),
 }
 
 /// Creates a new Server instance with the given host and port
 pub fn new(host: &str, port: u16) -> Server {
     Server {
         addr: format!("{}:{}", host, port),
+        role: Role::Master,
     }
 }
 
@@ -39,6 +48,11 @@ impl Server {
                 handle_connection(&mut stream).await.unwrap();
             });
         }
+    }
+
+    /// Sets the server to act as a replica of the given address
+    pub fn replicaof(&mut self, addr: String) {
+        self.role = Role::Replica(addr);
     }
 }
 
