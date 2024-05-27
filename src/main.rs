@@ -23,8 +23,8 @@ async fn main() {
     // Instantiate the server with the address
     let mut server = server::new("127.0.0.1", port);
 
+    // If the replica-of address is set, the server will act as a replica
     if let Some(replicaof) = cli.replicaof {
-        // If the replica-of address is set, the server will act as a replica
         server.replicaof(replicaof);
     }
 

@@ -10,25 +10,24 @@ use crate::{commands, database, helpers, parser};
 // TCP SERVER
 // ----------
 
-/// Struct to hold the server configuration and information
+/// Struct to hold information about the Server and its configuration
 #[derive(Clone)]
 pub struct Server {
-    /// The full address to listen on
+    /// The full address (host:port) to listen on
     addr: String,
-    /// The role of the server (master or replica)
-    pub role: Role,
 
     /// The database instance to store data
     pub db: database::Database,
 
-    /// Master Replication ID
-    /// This is used to identify the master server in a replication setup.
+    /// The role of the server (master or replica)
+    pub role: Role,
+
+    /// The master replication ID is used to identify the master server in a replication setup.
     /// The master server will generate a new ID every time it starts.
     /// The replica server will use this ID to identify the master server.
     pub master_replid: String,
 
-    /// The replication offset
-    /// This is used to keep track of the last byte read from the master server.
+    /// The replication offset is used to keep track of the last byte read from the master server.
     /// The replica server will use this offset to request new data from the master server.
     /// The master server will use this offset to send new data to the replica server.
     /// The offset is set to 0 when the server starts.
@@ -36,8 +35,8 @@ pub struct Server {
     pub master_repl_offset: u64,
 }
 
-/// Enum to represent the role of the server
-/// The server can be either a master or a replica
+/// Enum to represent the role of the server.
+/// The server can be either a master or a replica.
 #[derive(Clone)]
 pub enum Role {
     Master,
@@ -69,7 +68,7 @@ impl Server {
             let (mut stream, _) = listener.accept().await?;
 
             // Clone the server instance and wrap it in an Arc<Mutex<Server>>
-            // This allows us to share the server instance across threads
+            // This allows us to share the server instance across threads.
             let server = Arc::new(Mutex::new(self.clone()));
 
             // ... and spawn a new thread for each incoming connection
