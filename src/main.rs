@@ -21,37 +21,54 @@ async fn main() {
 
     // Determine the address using the port variable
     let port = cli.port; // Default port is 6379
-    let addr = format!("127.0.0.1:{}", port);
 
     // Run the server on the given address and port
-    run_server(&addr).await.unwrap();
+    let server = Server::new("127.0.0.1", port);
+    if let Err(e) = server.run().await {
+        eprintln!("Error: {}", e);
+    }
 }
 
 // ----------
 // TCP SERVER
 // ----------
 
-/// Runs the TCP server on the given address, listening for incoming connections.
-/// The server will handle each incoming connection in a separate thread.
-async fn run_server(addr: &str) -> Result<(), Box<dyn std::error::Error>> {
-    // Create a TCPListener and bind it to the given address and port
-    // Note: 6379 is the default port that Redis uses (You may have to stop any running Redis instances)
-    let listener = TcpListener::bind(addr).await?;
+/// Struct to hold the server configuration
+struct Server {
+    /// The full address to listen on
+    addr: String,
+}
 
-    // Listen for incoming connections and handle them
-    loop {
-        // Accept an incoming connection ...
-        let (mut stream, _) = listener.accept().await?;
-        // ... and spawn a new thread for each incoming connection
-        tokio::spawn(async move {
-            handle_connection(&mut stream).await.unwrap();
-        });
+impl Server {
+    /// Creates a new Server instance with the given host and port
+    pub fn new(host: &str, port: u16) -> Self {
+        Server {
+            addr: format!("{}:{}", host, port),
+        }
+    }
+
+    /// Runs the TCP server on the given address, listening for incoming connections.
+    /// The server will handle each incoming connection in a separate thread.
+    pub async fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
+        // Create a TCPListener and bind it to the given address and port
+        // Note: 6379 is the default port that Redis uses (You may have to stop any running Redis instances)
+        let listener = TcpListener::bind(&self.addr).await?;
+
+        // Listen for incoming connections and handle them
+        loop {
+            // Accept an incoming connection ...
+            let (mut stream, _) = listener.accept().await?;
+            // ... and spawn a new thread for each incoming connection
+            tokio::spawn(async move {
+                handle_connection(&mut stream).await.unwrap();
+            });
+        }
     }
 }
 
 /// Handles the incoming connection stream by reading the incoming data,
 /// parsing it, and writing a response back to the stream.
-async fn handle_connection(
+pub async fn handle_connection(
     stream: &mut tokio::net::TcpStream,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Database
