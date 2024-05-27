@@ -16,7 +16,17 @@ pub fn command(args: &[Type], server: &Arc<Mutex<server::Server>>) -> Type {
         server::Role::Replica(_) => "role:slave",
     };
 
+    // Get Master Replication ID and Offset
+    let master_replid = server.lock().unwrap().master_replid.clone();
+    let master_repl_offset = server.lock().unwrap().master_repl_offset;
+
     // Respond with the server information
-    let response: String = vec!["# Replication", role].join("\r\n");
+    let response: String = vec![
+        "# Replication".to_string(),
+        role.to_string(),
+        format!("master_replid:{}", master_replid),
+        format!("master_repl_offset:{}", master_repl_offset),
+    ]
+    .join("\r\n");
     Type::BulkString(response)
 }

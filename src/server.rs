@@ -27,6 +27,14 @@ pub struct Server {
     /// The master server will generate a new ID every time it starts.
     /// The replica server will use this ID to identify the master server.
     pub master_replid: String,
+
+    /// The replication offset
+    /// This is used to keep track of the last byte read from the master server.
+    /// The replica server will use this offset to request new data from the master server.
+    /// The master server will use this offset to send new data to the replica server.
+    /// The offset is set to 0 when the server starts.
+    /// The offset is incremented every time new data is read from the master server.
+    pub master_repl_offset: u64,
 }
 
 /// Enum to represent the role of the server
@@ -42,8 +50,9 @@ pub fn new(host: &str, port: u16) -> Server {
     Server {
         addr: format!("{}:{}", host, port),
         role: Role::Master,
-        master_replid: generate_id(40),
         db: database::Database::new(),
+        master_replid: generate_id(40),
+        master_repl_offset: 0,
     }
 }
 
@@ -100,8 +109,12 @@ async fn handle_connection(
         // Print the incoming data
         let cmd = parser::parse(&buffer[..bytes_read])?;
 
+        println!("Incoming Request: {:?}", cmd);
+
         // Handle the parsed data and get a response
         let response = commands::handle(cmd, server)?;
+
+        println!("Outgoing Response: {:?}", response);
 
         // Write a response back to the stream
         stream.write_all(response.as_bytes()).await?;

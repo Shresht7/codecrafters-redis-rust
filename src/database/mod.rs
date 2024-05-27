@@ -39,7 +39,6 @@ impl Database {
     /// Gets the value of a key in the database.
     pub fn get(&self, key: &Type) -> Option<&Type> {
         let item = self.data.get(key)?;
-        println!("Item: {:?}", item);
         if item.expires_at.is_some() {
             if item.created_at.elapsed().as_millis() as usize >= item.expires_at? {
                 return None;
