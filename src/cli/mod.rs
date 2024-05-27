@@ -48,3 +48,69 @@ impl CommandLineArguments {
         self
     }
 }
+
+// -----
+// TESTS
+// -----
+
+#[cfg(test)]
+mod tests {
+    use std::vec;
+
+    use super::*;
+
+    #[test]
+    fn should_return_defaults_if_there_is_nothing_to_parse() {
+        let args: Vec<String> = vec![];
+        let mut cli = CommandLineArguments::default();
+        cli.parse(args);
+        assert_eq!(cli.port, 6379);
+        assert_eq!(cli.replicaof, None);
+    }
+
+    #[test]
+    fn should_parse_port() {
+        let args: Vec<String> = vec!["--port".into(), "4321".into()];
+        let mut cli = CommandLineArguments::default();
+        cli.parse(args);
+        assert_eq!(cli.port, 4321);
+    }
+
+    #[test]
+    fn should_parse_shorthand_port() {
+        let args: Vec<String> = vec!["-p".into(), "5678".into()];
+        let mut cli = CommandLineArguments::default();
+        cli.parse(args);
+        assert_eq!(cli.port, 5678);
+    }
+
+    #[test]
+    fn should_parse_replicaof() {
+        let args: Vec<String> = vec!["--replicaof".into(), "111.222.333.444 9876".into()];
+        let mut cli = CommandLineArguments::default();
+        cli.parse(args);
+        assert_eq!(cli.replicaof, Some("111.222.333.444:9876".into()));
+    }
+
+    #[test]
+    fn should_parse_both_port_and_replicaof() {
+        let args: Vec<String> = vec![
+            "--port".into(),
+            "5000".into(),
+            "--replicaof".into(),
+            "111.222.333.444 3000".into(),
+        ];
+        let mut cli = CommandLineArguments::default();
+        cli.parse(args);
+        assert_eq!(cli.port, 5000);
+        assert_eq!(cli.replicaof, Some("111.222.333.444:3000".into()));
+    }
+
+    #[test]
+    fn should_ignore_any_other_arguments() {
+        let args: Vec<String> = vec!["--port".into(), "2142".into(), "--foo".into(), "bar".into()];
+        let mut cli = CommandLineArguments::default();
+        cli.parse(args);
+        assert_eq!(cli.port, 2142);
+    }
+}
