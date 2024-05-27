@@ -15,7 +15,11 @@ use crate::{commands, database, parser};
 pub struct Server {
     /// The full address to listen on
     addr: String,
+    /// The role of the server (master or replica)
     pub role: Role,
+
+    /// The database instance to store data
+    pub db: database::Database,
 }
 
 /// Enum to represent the role of the server
@@ -31,6 +35,7 @@ pub fn new(host: &str, port: u16) -> Server {
     Server {
         addr: format!("{}:{}", host, port),
         role: Role::Master,
+        db: database::Database::new(),
     }
 }
 
@@ -46,8 +51,12 @@ impl Server {
         loop {
             // Accept an incoming connection ...
             let (mut stream, _) = listener.accept().await?;
-            // ... and spawn a new thread for each incoming connection
+
+            // Clone the server instance and wrap it in an Arc<Mutex<Server>>
+            // This allows us to share the server instance across threads
             let server = Arc::new(Mutex::new(self.clone()));
+
+            // ... and spawn a new thread for each incoming connection
             tokio::spawn(async move {
                 handle_connection(&server, &mut stream).await.unwrap();
             });
@@ -66,9 +75,6 @@ async fn handle_connection(
     server: &Arc<Mutex<Server>>,
     stream: &mut tokio::net::TcpStream,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // Database // ? This may need to be moved to the main.rs file
-    let mut db = database::Database::new();
-
     /// The size of the buffer to read incoming data
     const BUFFER_SIZE: usize = 1024;
 
@@ -87,7 +93,7 @@ async fn handle_connection(
         let cmd = parser::parse(&buffer[..bytes_read])?;
 
         // Handle the parsed data and get a response
-        let response = commands::handle(cmd, server, &mut db)?;
+        let response = commands::handle(cmd, server)?;
 
         // Write a response back to the stream
         stream.write_all(response.as_bytes()).await?;

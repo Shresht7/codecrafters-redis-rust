@@ -2,13 +2,16 @@
 use crate::parser::resp::Type;
 use std::{collections::HashMap, time::Instant};
 
-#[derive(Debug)]
+/// Struct to hold the value and metadata of a key in the database.
+#[derive(Clone, Debug)]
 pub struct Item {
     value: Type,
     created_at: Instant,
     expires_at: Option<usize>,
 }
 
+/// Database struct to store key-value pairs.
+#[derive(Clone)]
 pub struct Database {
     data: HashMap<Type, Item>,
 }

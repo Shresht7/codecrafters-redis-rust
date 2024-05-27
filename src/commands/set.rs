@@ -1,14 +1,17 @@
 // Library
-use super::errors::CommandError;
 use super::resp::Type;
-use crate::{database::Database, parser::resp};
+use crate::{parser::resp, server};
+use std::{
+    ops::DerefMut,
+    sync::{Arc, Mutex},
+};
 
 /// Handles the SET command.
 /// The SET command sets the value of a key in the database.
 /// If the key already exists, the value is overwritten.
 /// The command returns OK if the value was set successfully.
 /// The command returns an error if the number of arguments is invalid.
-pub fn command(args: &[resp::Type], db: &mut Database) -> Type {
+pub fn command(args: &[resp::Type], server: &Arc<Mutex<server::Server>>) -> Type {
     // Check the number of arguments
     if args.len() < 2 {
         return Type::SimpleError(
@@ -32,9 +35,13 @@ pub fn command(args: &[resp::Type], db: &mut Database) -> Type {
         _ => return Type::SimpleError("ERR invalid value".into()),
     };
 
+    // Get database instance from the Server
+    let mut server = server.lock().unwrap();
+    let server = server.deref_mut();
+
     if args.len() == 2 {
         // Set the value in the database
-        db.set(key.clone(), value.clone(), None);
+        server.db.set(key.clone(), value.clone(), None);
 
         // Respond with OK
         return Type::SimpleString("OK".into());
@@ -53,7 +60,7 @@ pub fn command(args: &[resp::Type], db: &mut Database) -> Type {
     };
 
     // Set the value in the database
-    db.set(key.clone(), value.clone(), milliseconds);
+    server.db.set(key.clone(), value.clone(), milliseconds);
 
     // Respond with OK
     Type::SimpleString("OK".into())

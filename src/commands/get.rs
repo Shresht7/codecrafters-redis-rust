@@ -1,12 +1,16 @@
 // Library
-use crate::{database::Database, parser::resp::Type};
+use crate::{parser::resp::Type, server};
+use std::{
+    ops::DerefMut,
+    sync::{Arc, Mutex},
+};
 
 /// Handles the GET command.
 /// The GET command gets the value of a key in the database.
 /// The command returns the value if the key exists.
 /// The command returns an error if the number of arguments is invalid.
 /// The command returns an error if the key does not exist.
-pub fn command(args: &[Type], db: &Database) -> Type {
+pub fn command(args: &[Type], server: &Arc<Mutex<server::Server>>) -> Type {
     // Check the number of arguments
     if args.len() < 1 {
         return Type::SimpleError(
@@ -24,8 +28,12 @@ pub fn command(args: &[Type], db: &Database) -> Type {
         _ => return Type::SimpleError("ERR invalid key".into()),
     };
 
+    // Get database instance from the Server
+    let mut server = server.lock().unwrap();
+    let server = server.deref_mut();
+
     // Get the value from the database
-    match db.get(key) {
+    match server.db.get(key) {
         Some(value) => value.clone(),
         None => Type::BulkString("".into()),
     }
