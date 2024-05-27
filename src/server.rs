@@ -105,15 +105,15 @@ impl Server {
         stream.write_all(response.to_string().as_bytes()).await?;
         stream.flush().await?;
 
-        // Send REPLCONF listening-port <PORT>
-        let port = addr.split(":").collect::<Vec<&str>>()[1];
-        let response = Array(vec![
-            BulkString("REPLCONF".into()),
-            BulkString("listening-port".into()),
-            BulkString(port.into()),
-        ]);
-        stream.write_all(response.to_string().as_bytes()).await?;
-        stream.flush().await?;
+        // // Send REPLCONF listening-port <PORT>
+        // let port = addr.split(":").collect::<Vec<&str>>()[1];
+        // let response = Array(vec![
+        //     BulkString("REPLCONF".into()),
+        //     BulkString("listening-port".into()),
+        //     BulkString(port.into()),
+        // ]);
+        // stream.write_all(response.to_string().as_bytes()).await?;
+        // stream.flush().await?;
 
         // // Send REPLCONF capa psync2
         // let response = Array(vec![
