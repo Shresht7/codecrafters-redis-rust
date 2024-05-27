@@ -9,33 +9,27 @@ mod info;
 mod ping;
 mod set;
 
-mod errors;
-use errors::CommandError;
-
 /// Handles the incoming command by parsing it and calling the appropriate command handler.
-pub fn handle(
-    cmd: Vec<resp::Type>,
-    server: &Arc<Mutex<Server>>,
-) -> Result<String, Box<dyn std::error::Error>> {
+pub fn handle(cmd: Vec<resp::Type>, server: &Arc<Mutex<Server>>) -> String {
     // Get command array from parsed data
     let array = match cmd.get(0) {
         Some(resp::Type::Array(array)) => array,
-        _ => Err(Box::new(CommandError::InvalidCommand))?,
+        _ => return "-ERR unknown command\r\n".into(),
     };
 
     // Extract the command from the parsed data
     let command = match array.get(0) {
         Some(resp::Type::BulkString(command)) => command,
-        _ => Err(Box::new(CommandError::InvalidCommand))?,
+        _ => return "-ERR unknown command\r\n".into(),
     };
 
     // Handle the command
     match command.to_uppercase().as_str() {
         "PING" => ping::command(&array[1..]),
-        "ECHO" => Ok(echo::command(&array[1..]).to_string()),
-        "SET" => Ok(set::command(&array[1..], &server).to_string()),
-        "GET" => Ok(get::command(&array[1..], &server).to_string()),
-        "INFO" => Ok(info::command(&array[1..], &server).to_string()),
-        _ => Ok("-ERR unknown command\r\n".into()),
+        "ECHO" => echo::command(&array[1..]).to_string(),
+        "SET" => set::command(&array[1..], &server).to_string(),
+        "GET" => get::command(&array[1..], &server).to_string(),
+        "INFO" => info::command(&array[1..], &server).to_string(),
+        _ => "-ERR unknown command\r\n".into(),
     }
 }
