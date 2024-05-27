@@ -7,6 +7,7 @@ mod echo;
 mod get;
 mod info;
 mod ping;
+mod psync;
 mod replconf;
 mod set;
 
@@ -32,6 +33,7 @@ pub fn handle(cmd: Vec<resp::Type>, server: &Arc<Mutex<Server>>) -> resp::Type {
         "GET" => get::command(&array[1..], &server),
         "INFO" => info::command(&array[1..], &server),
         "REPLCONF" => replconf::command(&array[1..], &server),
+        "PSYNC" => psync::command(&array[1..], &server),
         _ => resp::Type::SimpleError("ERR unknown command\r\n".into()),
     }
 }

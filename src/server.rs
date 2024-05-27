@@ -137,6 +137,16 @@ impl Server {
         stream.flush().await?;
         stream.read(&mut [0; BUFFER_SIZE]).await?; // Await the response
 
+        // Send PSYNC <REPLID> <OFFSET>
+        let response = Array(vec![
+            BulkString("PSYNC".into()),
+            BulkString("?".into()),
+            BulkString("-1".into()),
+        ]);
+        stream.write_all(response.to_string().as_bytes()).await?;
+        stream.flush().await?;
+        stream.read(&mut [0; BUFFER_SIZE]).await?; // Await the response
+
         Ok(())
     }
 }
