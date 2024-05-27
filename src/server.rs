@@ -1,11 +1,10 @@
 // Library
-use rand::Rng;
 use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 
 // Modules
-use crate::{commands, database, parser};
+use crate::{commands, database, helpers, parser};
 
 // ----------
 // TCP SERVER
@@ -51,7 +50,7 @@ pub fn new(host: &str, port: u16) -> Server {
         addr: format!("{}:{}", host, port),
         role: Role::Master,
         db: database::Database::new(),
-        master_replid: generate_id(40),
+        master_replid: helpers::generate_id(40),
         master_repl_offset: 0,
     }
 }
@@ -124,38 +123,4 @@ async fn handle_connection(
     }
 
     Ok(())
-}
-
-// ----------------
-// HELPER FUNCTIONS
-// ----------------
-
-pub fn generate_id(len: u16) -> String {
-    const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let mut rng = rand::thread_rng();
-    let id: String = (0..len)
-        .map(|_| {
-            let idx = rng.gen_range(0..CHARSET.len());
-            CHARSET[idx] as char
-        })
-        .collect();
-    id
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn should_generate_random_id() {
-        let id1 = generate_id(40);
-        let id2 = generate_id(40);
-        assert_ne!(id1, id2);
-    }
-
-    #[test]
-    fn should_generate_id_of_given_length() {
-        let id = generate_id(40);
-        assert_eq!(id.len(), 40);
-    }
 }

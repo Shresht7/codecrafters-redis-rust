@@ -2,6 +2,7 @@
 mod cli;
 mod commands;
 mod database;
+mod helpers;
 mod parser;
 mod server;
 
