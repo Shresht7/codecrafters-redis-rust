@@ -115,14 +115,14 @@ impl Server {
         stream.write_all(response.to_string().as_bytes()).await?;
         stream.flush().await?;
 
-        // Send REPLCONF capa psync2
-        let response = Array(vec![
-            BulkString("REPLCONF".into()),
-            BulkString("capa".into()),
-            BulkString("psync2".into()),
-        ]);
-        stream.write_all(response.to_string().as_bytes()).await?;
-        stream.flush().await?;
+        // // Send REPLCONF capa psync2
+        // let response = Array(vec![
+        //     BulkString("REPLCONF".into()),
+        //     BulkString("capa".into()),
+        //     BulkString("psync2".into()),
+        // ]);
+        // stream.write_all(response.to_string().as_bytes()).await?;
+        // stream.flush().await?;
 
         Ok(())
     }
