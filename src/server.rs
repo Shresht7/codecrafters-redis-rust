@@ -4,7 +4,13 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
 // Modules
-use crate::{commands, database, helpers, parser};
+use crate::{
+    commands, database, helpers,
+    parser::{
+        self,
+        resp::Type::{Array, BulkString},
+    },
+};
 
 // ----------
 // TCP SERVER
@@ -60,10 +66,7 @@ impl Server {
     pub async fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // If this server is a replica, connect to the master server
         if let Role::Replica(addr) = &self.role {
-            let mut stream = TcpStream::connect(addr).await?;
-            let response =
-                parser::resp::Type::Array(vec![parser::resp::Type::BulkString("PING".into())]);
-            stream.write_all(response.to_string().as_bytes()).await?;
+            self.send_handshake(addr).await?;
         }
 
         // Create a TCPListener and bind it to the given address and port
@@ -89,6 +92,39 @@ impl Server {
     /// Sets the server to act as a replica of the given address
     pub fn replicaof(&mut self, addr: &String) {
         self.role = Role::Replica(addr.clone());
+    }
+
+    /// Sends a handshake to the replication master server at the given address.
+    /// The handshake includes a PING command, REPLCONF listening-port, and REPLCONF capa psync2.
+    pub async fn send_handshake(&self, addr: &String) -> Result<(), Box<dyn std::error::Error>> {
+        // Connect to the replication master
+        let mut stream = TcpStream::connect(addr).await?;
+
+        // Send a PING
+        let response = Array(vec![BulkString("PING".into())]);
+        stream.write_all(response.to_string().as_bytes()).await?;
+        stream.flush().await?;
+
+        // Send REPLCONF listening-port <PORT>
+        let port = addr.split(":").collect::<Vec<&str>>()[1];
+        let response = Array(vec![
+            BulkString("REPLCONF".into()),
+            BulkString("listening-port".into()),
+            BulkString(port.into()),
+        ]);
+        stream.write_all(response.to_string().as_bytes()).await?;
+        stream.flush().await?;
+
+        // Send REPLCONF capa psync2
+        let response = Array(vec![
+            BulkString("REPLCONF".into()),
+            BulkString("capa".into()),
+            BulkString("psync2".into()),
+        ]);
+        stream.write_all(response.to_string().as_bytes()).await?;
+        stream.flush().await?;
+
+        Ok(())
     }
 }
 
