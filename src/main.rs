@@ -15,7 +15,10 @@ async fn main() {
     // Parse the command-line arguments
     let args: Vec<String> = std::env::args().collect();
     let mut cli = cli::CommandLineArguments::default();
-    cli.parse(args);
+    if let Err(e) = cli.parse(args) {
+        eprintln!("Failed to parse the command line arguments!\n{}", e);
+        return;
+    }
 
     // Determine the address using the port variable
     let port = cli.port; // Default port is 6379
@@ -31,5 +34,6 @@ async fn main() {
     // Start the server
     if let Err(e) = server.run().await {
         eprintln!("Error: {}", e);
+        return;
     }
 }
