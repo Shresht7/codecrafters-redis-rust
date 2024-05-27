@@ -95,14 +95,14 @@ impl<'a> BytesReader<'a> {
         Ok((start_pos, end_pos))
     }
 
-    /// Split at the first CRLF sequence in the byte slice.
-    /// Return the byte slices before and after the CRLF sequence.
-    pub fn split_crlf(&mut self) -> Result<(BytesReader, BytesReader), Box<dyn std::error::Error>> {
-        let (start, _) = self.find_crlf()?;
-        let (first, rest) = self.slice.split_at(start);
-        let (_, rest) = rest.split_at(CRLF.len());
-        Ok((read(first), read(rest)))
-    }
+    // /// Split at the first CRLF sequence in the byte slice.
+    // /// Return the byte slices before and after the CRLF sequence.
+    // pub fn split_crlf(&mut self) -> Result<(BytesReader, BytesReader), Box<dyn std::error::Error>> {
+    //     let (start, _) = self.find_crlf()?;
+    //     let (first, rest) = self.slice.split_at(start);
+    //     let (_, rest) = rest.split_at(CRLF.len());
+    //     Ok((read(first), read(rest)))
+    // }
 
     /// Return the first byte in the byte slice
     /// If the byte slice is empty, return an error.
@@ -306,18 +306,18 @@ mod tests {
         assert!(result.is_err());
     }
 
-    #[test]
-    fn should_split_crlf() {
-        let input = b"hello\r\nworld";
-        let mut bytes = read(input);
-        match bytes.split_crlf() {
-            Ok((mut first, mut rest)) => {
-                assert_eq!(first.as_bytes(), b"hello");
-                assert_eq!(rest.as_bytes(), b"world");
-            }
-            Err(err) => show(err),
-        }
-    }
+    // #[test]
+    // fn should_split_crlf() {
+    //     let input = b"hello\r\nworld";
+    //     let mut bytes = read(input);
+    //     match bytes.split_crlf() {
+    //         Ok((mut first, mut rest)) => {
+    //             assert_eq!(first.as_bytes(), b"hello");
+    //             assert_eq!(rest.as_bytes(), b"world");
+    //         }
+    //         Err(err) => show(err),
+    //     }
+    // }
 
     #[test]
     fn should_get_the_first_byte() {

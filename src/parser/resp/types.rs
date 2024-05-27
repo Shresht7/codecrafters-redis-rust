@@ -1,7 +1,6 @@
 // Library
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
-use std::path::Display;
 
 // ---------------------------------------
 // REDIS SERIALIZATION PROTOCOL DATA TYPES
