@@ -35,7 +35,11 @@ impl CommandLineArguments {
                 }
                 "--replicaof" => {
                     if i + 1 < args.len() {
-                        self.replicaof = Some(args[i + 1].clone());
+                        let str = args[i + 1].clone();
+                        // Split the string into host and port
+                        let parts: Vec<&str> = str.split(' ').collect();
+                        let addr = format!("{}:{}", parts[0], parts[1]);
+                        self.replicaof = Some(addr);
                     }
                 }
                 _ => {}
