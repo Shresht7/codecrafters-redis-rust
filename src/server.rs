@@ -60,6 +60,9 @@ pub fn new(host: &str, port: u16) -> Server {
     }
 }
 
+/// The size of the buffer to read incoming data
+const BUFFER_SIZE: usize = 1024;
+
 impl Server {
     /// Runs the TCP server on the given address, listening for incoming connections.
     /// The server will handle each incoming connection in a separate thread.
@@ -104,7 +107,7 @@ impl Server {
         let response = Array(vec![BulkString("PING".into())]);
         stream.write_all(response.to_string().as_bytes()).await?;
         stream.flush().await?;
-        stream.read(&mut [0; 1024]).await?; // Read the PONG response (not used)
+        stream.read(&mut [0; BUFFER_SIZE]).await?; // Await the response
 
         // Send REPLCONF listening-port <PORT>
         let port = addr.split(":").collect::<Vec<&str>>()[1];
@@ -115,16 +118,17 @@ impl Server {
         ]);
         stream.write_all(response.to_string().as_bytes()).await?;
         stream.flush().await?;
-        stream.read(&mut [0; 1024]).await?; // Read the PONG response (not used)
+        stream.read(&mut [0; BUFFER_SIZE]).await?; // Await the response
 
-        // // Send REPLCONF capa psync2
-        // let response = Array(vec![
-        //     BulkString("REPLCONF".into()),
-        //     BulkString("capa".into()),
-        //     BulkString("psync2".into()),
-        // ]);
-        // stream.write_all(response.to_string().as_bytes()).await?;
-        // stream.flush().await?;
+        // Send REPLCONF capa psync2
+        let response = Array(vec![
+            BulkString("REPLCONF".into()),
+            BulkString("capa".into()),
+            BulkString("psync2".into()),
+        ]);
+        stream.write_all(response.to_string().as_bytes()).await?;
+        stream.flush().await?;
+        stream.read(&mut [0; BUFFER_SIZE]).await?; // Await the response
 
         Ok(())
     }
@@ -136,9 +140,6 @@ async fn handle_connection(
     server: &Arc<Mutex<Server>>,
     stream: &mut tokio::net::TcpStream,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    /// The size of the buffer to read incoming data
-    const BUFFER_SIZE: usize = 1024;
-
     // Loop as long as requests are being made
     loop {
         // Read the incoming data from the stream
