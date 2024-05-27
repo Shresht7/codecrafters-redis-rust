@@ -7,6 +7,7 @@ mod echo;
 mod get;
 mod info;
 mod ping;
+mod replconf;
 mod set;
 
 /// Handles the incoming command by parsing it and calling the appropriate command handler.
@@ -30,6 +31,7 @@ pub fn handle(cmd: Vec<resp::Type>, server: &Arc<Mutex<Server>>) -> resp::Type {
         "SET" => set::command(&array[1..], &server),
         "GET" => get::command(&array[1..], &server),
         "INFO" => info::command(&array[1..], &server),
+        "REPLCONF" => replconf::command(&array[1..], &server),
         _ => resp::Type::SimpleError("ERR unknown command\r\n".into()),
     }
 }
