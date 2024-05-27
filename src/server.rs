@@ -64,14 +64,14 @@ impl Server {
     /// Runs the TCP server on the given address, listening for incoming connections.
     /// The server will handle each incoming connection in a separate thread.
     pub async fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        // Create a TCPListener and bind it to the given address and port
+        // Note: 6379 is the default port that Redis uses (You may have to stop any running Redis instances)
+        let listener = TcpListener::bind(&self.addr).await?;
+
         // If this server is a replica, connect to the master server
         if let Role::Replica(addr) = &self.role {
             self.send_handshake(addr).await?;
         }
-
-        // Create a TCPListener and bind it to the given address and port
-        // Note: 6379 is the default port that Redis uses (You may have to stop any running Redis instances)
-        let listener = TcpListener::bind(&self.addr).await?;
 
         // Listen for incoming connections and handle them
         loop {
@@ -104,16 +104,18 @@ impl Server {
         let response = Array(vec![BulkString("PING".into())]);
         stream.write_all(response.to_string().as_bytes()).await?;
         stream.flush().await?;
+        stream.read(&mut [0; 1024]).await?; // Read the PONG response (not used)
 
-        // // Send REPLCONF listening-port <PORT>
-        // let port = addr.split(":").collect::<Vec<&str>>()[1];
-        // let response = Array(vec![
-        //     BulkString("REPLCONF".into()),
-        //     BulkString("listening-port".into()),
-        //     BulkString(port.into()),
-        // ]);
-        // stream.write_all(response.to_string().as_bytes()).await?;
-        // stream.flush().await?;
+        // Send REPLCONF listening-port <PORT>
+        let port = addr.split(":").collect::<Vec<&str>>()[1];
+        let response = Array(vec![
+            BulkString("REPLCONF".into()),
+            BulkString("listening-port".into()),
+            BulkString(port.into()),
+        ]);
+        stream.write_all(response.to_string().as_bytes()).await?;
+        stream.flush().await?;
+        stream.read(&mut [0; 1024]).await?; // Read the PONG response (not used)
 
         // // Send REPLCONF capa psync2
         // let response = Array(vec![
