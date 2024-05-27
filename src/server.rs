@@ -20,7 +20,7 @@ use crate::{
 #[derive(Clone)]
 pub struct Server {
     /// The host to listen on
-    host: &'static str,
+    // host: &'static str,
 
     /// The port to listen on (default is 6379)
     port: u16,
@@ -58,7 +58,7 @@ pub enum Role {
 /// Creates a new Server instance with the given host and port
 pub fn new(host: &'static str, port: u16) -> Server {
     Server {
-        host,
+        // host,
         port,
         addr: format!("{}:{}", host, port),
         role: Role::Master,
