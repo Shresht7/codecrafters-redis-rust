@@ -13,8 +13,16 @@ mod parser;
 
 #[tokio::main]
 async fn main() {
+    // Parse the command-line arguments
+    let args: Vec<String> = std::env::args().collect();
+    let cmd_args = CommandLineArguments::parse(args);
+
+    // Determine the address using the port variable
+    let port = cmd_args.port.unwrap_or(6379); // Default port is 6379
+    let addr = format!("127.0.0.1:{}", port);
+
     // Run the server on the given address and port
-    run_server("127.0.0.1:6379").await.unwrap();
+    run_server(&addr).await.unwrap();
 }
 
 // ----------
@@ -75,4 +83,43 @@ async fn handle_connection(
     }
 
     Ok(())
+}
+
+// ------------
+// COMMAND LINE
+// ------------
+
+struct CommandLineArguments {
+    port: Option<u16>,
+}
+
+impl CommandLineArguments {
+    fn parse(args: Vec<String>) -> Self {
+        // Declare the variables to store the command-line arguments
+        let mut port = None;
+
+        // Extract the port variable from the command-line arguments
+        for i in 0..args.len() {
+            match args[i].as_str() {
+                "-p" | "--port" => {
+                    if i + 1 < args.len() {
+                        port = match args[i + 1].parse::<u16>() {
+                            Ok(p) => Some(p),
+                            Err(_) => {
+                                eprintln!("Invalid port number: {}", args[i + 1]);
+                                None
+                            }
+                        };
+                    } else {
+                        eprintln!("Port number not provided");
+                        port = None;
+                    };
+                }
+                _ => {}
+            }
+        }
+
+        // Return the parsed command-line arguments
+        Self { port }
+    }
 }
