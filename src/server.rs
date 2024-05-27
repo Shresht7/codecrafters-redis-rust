@@ -1,7 +1,7 @@
 // Library
 use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpListener;
+use tokio::net::{TcpListener, TcpStream};
 
 // Modules
 use crate::{commands, database, helpers, parser};
@@ -58,6 +58,14 @@ impl Server {
     /// Runs the TCP server on the given address, listening for incoming connections.
     /// The server will handle each incoming connection in a separate thread.
     pub async fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        // If this server is a replica, connect to the master server
+        if let Role::Replica(addr) = &self.role {
+            let mut stream = TcpStream::connect(addr).await?;
+            let response =
+                parser::resp::Type::Array(vec![parser::resp::Type::BulkString("PING".into())]);
+            stream.write_all(response.to_string().as_bytes()).await?;
+        }
+
         // Create a TCPListener and bind it to the given address and port
         // Note: 6379 is the default port that Redis uses (You may have to stop any running Redis instances)
         let listener = TcpListener::bind(&self.addr).await?;
@@ -79,8 +87,8 @@ impl Server {
     }
 
     /// Sets the server to act as a replica of the given address
-    pub fn replicaof(&mut self, addr: String) {
-        self.role = Role::Replica(addr);
+    pub fn replicaof(&mut self, addr: &String) {
+        self.role = Role::Replica(addr.clone());
     }
 }
 
