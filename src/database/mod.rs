@@ -47,8 +47,8 @@ impl Database {
         Some(&item.value)
     }
 
-    /// Removes a key from the database.
-    pub fn remove(&mut self, key: &Type) {
-        self.data.remove(key);
-    }
+    // /// Removes a key from the database.
+    // pub fn remove(&mut self, key: &Type) {
+    //     self.data.remove(key);
+    // }
 }
