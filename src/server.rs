@@ -19,6 +19,12 @@ use crate::{
 /// Struct to hold information about the Server and its configuration
 #[derive(Clone)]
 pub struct Server {
+    /// The host to listen on
+    host: &'static str,
+
+    /// The port to listen on (default is 6379)
+    port: u16,
+
     /// The full address (host:port) to listen on
     addr: String,
 
@@ -50,8 +56,10 @@ pub enum Role {
 }
 
 /// Creates a new Server instance with the given host and port
-pub fn new(host: &str, port: u16) -> Server {
+pub fn new(host: &'static str, port: u16) -> Server {
     Server {
+        host,
+        port,
         addr: format!("{}:{}", host, port),
         role: Role::Master,
         db: database::new(),
@@ -110,11 +118,10 @@ impl Server {
         stream.read(&mut [0; BUFFER_SIZE]).await?; // Await the response
 
         // Send REPLCONF listening-port <PORT>
-        let port = addr.split(":").collect::<Vec<&str>>()[1];
         let response = Array(vec![
             BulkString("REPLCONF".into()),
             BulkString("listening-port".into()),
-            BulkString(port.into()),
+            BulkString(self.port.to_string()),
         ]);
         stream.write_all(response.to_string().as_bytes()).await?;
         stream.flush().await?;
