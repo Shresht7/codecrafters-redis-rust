@@ -464,7 +464,16 @@ impl Type {
                 bytes
             }
 
-            Type::RDBFile(data) => data.clone(),
+            Type::RDBFile(data) => {
+                let mut bytes = vec![b'$']
+                    .into_iter()
+                    .chain(data.len().to_string().as_bytes().to_vec())
+                    .chain(vec![b'\r', b'\n'])
+                    .collect::<Vec<u8>>();
+                bytes.extend(data);
+                bytes.extend(vec![b'\r', b'\n']);
+                bytes
+            }
         }
     }
 }
