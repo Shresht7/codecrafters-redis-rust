@@ -28,6 +28,7 @@ async fn main() {
 
     // If the replica-of address is set, the server will act as a replica
     if let Some(replicaof) = cli.replicaof {
+        println!("Replicating from: {}", replicaof);
         server.replicaof(&replicaof);
     }
 

@@ -19,6 +19,7 @@ pub async fn command(
     }
 
     // Get server instance from the Server
+    println!("[info.rs::fn command] Acquiring lock");
     let server = server.lock().await;
 
     // Get the role of the server

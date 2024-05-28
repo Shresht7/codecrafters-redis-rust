@@ -34,6 +34,7 @@ pub async fn command(
     };
 
     // Get database instance from the Server
+    println!("[get.rs::fn command] Acquiring lock");
     let server = server.lock().await;
 
     // Get the value from the database

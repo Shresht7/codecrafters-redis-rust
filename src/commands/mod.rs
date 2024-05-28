@@ -1,7 +1,11 @@
 // Library
 use crate::{parser::resp, server::Server};
 use std::sync::Arc;
-use tokio::{io::AsyncWriteExt, net::TcpStream, sync::Mutex};
+use tokio::{
+    io::AsyncWriteExt,
+    net::TcpStream,
+    sync::{broadcast::Sender, Mutex},
+};
 
 // Commands
 mod echo;
@@ -17,6 +21,7 @@ pub async fn handle(
     cmd: Vec<resp::Type>,
     stream: &mut TcpStream,
     server: &Arc<Mutex<Server>>,
+    sender: &Arc<Sender<resp::Type>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Get command array from parsed data
     let array = match cmd.get(0) {
@@ -42,11 +47,16 @@ pub async fn handle(
     match command.to_uppercase().as_str() {
         "PING" => ping::command(&array[1..], stream).await,
         "ECHO" => echo::command(&array[1..], stream).await,
-        "SET" => set::command(&array[1..], stream, server).await,
+        "SET" => {
+            if sender.receiver_count() > 0 {
+                sender.send(cmd[0].clone())?;
+            }
+            set::command(&array[1..], stream, server).await
+        }
         "GET" => get::command(&array[1..], stream, server).await,
         "INFO" => info::command(&array[1..], stream, server).await,
         "REPLCONF" => replconf::command(&array[1..], stream, server).await,
-        "PSYNC" => psync::command(&array[1..], stream, server).await,
+        "PSYNC" => psync::command(&array[1..], stream, server, sender).await,
         _ => {
             let response = resp::Type::SimpleError("ERR unknown command\r\n".into());
             stream.write_all(&response.as_bytes()).await?;

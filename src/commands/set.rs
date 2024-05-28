@@ -1,7 +1,7 @@
 // Library
 use super::resp::Type;
 use crate::{parser::resp, server::Server};
-use std::sync::Arc;
+use std::{ops::DerefMut, sync::Arc};
 use tokio::{io::AsyncWriteExt, net::TcpStream, sync::Mutex};
 
 /// Handles the SET command.
@@ -14,6 +14,8 @@ pub async fn command(
     stream: &mut TcpStream,
     server: &Arc<Mutex<Server>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    println!("SET EXPIRY");
+
     // Check the number of arguments
     if args.len() < 2 {
         let response = Type::SimpleError(
@@ -25,6 +27,7 @@ pub async fn command(
             .into(),
         );
         stream.write_all(&response.as_bytes()).await?;
+        stream.flush().await?;
         return Ok(());
     }
 
@@ -34,6 +37,7 @@ pub async fn command(
         _ => {
             let response = Type::SimpleError("ERR invalid key".into());
             stream.write_all(&response.as_bytes()).await?;
+            stream.flush().await?;
             return Ok(());
         }
     };
@@ -43,12 +47,17 @@ pub async fn command(
         _ => {
             let response = Type::SimpleError("ERR invalid value".into());
             stream.write_all(&response.as_bytes()).await?;
+            stream.flush().await?;
             return Ok(());
         }
     };
 
     // Get database instance from the Server
+    println!("[set.rs::fn command] Acquiring lock");
     let mut server = server.lock().await;
+    let server = server.deref_mut();
+
+    println!("SET {:?} {:?}", key, value);
 
     if args.len() == 2 {
         // Set the value in the database
@@ -57,6 +66,7 @@ pub async fn command(
         // Respond with OK
         let response = Type::SimpleString("OK".into());
         stream.write_all(&response.as_bytes()).await?;
+        stream.flush().await?;
         return Ok(());
     }
 
@@ -68,12 +78,14 @@ pub async fn command(
                 _ => {
                     let response = Type::SimpleError("ERR invalid time".into());
                     stream.write_all(&response.as_bytes()).await?;
+                    stream.flush().await?;
                     return Ok(());
                 }
             },
             _ => {
                 let response = Type::SimpleError("ERR invalid time".into());
                 stream.write_all(&response.as_bytes()).await?;
+                stream.flush().await?;
                 return Ok(());
             }
         },
@@ -86,5 +98,6 @@ pub async fn command(
     // Respond with OK
     let response = Type::SimpleString("OK".into());
     stream.write_all(&response.as_bytes()).await?;
+    stream.flush().await?;
     Ok(())
 }

@@ -2,8 +2,9 @@
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::Mutex;
+use tokio::sync::{broadcast, Mutex};
 
+use crate::parser::resp::Type;
 // Modules
 use crate::{
     commands, database, helpers,
@@ -50,7 +51,7 @@ pub struct Server {
 
 /// Enum to represent the role of the server.
 /// The server can be either a master or a replica.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Role {
     Master,
     Replica(String),
@@ -84,19 +85,38 @@ impl Server {
         // This will allows us to share the server instance across threads.
         let server = Arc::new(Mutex::new(self.clone()));
 
+        // Create a broadcast channel to send the server instance to each thread
+        let sender: broadcast::Sender<Type> = broadcast::channel(16).0;
+        let sender = Arc::new(sender);
+
         // If this server is a replica, connect to the master server
         if let Role::Replica(addr) = &self.role {
-            self.send_handshake(addr).await?;
+            println!("Connecting to master server at {}", addr);
+            let mut stream = self.send_handshake(addr).await?;
+
+            // Clone the Arc<Mutex<Server>> instance
+            let server = Arc::clone(&server);
+            // Clone the broadcast sender instance
+            let sender = Arc::clone(&sender);
+
+            // Spawn a new thread to handle the replication connection
+            tokio::spawn(async move {
+                handle_connection(&server, &mut stream, sender)
+                    .await
+                    .expect("Failed to handle connection".into())
+            });
         }
 
         // Listen for incoming connections and handle them
         while let Ok((mut stream, _)) = listener.accept().await {
-            // Clone the Arc<Mutex<Server>> instance for each incoming connection ...
+            // Clone the Arc<Mutex<Server>> instance
             let server = Arc::clone(&server);
+            // Clone the broadcast sender instance
+            let sender = Arc::clone(&sender);
 
             // ... and spawn a new thread for each incoming connection
             tokio::spawn(async move {
-                handle_connection(&server, &mut stream)
+                handle_connection(&server, &mut stream, sender)
                     .await
                     .expect("Failed to handle connection".into())
             });
@@ -112,7 +132,10 @@ impl Server {
 
     /// Sends a handshake to the replication master server at the given address.
     /// The handshake includes a PING command, REPLCONF listening-port, and REPLCONF capa psync2.
-    pub async fn send_handshake(&self, addr: &String) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn send_handshake(
+        &self,
+        addr: &String,
+    ) -> Result<TcpStream, Box<dyn std::error::Error>> {
         // Connect to the replication master
         let mut stream = TcpStream::connect(addr).await?;
 
@@ -152,7 +175,7 @@ impl Server {
         stream.flush().await?;
         stream.read(&mut [0; BUFFER_SIZE]).await?; // Await the response
 
-        Ok(())
+        Ok(stream)
     }
 }
 
@@ -161,6 +184,7 @@ impl Server {
 async fn handle_connection(
     server: &Arc<Mutex<Server>>,
     stream: &mut tokio::net::TcpStream,
+    sender: Arc<broadcast::Sender<Type>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Loop as long as requests are being made
     loop {
@@ -179,7 +203,7 @@ async fn handle_connection(
         println!("Incoming Request: {:?}", cmd);
 
         // Handle the parsed data and get a response
-        commands::handle(cmd, stream, server).await?;
+        commands::handle(cmd, stream, server, &sender).await?;
     }
 
     Ok(())
