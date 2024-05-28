@@ -35,12 +35,13 @@ pub async fn command(
 
     // Handle the REPLCONF GETACK command
     match subcommand.to_uppercase().as_str() {
+        "LISTENING-PORT" => {
+            let response = Type::SimpleString("OK".into());
+            connection.write_all(&response.as_bytes()).await?;
+        }
         "GETACK" => get_ack(connection).await?,
         x => {
-            let response = Type::SimpleError(format!(
-                "ERR Unknown REPLCONF subcommand '{}'. Try GETACK.",
-                x
-            ));
+            let response = Type::SimpleError(format!("ERR Unknown REPLCONF subcommand '{}'", x));
             connection.write_all(&response.as_bytes()).await?;
         }
     }
