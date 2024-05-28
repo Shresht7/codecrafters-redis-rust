@@ -85,12 +85,6 @@ impl Role {
         // Send PSYNC <REPLID> <OFFSET>
         psync(&mut connection, "?", -1).await?;
 
-        // Read out the RDB file from the master server
-        connection.read().await?;
-        let data = connection.parse_from_buffer();
-        connection.clear_buffer();
-        println!("Received RDB file: {:?}", data);
-
         // Return the connection to the master server so that
         // we can re-use the same connection for replication.
         Ok(connection)

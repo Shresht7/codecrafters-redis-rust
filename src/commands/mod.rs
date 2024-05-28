@@ -60,6 +60,8 @@ pub async fn handle(
                     conn.write_all(&response.as_bytes()).await?;
                 }
             }
+        } else {
+            println!("Invalid command: {:?}", cmd);
         }
     }
     Ok(())
