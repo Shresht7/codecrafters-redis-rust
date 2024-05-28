@@ -1,4 +1,8 @@
 // Library
+use crate::{
+    commands, database, helpers,
+    parser::{self, resp::Type},
+};
 use conn::Connection;
 use std::sync::Arc;
 use tokio::{
@@ -6,11 +10,6 @@ use tokio::{
     sync::{broadcast, Mutex},
 };
 
-// Modules
-use crate::{
-    commands, database, helpers,
-    parser::{self, resp::Type},
-};
 // Modules
 pub mod conn;
 pub mod replication;
@@ -78,8 +77,11 @@ impl Server {
         let server = Arc::new(Mutex::new(self.clone()));
 
         // If this server is a replica, connect to the master server
-        if let Role::Replica(addr) = &self.role {
-            println!("Connecting to master server at {}", addr);
+        if let Role::Replica(master_addr) = &self.role {
+            println!(
+                "[{}] Connecting to master server at {}",
+                self.addr, master_addr
+            );
             let mut connection = self.role.send_handshake(self.port).await?;
 
             // Clone the Arc<Mutex<Server>> instance
@@ -101,6 +103,7 @@ impl Server {
         while let Ok((stream, _)) = listener.accept().await {
             // Create a new Connection instance for the incoming connection
             let mut connection = conn::new(stream);
+
             // Clone the Arc<Mutex<Server>> instance
             let server = Arc::clone(&server);
 
