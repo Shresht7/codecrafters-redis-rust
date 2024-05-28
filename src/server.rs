@@ -28,7 +28,7 @@ pub struct Server {
     port: u16,
 
     /// The full address (host:port) to listen on
-    addr: String,
+    pub addr: String,
 
     /// The database instance to store data
     pub db: database::Database,
