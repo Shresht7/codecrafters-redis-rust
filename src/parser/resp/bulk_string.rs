@@ -63,15 +63,18 @@ pub fn parse(input: &[u8]) -> Result<(Type, &[u8]), Box<dyn std::error::Error>> 
     let data_end_pos = data_start_pos + length as usize;
 
     // Extract the bulk string from the input and convert it to a String
-    let bulk_string = bytes.slice(data_start_pos, data_end_pos).as_string()?;
+    let bulk_string = bytes.slice(data_start_pos, data_end_pos).as_bytes();
 
     // Check if the data begins with REDIS0011
-    if bulk_string.starts_with("REDIS0011") {
+    if bulk_string.starts_with(b"REDIS0011") {
         return Ok((
-            Type::RDBFile(bulk_string.as_bytes().to_vec()),
+            Type::RDBFile(bulk_string.to_vec()),
             &input[data_end_pos + CRLF.len()..], // Remaining bytes
         ));
     }
+
+    // Convert the bulk string to a String
+    let bulk_string = std::str::from_utf8(bulk_string)?.to_string();
 
     // Return the parsed bulk string and the remaining input
     Ok((
