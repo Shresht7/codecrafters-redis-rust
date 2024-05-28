@@ -2,17 +2,14 @@
 use conn::Connection;
 use std::sync::Arc;
 use tokio::{
-    net::{TcpListener, TcpStream},
+    net::TcpListener,
     sync::{broadcast, Mutex},
 };
 
 // Modules
 use crate::{
     commands, database, helpers,
-    parser::{
-        self,
-        resp::{array, bulk_string, Type},
-    },
+    parser::{self, resp::Type},
 };
 // Modules
 pub mod conn;
@@ -86,7 +83,7 @@ impl Server {
         // If this server is a replica, connect to the master server
         if let Role::Replica(addr) = &self.role {
             println!("Connecting to master server at {}", addr);
-            let mut connection = self.send_handshake(addr).await?;
+            let mut connection = self.role.send_handshake(self.port).await?;
 
             // Clone the Arc<Mutex<Server>> instance
             let server = Arc::clone(&server);
@@ -122,53 +119,12 @@ impl Server {
     }
 
     /// Sets the server to act as a replica of the given address
-    pub fn replicaof(&mut self, addr: &String) {
-        self.role = Role::Replica(addr.clone());
-    }
-
-    /// Sends a handshake to the replication master server at the given address.
-    /// The handshake includes a PING command, REPLCONF listening-port, and REPLCONF capa psync2.
-    pub async fn send_handshake(
-        &self,
-        addr: &String,
-    ) -> Result<conn::Connection, Box<dyn std::error::Error>> {
-        // Connect to the replication master
-        let stream = TcpStream::connect(addr).await?;
-        let mut connection = conn::new(stream);
-
-        // Send a PING
-        let response = array(vec![bulk_string("PING")]);
-        connection.write_all(&response.as_bytes()).await?;
-        connection.read().await?; // Read the PONG response (not used)
-
-        // Send REPLCONF listening-port <PORT>
-        let response = array(vec![
-            bulk_string("REPLCONF"),
-            bulk_string("listening-port"),
-            bulk_string(self.port.to_string().as_str()),
-        ]);
-        connection.write_all(&response.as_bytes()).await?;
-        connection.read().await?; // Read the OK response (not used)
-
-        // Send REPLCONF capa psync2
-        let response = array(vec![
-            bulk_string("REPLCONF"),
-            bulk_string("capa"),
-            bulk_string("psync2"),
-        ]);
-        connection.write_all(&response.as_bytes()).await?;
-        connection.read().await?; // Read the OK response (not used)
-
-        // Send PSYNC <REPLID> <OFFSET>
-        let response = array(vec![
-            bulk_string("PSYNC"),
-            bulk_string("?"),
-            bulk_string("-1"),
-        ]);
-        connection.write_all(&response.as_bytes()).await?;
-        connection.read().await?; // Read the FULLRESYNC response (not used)
-
-        Ok(connection)
+    /// The server will act as a replica and connect to the master server at the given address.
+    /// The server will send a handshake to the master server to establish the connection.
+    /// The server will start receiving data from the master server.
+    pub fn replicaof(&mut self, addr: String) -> Result<(), Box<dyn std::error::Error>> {
+        self.role = Role::Replica(addr);
+        Ok(())
     }
 }
 
