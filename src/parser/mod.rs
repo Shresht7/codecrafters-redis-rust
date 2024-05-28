@@ -23,7 +23,7 @@ fn _parse(input: &[u8]) -> Result<(resp::Type, &[u8]), Box<dyn std::error::Error
         b'=' => resp::verbatim_string::parse(&input),
         b'%' => resp::map::parse(&input),
         b'~' => resp::set::parse(&input),
-        _ => Err(format!("Invalid first byte: {}", first_byte.to_string()).into()),
+        _ => Err(format!("Invalid first byte in {}", String::from_utf8_lossy(input)).into()),
     }
 }
 

@@ -112,7 +112,7 @@ impl Connection {
             match parser::parse(request) {
                 Ok(c) => cmds = c,
                 Err(e) => {
-                    response = format!("ERR {}\r\n", e);
+                    response = format!("-ERR {}\r\n", e);
                 }
             }
             println!("Incoming Commands: {:?}", cmds);
