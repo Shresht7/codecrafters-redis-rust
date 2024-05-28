@@ -78,29 +78,49 @@ impl Server {
 
         // If this server is a replica, connect to the master server
         if let Role::Replica(master_addr) = &self.role {
-            println!(
-                "[{}] Connecting to master server at {}",
-                self.addr, master_addr
-            );
-            let mut connection = self.role.send_handshake(self.port).await?;
-
-            // Clone the Arc<Mutex<Server>> instance
-            let server = Arc::clone(&server);
-
-            // Spawn a new thread to handle the replication connection
-            tokio::spawn(async move {
-                handle_connection(&mut connection, &server)
-                    .await
-                    .expect("Failed to handle connection");
-            });
+            self.handle_replication(master_addr, &server).await?;
         }
 
-        // Create a TCPListener and bind it to the given address and port
-        // Note: 6379 is the default port that Redis uses (You may have to stop any running Redis instances)
-        let listener = TcpListener::bind(&self.addr).await?;
+        // Handle the main connection
+        self.handle_main_connections(server).await?;
 
-        // Listen for incoming connections and handle them
-        while let Ok((stream, _)) = listener.accept().await {
+        Ok(())
+    }
+
+    /// Handles replication for the replica server.
+    /// Connects to the master server at the given address and spawns a new thread to handle the connection.
+    async fn handle_replication(
+        &self,
+        master_addr: &String,
+        server: &Arc<Mutex<Server>>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        println!(
+            "[{}] Connecting to master server at {}",
+            self.addr, master_addr
+        );
+        // Send handshake and establish connection with the master server
+        let mut connection = self.role.send_handshake(self.port).await?;
+
+        // Clone the Arc<Mutex<Server>> instance
+        let server = Arc::clone(server);
+
+        // Handle the connection
+        tokio::spawn(async move {
+            handle_connection(&mut connection, &server)
+                .await
+                .expect("Failed to handle connection");
+        });
+        Ok(())
+    }
+
+    /// Handles the main logic for the server.
+    /// Listens for incoming connections on the server's address and spawns a new thread to handle each connection.
+    async fn handle_main_connections(
+        &self,
+        server: Arc<Mutex<Server>>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let listener = TcpListener::bind(&self.addr).await?;
+        Ok(while let Ok((stream, _)) = listener.accept().await {
             // Create a new Connection instance for the incoming connection
             let mut connection = conn::new(stream);
 
@@ -113,12 +133,10 @@ impl Server {
                     .await
                     .expect("Failed to handle connection");
             });
-        }
-
-        Ok(())
+        })
     }
 
-    /// Sets the server to act as a replica of the given address
+    /// Sets the server to act as a replica of the given address.
     /// The server will act as a replica and connect to the master server at the given address.
     /// The server will send a handshake to the master server to establish the connection.
     /// The server will start receiving data from the master server.
