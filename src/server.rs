@@ -193,18 +193,6 @@ impl Server {
         stream.flush().await?;
         stream.read(&mut [0; BUFFER_SIZE]).await?; // Read the FULLRESYNC response (not used)
 
-        // Get the length of the RDB file
-        let mut buffer = [0; BUFFER_SIZE];
-        let bytes_read = stream.read(&mut buffer).await?; // Read the RDB file
-
-        println!("Bytes read: {:?}", bytes_read);
-
-        // Parse the RDB file
-        if bytes_read > 0 {
-            let cmd = parser::parse(&buffer[..bytes_read])?;
-            println!("RDB File: {:?}", cmd);
-        }
-
         Ok(stream)
     }
 }
