@@ -89,7 +89,7 @@ pub fn new(host: &'static str, port: u16) -> Server {
 }
 
 /// The size of the buffer to read incoming data
-const BUFFER_SIZE: usize = 4096;
+const BUFFER_SIZE: usize = 1024;
 
 impl Server {
     /// Runs the TCP server on the given address, listening for incoming connections.
@@ -161,7 +161,7 @@ impl Server {
         let response = Array(vec![BulkString("PING".into())]);
         stream.write_all(&response.as_bytes()).await?;
         stream.flush().await?;
-        stream.read(&mut [0; BUFFER_SIZE]).await?; // Await the response
+        stream.read(&mut [0; BUFFER_SIZE]).await?; // Read the PONG response (not used)
 
         // Send REPLCONF listening-port <PORT>
         let response = Array(vec![
@@ -171,7 +171,7 @@ impl Server {
         ]);
         stream.write_all(&response.as_bytes()).await?;
         stream.flush().await?;
-        stream.read(&mut [0; BUFFER_SIZE]).await?; // Await the response
+        stream.read(&mut [0; BUFFER_SIZE]).await?; // Read the OK response (not used)
 
         // Send REPLCONF capa psync2
         let response = Array(vec![
@@ -181,7 +181,7 @@ impl Server {
         ]);
         stream.write_all(&response.as_bytes()).await?;
         stream.flush().await?;
-        stream.read(&mut [0; BUFFER_SIZE]).await?; // Await the response
+        stream.read(&mut [0; BUFFER_SIZE]).await?; // Read the OK response (not used)
 
         // Send PSYNC <REPLID> <OFFSET>
         let response = Array(vec![
@@ -191,18 +191,19 @@ impl Server {
         ]);
         stream.write_all(&response.as_bytes()).await?;
         stream.flush().await?;
+        stream.read(&mut [0; BUFFER_SIZE]).await?; // Read the FULLRESYNC response (not used)
 
         // Get the length of the RDB file
         let mut buffer = [0; BUFFER_SIZE];
-        loop {
-            let bytes_read = stream.read(&mut buffer).await?;
-            if bytes_read == 0 {
-                break;
-            }
+        let bytes_read = stream.read(&mut buffer).await?; // Read the RDB file
+
+        println!("Bytes read: {:?}", bytes_read);
+
+        // Parse the RDB file
+        if bytes_read > 0 {
+            let cmd = parser::parse(&buffer[..bytes_read])?;
+            println!("RDB File: {:?}", cmd);
         }
-        // Convert the buffer to a string
-        let response = String::from_utf8_lossy(&buffer);
-        println!("Received RDB File: {:?}", response);
 
         Ok(stream)
     }
