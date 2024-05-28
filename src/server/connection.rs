@@ -107,15 +107,17 @@ impl Connection {
             let request = self.read_buffer(bytes_read);
             println!("Incoming Requests: {}", String::from_utf8_lossy(request));
 
-            let cmds;
+            let mut response: String = "OK\r\n".to_string();
+            let mut cmds: Vec<parser::resp::Type> = Vec::new();
             match parser::parse(request) {
                 Ok(c) => cmds = c,
                 Err(e) => {
-                    eprintln!("Error parsing request: {:?}", e);
-                    continue;
+                    response = format!("ERR {}\r\n", e);
                 }
             }
             println!("Incoming Commands: {:?}", cmds);
+
+            self.write_all(response.as_bytes()).await?;
 
             // Handle the commands
             commands::handle(cmds, self, server).await?;

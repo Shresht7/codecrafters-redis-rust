@@ -23,7 +23,7 @@ fn _parse(input: &[u8]) -> Result<(resp::Type, &[u8]), Box<dyn std::error::Error
         b'=' => resp::verbatim_string::parse(&input),
         b'%' => resp::map::parse(&input),
         b'~' => resp::set::parse(&input),
-        _ => Err("Invalid data type".into()),
+        _ => Err(format!("Invalid data type: {}", first_byte).into()),
     }
 }
 
