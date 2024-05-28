@@ -58,6 +58,7 @@ pub async fn command(
         stream.write_all(&response.as_bytes()).await?;
         stream.flush().await?;
 
+        println!("RDB File: {:?}", rdb_bytes);
         let response = resp::Type::RDBFile(rdb_bytes);
         stream.write_all(&response.as_bytes()).await?;
         stream.flush().await?;
@@ -68,11 +69,6 @@ pub async fn command(
     while let Ok(x) = receiver.recv().await {
         stream.write_all(&x.as_bytes()).await?;
         stream.flush().await?;
-        println!(
-            "Sent message: {:?} of length {}",
-            &x.as_bytes(),
-            &x.as_bytes().len()
-        );
     }
 
     Ok(())
