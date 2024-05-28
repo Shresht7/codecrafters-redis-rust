@@ -195,11 +195,9 @@ impl Server {
         // Get the length of the RDB file
         let mut buffer = [0; BUFFER_SIZE];
         let bytes_read = stream.read(&mut buffer).await?;
-        println!(
-            "Received RDB file: {:?} of length {}",
-            &buffer[..bytes_read],
-            bytes_read
-        );
+        let rdb = database::rdb::bytes_to_base64(&buffer[..bytes_read]);
+        println!("Received RDB file: {:?} of length {}", rdb, rdb.len());
+        // Convert these bytes to base64 string
 
         Ok(stream)
     }
