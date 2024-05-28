@@ -106,7 +106,15 @@ impl Connection {
             // Parse the incoming data
             let request = self.read_buffer(bytes_read);
             println!("Incoming Requests: {}", String::from_utf8_lossy(request));
-            let cmds = parser::parse(request).expect("Failed to parse request");
+
+            let cmds;
+            match parser::parse(request) {
+                Ok(c) => cmds = c,
+                Err(e) => {
+                    eprintln!("Error parsing request: {:?}", e);
+                    continue;
+                }
+            }
             println!("Incoming Commands: {:?}", cmds);
 
             // Handle the commands
