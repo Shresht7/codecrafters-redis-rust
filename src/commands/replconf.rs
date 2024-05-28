@@ -23,9 +23,11 @@ pub async fn command(
     // Extract Sub-Command
     let subcommand = match args.get(0) {
         Some(Type::BulkString(subcommand)) => subcommand,
-        _ => {
-            let response =
-                Type::SimpleError("ERR wrong number of arguments for 'replconf' command".into());
+        x => {
+            let response = Type::SimpleError(format!(
+                "ERR Protocol error: expected bulk string but got '{:?}'",
+                x
+            ));
             connection.write_all(&response.as_bytes()).await?;
             return Ok(());
         }
@@ -34,9 +36,11 @@ pub async fn command(
     // Handle the REPLCONF GETACK command
     match subcommand.to_uppercase().as_str() {
         "GETACK" => get_ack(connection).await?,
-        _ => {
-            let response =
-                Type::SimpleError("ERR unknown subcommand for 'replconf' command".into());
+        x => {
+            let response = Type::SimpleError(format!(
+                "ERR Unknown REPLCONF subcommand '{}'. Try GETACK.",
+                x
+            ));
             connection.write_all(&response.as_bytes()).await?;
         }
     }
