@@ -364,46 +364,106 @@ impl std::fmt::Display for Type {
 impl Type {
     pub fn as_bytes(&self) -> Vec<u8> {
         match &self {
-            Type::SimpleString(data) => data.as_bytes().to_vec(),
-            Type::SimpleError(data) => data.as_bytes().to_vec(),
-            Type::Integer(data) => data.to_string().as_bytes().to_vec(),
-            Type::BulkString(data) => data.as_bytes().to_vec(),
+            Type::SimpleString(data) => vec![b'+']
+                .into_iter()
+                .chain(data.as_bytes().to_vec())
+                .chain(vec![b'\r', b'\n'])
+                .collect(),
+            Type::SimpleError(data) => vec![b'-']
+                .into_iter()
+                .chain(data.as_bytes().to_vec())
+                .chain(vec![b'\r', b'\n'])
+                .collect(),
+            Type::Integer(data) => vec![b':']
+                .into_iter()
+                .chain(data.to_string().as_bytes().to_vec())
+                .chain(vec![b'\r', b'\n'])
+                .collect(),
+            Type::BulkString(data) => {
+                let mut bytes = vec![b'$']
+                    .into_iter()
+                    .chain(data.len().to_string().as_bytes().to_vec())
+                    .chain(vec![b'\r', b'\n'])
+                    .collect::<Vec<u8>>();
+                bytes.extend(data.as_bytes());
+                bytes.extend(vec![b'\r', b'\n']);
+                bytes
+            }
             Type::Array(data) => {
-                let mut bytes = Vec::new();
+                let mut bytes = vec![b'*']
+                    .into_iter()
+                    .chain(data.len().to_string().as_bytes().to_vec())
+                    .chain(vec![b'\r', b'\n'])
+                    .collect::<Vec<u8>>();
                 for item in data {
-                    bytes.extend_from_slice(&item.as_bytes());
+                    bytes.extend(item.as_bytes());
                 }
                 bytes
             }
-            Type::Null => b"$-1\r\n".to_vec(),
-            Type::Boolean(data) => {
-                if *data {
-                    b"#t\r\n".to_vec()
-                } else {
-                    b"#f\r\n".to_vec()
-                }
+            Type::Null => vec![b'_', b'\r', b'\n'],
+
+            Type::Boolean(data) => vec![b'#']
+                .into_iter()
+                .chain(data.to_string().as_bytes().to_vec())
+                .chain(vec![b'\r', b'\n'])
+                .collect(),
+
+            Type::Double(data) => vec![b',']
+                .into_iter()
+                .chain(data.to_string().as_bytes().to_vec())
+                .chain(vec![b'\r', b'\n'])
+                .collect(),
+
+            Type::BigNumber(data) => vec![b'(']
+                .into_iter()
+                .chain(data.to_string().as_bytes().to_vec())
+                .chain(vec![b'\r', b'\n'])
+                .collect(),
+
+            Type::BulkError(data) => vec![b'!']
+                .into_iter()
+                .chain(data.len().to_string().as_bytes().to_vec())
+                .chain(vec![b'\r', b'\n'])
+                .collect(),
+
+            Type::VerbatimString(encoding, data) => {
+                let mut bytes = vec![b'=']
+                    .into_iter()
+                    .chain(data.len().to_string().as_bytes().to_vec())
+                    .chain(vec![b'\r', b'\n'])
+                    .collect::<Vec<u8>>();
+                bytes.extend(encoding.as_bytes());
+                bytes.extend(vec![b':']);
+                bytes.extend(data.as_bytes());
+                bytes.extend(vec![b'\r', b'\n']);
+                bytes
             }
-            Type::Double(data) => data.to_string().as_bytes().to_vec(),
-            Type::BigNumber(data) => data.to_string().as_bytes().to_vec(),
-            Type::BulkError(data) => data.as_bytes().to_vec(),
-            Type::VerbatimString(data, encoding) => {
-                format!("{}:{}", data, encoding).as_bytes().to_vec()
-            }
+
             Type::Map(data) => {
-                let mut bytes = Vec::new();
+                let mut bytes = vec![b'%']
+                    .into_iter()
+                    .chain(data.len().to_string().as_bytes().to_vec())
+                    .chain(vec![b'\r', b'\n'])
+                    .collect::<Vec<u8>>();
                 for (key, value) in data {
-                    bytes.extend_from_slice(&key.as_bytes());
-                    bytes.extend_from_slice(&value.as_bytes());
+                    bytes.extend(key.as_bytes());
+                    bytes.extend(value.as_bytes());
                 }
                 bytes
             }
+
             Type::Set(data) => {
-                let mut bytes = Vec::new();
+                let mut bytes = vec![b'~']
+                    .into_iter()
+                    .chain(data.len().to_string().as_bytes().to_vec())
+                    .chain(vec![b'\r', b'\n'])
+                    .collect::<Vec<u8>>();
                 for item in data {
-                    bytes.extend_from_slice(&item.as_bytes());
+                    bytes.extend(item.as_bytes());
                 }
                 bytes
             }
+
             Type::RDBFile(data) => data.clone(),
         }
     }
