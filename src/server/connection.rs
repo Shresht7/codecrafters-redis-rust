@@ -95,6 +95,8 @@ impl Connection {
             // Read the incoming data from the stream
             let bytes_read = self.read().await?;
             if bytes_read == 0 {
+                // If no data was read, this typically indicates that the end of the
+                // stream has been reached and the connection should be closed.
                 break;
             }
 
@@ -106,6 +108,8 @@ impl Connection {
             // Handle the commands
             commands::handle(cmds, self, server).await?;
         }
+
+        // Once we are out of the loop, the connection will be closed.
         Ok(())
     }
 }

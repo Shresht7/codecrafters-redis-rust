@@ -91,11 +91,12 @@ impl Server {
         server: &Arc<Mutex<Server>>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         println!(
-            "[{}] Connecting to master server at {}",
+            "[{}] Connecting to master server at {}...",
             self.addr, master_addr
         );
         // Send handshake and establish connection with the master server
         let mut connection = self.role.send_handshake(self.port).await?;
+        println!("[{}] Connection Established to {}", self.addr, master_addr);
 
         // Clone the Arc<Mutex<Server>> instance
         let server = Arc::clone(server);
@@ -116,7 +117,9 @@ impl Server {
         &self,
         server: Arc<Mutex<Server>>,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        // Bind the server to the address and start listening for incoming connections
         let listener = TcpListener::bind(&self.addr).await?;
+        println!("[{}] Server is listening on {}", self.addr, self.port);
         Ok(while let Ok((stream, _)) = listener.accept().await {
             // Create a new Connection instance for the incoming connection
             let mut connection = connection::new(stream);
