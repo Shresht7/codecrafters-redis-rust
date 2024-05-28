@@ -238,6 +238,10 @@ pub enum Type {
     /// Sets are similar to arrays but with the distinction that sets contain unique elements.
     Set(HashSet<Type>),
     // TODO: Pushes
+    /// RDB file format
+    /// RDB files are the binary representation of the Redis database.
+    /// The RDB file format is used for persistence and backups.
+    RDBFile(Vec<u8>),
 }
 
 impl Eq for Type {

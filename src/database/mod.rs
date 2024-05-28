@@ -3,7 +3,7 @@ use crate::parser::resp::Type;
 use std::{collections::HashMap, time::Instant};
 
 // Modules
-mod rdb;
+pub mod rdb;
 
 /// Struct to hold the value and metadata of a database item.
 #[derive(Clone, Debug)]

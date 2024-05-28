@@ -1,5 +1,5 @@
 // Library
-use crate::{parser::resp, server::Server};
+use crate::{database, parser::resp, server::Server};
 use std::sync::{Arc, Mutex};
 
 /// Handles the PSYNC command
@@ -31,7 +31,14 @@ pub fn command(args: &[resp::Type], server: &Arc<Mutex<Server>>) -> resp::Type {
     let repl_id = server.lock().unwrap().master_replid.clone();
     let repl_offset = server.lock().unwrap().master_repl_offset;
 
+    // Read Empty RDB File
+    let rdb = database::rdb::EMPTY_RDB;
+    let rdb_bytes = database::rdb::base64_to_bytes(rdb);
+
     // Send a full synchronization request to the master server
-    resp::Type::SimpleString(format!("FULLRESYNC {} {}", repl_id, repl_offset))
+    resp::Type::Array(vec![
+        resp::Type::SimpleString(format!("FULLRESYNC {} {}", repl_id, repl_offset)),
+        resp::Type::RDBFile(rdb_bytes),
+    ])
     // }
 }
