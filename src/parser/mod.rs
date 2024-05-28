@@ -41,8 +41,14 @@ pub fn parse(input: &[u8]) -> Result<Vec<resp::Type>, Box<dyn std::error::Error>
 
     // Parse the input data until there is no more data to parse
     while !remaining.is_empty() {
+        println!("Remaining: {:?}", String::from_utf8_lossy(remaining));
+
         // Parse the next data element and update the remaining input
         let (element, rest) = _parse(remaining)?;
+
+        println!("Parsed Element: {:?}", element);
+        println!("Rest: {:?}", String::from_utf8_lossy(rest));
+
         data.push(element);
         remaining = rest;
     }
