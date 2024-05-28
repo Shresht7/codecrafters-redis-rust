@@ -77,16 +77,16 @@ impl Connection {
         &self.buffer[..len]
     }
 
-    /// Parses the buffer and returns the data as a string.
-    pub fn parse_from_buffer(&mut self) -> String {
-        String::from_utf8_lossy(&self.buffer).to_string()
-        // self.buffer = [0; BUFFER_SIZE]; // Clear the buffer
-    }
+    // /// Parses the buffer and returns the data as a string.
+    // pub fn parse_from_buffer(&mut self) -> String {
+    //     String::from_utf8_lossy(&self.buffer).to_string()
+    //     // self.buffer = [0; BUFFER_SIZE]; // Clear the buffer
+    // }
 
-    /// Clears the buffer by setting all elements to 0.
-    pub fn clear_buffer(&mut self) {
-        self.buffer = [0; BUFFER_SIZE];
-    }
+    // /// Clears the buffer by setting all elements to 0.
+    // pub fn clear_buffer(&mut self) {
+    //     self.buffer = [0; BUFFER_SIZE];
+    // }
 
     /// Handles the incoming connection stream by reading the incoming data,
     /// parsing it, and writing a response back to the stream.
