@@ -43,13 +43,16 @@ pub async fn handle(
         }
     };
 
+    println!("Received command: {:?}", command);
+
     // Handle the command
     match command.to_uppercase().as_str() {
         "PING" => ping::command(&array[1..], stream).await,
         "ECHO" => echo::command(&array[1..], stream).await,
         "SET" => {
+            println!("Sender count: {:?}", sender.receiver_count());
             if sender.receiver_count() > 0 {
-                sender.send(cmd[0].clone())?;
+                sender.send(cmd[0].clone()).expect("Failed to send message");
             }
             set::command(&array[1..], stream, server).await
         }

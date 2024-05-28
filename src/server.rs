@@ -57,6 +57,24 @@ pub enum Role {
     Replica(String),
 }
 
+impl Role {
+    /// Returns true if the server is a master
+    pub fn is_master(&self) -> bool {
+        match self {
+            Role::Master => true,
+            _ => false,
+        }
+    }
+
+    // /// Returns true if the server is a replica
+    // pub fn is_replica(&self) -> bool {
+    //     match self {
+    //         Role::Replica(_) => true,
+    //         _ => false,
+    //     }
+    // }
+}
+
 /// Creates a new Server instance with the given host and port
 pub fn new(host: &'static str, port: u16) -> Server {
     Server {

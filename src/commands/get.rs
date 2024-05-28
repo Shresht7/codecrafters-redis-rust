@@ -34,14 +34,18 @@ pub async fn command(
     };
 
     // Get database instance from the Server
-    println!("[get.rs::fn command] Acquiring lock");
     let server = server.lock().await;
+
+    let response = server.db.get(key);
+    println!("[get.rs::fn command] DB Response: {:?}", response);
 
     // Get the value from the database
     let response = match server.db.get(key) {
         Some(value) => value.clone(),
         None => Type::BulkString("".into()),
     };
+
+    println!("[get.rs::fn command] Payload Response: {:?}", response);
 
     // Respond with the value
     stream.write_all(&response.as_bytes()).await?;
