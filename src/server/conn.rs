@@ -1,7 +1,10 @@
 // Library
+use crate::{commands, parser, server::Server};
+use std::sync::Arc;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
+    sync::Mutex,
 };
 
 // ----------
@@ -81,4 +84,28 @@ impl Connection {
     //     self.buffer = [0; BUFFER_SIZE]; // Clear the buffer
     //     str
     // }
+
+    /// Handles the incoming connection stream by reading the incoming data,
+    /// parsing it, and writing a response back to the stream.
+    pub async fn handle(
+        &mut self,
+        server: &Arc<Mutex<Server>>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        loop {
+            // Read the incoming data from the stream
+            let bytes_read = self.read().await?;
+            if bytes_read == 0 {
+                break;
+            }
+
+            // Parse the incoming data
+            let request = self.read_buffer(bytes_read);
+            let cmds = parser::parse(request).expect("Failed to parse request");
+            println!("Incoming Request: {:?}", cmds);
+
+            // Handle the commands
+            commands::handle(cmds, self, server).await?;
+        }
+        Ok(())
+    }
 }

@@ -1,9 +1,5 @@
 // Library
-use crate::{
-    commands, database, helpers,
-    parser::{self, resp::Type},
-};
-use conn::Connection;
+use crate::{database, helpers, parser::resp::Type};
 use std::sync::Arc;
 use tokio::{
     net::TcpListener,
@@ -106,7 +102,8 @@ impl Server {
 
         // Handle the connection
         tokio::spawn(async move {
-            handle_connection(&mut connection, &server)
+            connection
+                .handle(&server)
                 .await
                 .expect("Failed to handle connection");
         });
@@ -129,7 +126,8 @@ impl Server {
 
             // ... and spawn a new thread for each incoming connection
             tokio::spawn(async move {
-                handle_connection(&mut connection, &server)
+                connection
+                    .handle(&server)
                     .await
                     .expect("Failed to handle connection");
             });
@@ -144,28 +142,4 @@ impl Server {
         self.role = Role::Replica(addr);
         Ok(())
     }
-}
-
-/// Handles the incoming connection stream by reading the incoming data,
-/// parsing it, and writing a response back to the stream.
-pub async fn handle_connection(
-    connection: &mut Connection,
-    server: &Arc<Mutex<Server>>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    loop {
-        // Read the incoming data from the stream
-        let bytes_read = connection.read().await?;
-        if bytes_read == 0 {
-            break;
-        }
-
-        // Parse the incoming data
-        let request = connection.read_buffer(bytes_read);
-        let cmds = parser::parse(request).expect("Failed to parse request");
-        println!("Incoming Request: {:?}", cmds);
-
-        // Handle the commands
-        commands::handle(cmds, connection, server).await?;
-    }
-    Ok(())
 }
