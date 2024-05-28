@@ -380,13 +380,15 @@ impl Type {
                 .chain(vec![b'\r', b'\n'])
                 .collect(),
             Type::BulkString(data) => {
-                let mut bytes = vec![b'$']
-                    .into_iter()
-                    .chain(data.len().to_string().as_bytes().to_vec())
-                    .chain(vec![b'\r', b'\n'])
-                    .collect::<Vec<u8>>();
-                bytes.extend(data.as_bytes());
-                bytes.extend(vec![b'\r', b'\n']);
+                let mut bytes = vec![b'$'];
+                if data.is_empty() {
+                    bytes.extend(vec![b'-', b'1', b'\r', b'\n']);
+                } else {
+                    bytes.extend(data.len().to_string().as_bytes().to_vec());
+                    bytes.extend(vec![b'\r', b'\n']);
+                    bytes.extend(data.as_bytes().to_vec());
+                    bytes.extend(vec![b'\r', b'\n']);
+                }
                 bytes
             }
             Type::Array(data) => {
