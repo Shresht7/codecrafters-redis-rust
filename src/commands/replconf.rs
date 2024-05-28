@@ -20,9 +20,19 @@ pub async fn command(
         return Ok(());
     }
 
+    // Extract Sub-Command
+    let subcommand = match args.get(0) {
+        Some(Type::BulkString(subcommand)) => subcommand,
+        _ => {
+            let response =
+                Type::SimpleError("ERR wrong number of arguments for 'replconf' command".into());
+            connection.write_all(&response.as_bytes()).await?;
+            return Ok(());
+        }
+    };
+
     // Handle the REPLCONF GETACK command
-    println!("REPLCONF subcommand: {:?}", args);
-    match args[0].to_string().to_uppercase().as_str() {
+    match subcommand.to_uppercase().as_str() {
         "GETACK" => get_ack(connection).await?,
         _ => {
             let response =
