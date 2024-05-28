@@ -89,7 +89,7 @@ pub fn new(host: &'static str, port: u16) -> Server {
 }
 
 /// The size of the buffer to read incoming data
-const BUFFER_SIZE: usize = 1024;
+const BUFFER_SIZE: usize = 4096;
 
 impl Server {
     /// Runs the TCP server on the given address, listening for incoming connections.
