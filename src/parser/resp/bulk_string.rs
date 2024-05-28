@@ -69,7 +69,7 @@ pub fn parse(input: &[u8]) -> Result<(Type, &[u8]), Box<dyn std::error::Error>> 
     if bulk_string.starts_with(b"REDIS0011") {
         return Ok((
             Type::RDBFile(bulk_string.to_vec()),
-            &input[data_end_pos + CRLF.len()..], // Remaining bytes
+            &input[data_end_pos..], // Remaining bytes
         ));
     }
 
