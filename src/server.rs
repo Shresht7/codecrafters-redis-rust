@@ -80,27 +80,29 @@ impl Server {
         // Note: 6379 is the default port that Redis uses (You may have to stop any running Redis instances)
         let listener = TcpListener::bind(&self.addr).await?;
 
+        // Clone the server instance and wrap it in an Arc<Mutex<Server>>
+        // This will allows us to share the server instance across threads.
+        let server = Arc::new(Mutex::new(self.clone()));
+
         // If this server is a replica, connect to the master server
         if let Role::Replica(addr) = &self.role {
             self.send_handshake(addr).await?;
         }
 
-        let server = Arc::new(Mutex::new(self.clone()));
-
         // Listen for incoming connections and handle them
-        loop {
-            // Accept an incoming connection ...
-            let (mut stream, _) = listener.accept().await?;
-
-            // Clone the server instance and wrap it in an Arc<Mutex<Server>>
-            // This allows us to share the server instance across threads.
+        while let Ok((mut stream, _)) = listener.accept().await {
+            // Clone the Arc<Mutex<Server>> instance for each incoming connection ...
             let server = Arc::clone(&server);
 
             // ... and spawn a new thread for each incoming connection
             tokio::spawn(async move {
-                handle_connection(&server, &mut stream).await.unwrap();
+                handle_connection(&server, &mut stream)
+                    .await
+                    .expect("Failed to handle connection".into())
             });
         }
+
+        Ok(())
     }
 
     /// Sets the server to act as a replica of the given address
