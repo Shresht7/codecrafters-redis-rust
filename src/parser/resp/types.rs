@@ -471,7 +471,6 @@ impl Type {
                     .chain(vec![b'\r', b'\n'])
                     .collect::<Vec<u8>>();
                 bytes.extend(data);
-                bytes.extend(vec![b'\r', b'\n']);
                 bytes
             }
         }
