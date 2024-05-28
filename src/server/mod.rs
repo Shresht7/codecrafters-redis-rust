@@ -14,6 +14,9 @@ use crate::{
         resp::{array, bulk_string, Type},
     },
 };
+// Modules
+pub mod role;
+use role::Role;
 
 // ----------
 // TCP SERVER
@@ -48,32 +51,6 @@ pub struct Server {
     /// The offset is set to 0 when the server starts.
     /// The offset is incremented every time new data is read from the master server.
     pub master_repl_offset: u64,
-}
-
-/// Enum to represent the role of the server.
-/// The server can be either a master or a replica.
-#[derive(Debug, Clone)]
-pub enum Role {
-    Master,
-    Replica(String),
-}
-
-impl Role {
-    /// Returns true if the server is a master
-    pub fn is_master(&self) -> bool {
-        match self {
-            Role::Master => true,
-            _ => false,
-        }
-    }
-
-    // /// Returns true if the server is a replica
-    // pub fn is_replica(&self) -> bool {
-    //     match self {
-    //         Role::Replica(_) => true,
-    //         _ => false,
-    //     }
-    // }
 }
 
 /// Creates a new Server instance with the given host and port

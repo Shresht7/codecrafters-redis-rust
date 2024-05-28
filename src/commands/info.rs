@@ -24,8 +24,8 @@ pub async fn command(
 
     // Get the role of the server
     let role = match server.role {
-        server::Role::Master => "role:master",
-        server::Role::Replica(_) => "role:slave",
+        server::role::Role::Master => "role:master",
+        server::role::Role::Replica(_) => "role:slave",
     };
 
     // Get Master Replication ID and Offset
