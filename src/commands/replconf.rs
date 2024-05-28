@@ -58,7 +58,7 @@ pub async fn get_ack(connection: &mut Connection) -> Result<(), Box<dyn std::err
     let response = Type::Array(vec![
         Type::BulkString("REPLCONF".into()),
         Type::BulkString("ACK".into()),
-        Type::Integer(0),
+        Type::BulkString(0.to_string()),
     ]);
     connection.write_all(&response.as_bytes()).await?;
     return Ok(());
