@@ -194,12 +194,15 @@ impl Server {
 
         // Get the length of the RDB file
         let mut buffer = [0; BUFFER_SIZE];
-        let bytes_read = stream.read(&mut buffer).await?;
-        println!("Received: {:?}", &buffer[..bytes_read]);
-
-        let mut buffer = [0; BUFFER_SIZE];
-        let more = stream.read(&mut [0; BUFFER_SIZE]).await?; // Await the response
-        println!("Received: {:?}", &buffer[..more]);
+        loop {
+            let bytes_read = stream.read(&mut buffer).await?;
+            if bytes_read == 0 {
+                break;
+            }
+        }
+        // Convert the buffer to a string
+        let response = String::from_utf8_lossy(&buffer);
+        println!("Received RDB File: {:?}", response);
 
         Ok(stream)
     }
