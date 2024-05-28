@@ -113,7 +113,7 @@ impl Server {
 
         // Send a PING
         let response = Array(vec![BulkString("PING".into())]);
-        stream.write_all(response.to_string().as_bytes()).await?;
+        stream.write_all(&response.as_bytes()).await?;
         stream.flush().await?;
         stream.read(&mut [0; BUFFER_SIZE]).await?; // Await the response
 
@@ -123,7 +123,7 @@ impl Server {
             BulkString("listening-port".into()),
             BulkString(self.port.to_string()),
         ]);
-        stream.write_all(response.to_string().as_bytes()).await?;
+        stream.write_all(&response.as_bytes()).await?;
         stream.flush().await?;
         stream.read(&mut [0; BUFFER_SIZE]).await?; // Await the response
 
@@ -133,7 +133,7 @@ impl Server {
             BulkString("capa".into()),
             BulkString("psync2".into()),
         ]);
-        stream.write_all(response.to_string().as_bytes()).await?;
+        stream.write_all(&response.as_bytes()).await?;
         stream.flush().await?;
         stream.read(&mut [0; BUFFER_SIZE]).await?; // Await the response
 
@@ -143,7 +143,7 @@ impl Server {
             BulkString("?".into()),
             BulkString("-1".into()),
         ]);
-        stream.write_all(response.to_string().as_bytes()).await?;
+        stream.write_all(&response.as_bytes()).await?;
         stream.flush().await?;
         stream.read(&mut [0; BUFFER_SIZE]).await?; // Await the response
 
