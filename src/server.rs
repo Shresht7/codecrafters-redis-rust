@@ -191,7 +191,15 @@ impl Server {
         ]);
         stream.write_all(&response.as_bytes()).await?;
         stream.flush().await?;
-        stream.read(&mut [0; BUFFER_SIZE]).await?; // Await the response
+
+        // Get the length of the RDB file
+        let mut buffer = [0; BUFFER_SIZE];
+        let bytes_read = stream.read(&mut buffer).await?;
+        println!(
+            "Received RDB file: {:?} of length {}",
+            &buffer[..bytes_read],
+            bytes_read
+        );
 
         Ok(stream)
     }
@@ -208,7 +216,7 @@ async fn handle_connection(
     loop {
         // Read the incoming data from the stream
         let mut buffer = [0; BUFFER_SIZE];
-        let bytes_read = stream.read(&mut buffer).await?;
+        let bytes_read = stream.read(&mut buffer).await.expect("Failed to read data");
 
         // If no bytes were read, the client has closed the connection
         if bytes_read == 0 {
@@ -216,12 +224,14 @@ async fn handle_connection(
         }
 
         // Print the incoming data
-        let cmd = parser::parse(&buffer[..bytes_read])?;
+        let cmd = parser::parse(&buffer[..bytes_read]).expect("Failed to parse data");
 
         println!("Incoming Request: {:?}", cmd);
 
         // Handle the parsed data and get a response
-        commands::handle(cmd, stream, server, &sender).await?;
+        commands::handle(cmd, stream, server, &sender)
+            .await
+            .expect("Failed to handle command");
     }
 
     Ok(())

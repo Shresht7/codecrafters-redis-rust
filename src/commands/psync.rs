@@ -68,6 +68,11 @@ pub async fn command(
     while let Ok(x) = receiver.recv().await {
         stream.write_all(&x.as_bytes()).await?;
         stream.flush().await?;
+        println!(
+            "Sent message: {:?} of length {}",
+            &x.as_bytes(),
+            &x.as_bytes().len()
+        );
     }
 
     Ok(())

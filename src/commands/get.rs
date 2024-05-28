@@ -1,6 +1,6 @@
 // Library
 use crate::{parser::resp::Type, server::Server};
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 use tokio::{io::AsyncWriteExt, net::TcpStream, sync::Mutex};
 
 /// Handles the GET command.
@@ -35,6 +35,7 @@ pub async fn command(
 
     // Get database instance from the Server
     let server = server.lock().await;
+    let server = server.deref();
 
     let response = server.db.get(key);
     println!("[get.rs::fn command] DB Response: {:?}", response);

@@ -1,7 +1,7 @@
 // Library
 use super::resp::Type;
 use crate::{parser::resp, server::Server};
-use std::{ops::DerefMut, sync::Arc};
+use std::sync::Arc;
 use tokio::{io::AsyncWriteExt, net::TcpStream, sync::Mutex};
 
 /// Handles the SET command.
@@ -17,7 +17,6 @@ pub async fn command(
     // Get database instance from the Server
     println!("[set.rs::fn command] Acquiring lock");
     let mut server = server.lock().await;
-    let server = server.deref_mut();
 
     // Get the role of the server
     let role = server.role.clone();
