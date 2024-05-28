@@ -27,11 +27,23 @@ pub fn generate_id(len: u16) -> String {
 /// assert_eq!(host, "127.0.0.1"); // true
 /// assert_eq!(port, 6379); // true
 /// ```
-pub fn split_host_and_port(addr: &str) -> Result<(&str, u16), Box<dyn std::error::Error>> {
-    let parts: Vec<&str> = addr.split(':').collect();
+pub fn split_host_and_port(
+    addr: &'static str,
+    sep: &str,
+) -> Result<(&'static str, u16), Box<dyn std::error::Error>> {
+    // Check if the address contains the separator
+    if !addr.contains(sep) {
+        return Err("Invalid address".into());
+    }
+    // Split the address into host and port
+    let parts: Vec<&str> = addr.split(sep).collect();
+
+    // Get the host and port parts
     let host = parts.get(0).ok_or("Invalid address")?;
     let port = parts.get(1).ok_or("Invalid address")?;
-    let port = port.parse::<u16>()?;
+    let port = port.parse::<u16>()?; // Convert port to u16
+
+    // Return the host and port
     Ok((host, port))
 }
 
@@ -57,7 +69,15 @@ mod tests {
     #[test]
     fn should_split_host_and_port() {
         let addr = "127.0.0.1:6379";
-        let (host, port) = split_host_and_port(addr).unwrap();
+        let (host, port) = split_host_and_port(addr, ":").unwrap();
+        assert_eq!(host, "127.0.0.1");
+        assert_eq!(port, 6379);
+    }
+
+    #[test]
+    fn should_support_different_separators() {
+        let addr = "127.0.0.1 6379";
+        let (host, port) = split_host_and_port(addr, " ").unwrap();
         assert_eq!(host, "127.0.0.1");
         assert_eq!(port, 6379);
     }
@@ -65,14 +85,14 @@ mod tests {
     #[test]
     fn should_fail_to_split_host_and_port() {
         let addr = "127.0.0.1";
-        let result = split_host_and_port(addr);
+        let result = split_host_and_port(addr, ":");
         assert!(result.is_err());
     }
 
     #[test]
     fn should_fail_to_split_host_and_port_with_invalid_port() {
         let addr = "127.0.0.1:invalid";
-        let result = split_host_and_port(addr);
+        let result = split_host_and_port(addr, ":");
         assert!(result.is_err());
     }
 }
