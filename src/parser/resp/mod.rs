@@ -16,3 +16,17 @@ pub(crate) mod verbatim_string;
 // Exports
 pub(crate) mod types;
 pub use types::Type;
+
+// ----------------
+// HELPER FUNCTIONS
+// ----------------
+
+/// Creates a new RESP array with the given elements
+pub fn array(elements: Vec<Type>) -> Type {
+    Type::Array(elements)
+}
+
+/// Creates a new RESP bulk string with the given value
+pub fn bulk_string(value: &str) -> Type {
+    Type::BulkString(value.into())
+}

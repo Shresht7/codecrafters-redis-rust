@@ -1,16 +1,17 @@
 // Library
 use std::sync::Arc;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::{broadcast, Mutex};
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::{TcpListener, TcpStream},
+    sync::{broadcast, Mutex},
+};
 
-use crate::parser::resp::Type;
 // Modules
 use crate::{
     commands, database, helpers,
     parser::{
         self,
-        resp::Type::{Array, BulkString},
+        resp::{array, bulk_string, Type},
     },
 };
 
@@ -158,36 +159,36 @@ impl Server {
         let mut stream = TcpStream::connect(addr).await?;
 
         // Send a PING
-        let response = Array(vec![BulkString("PING".into())]);
+        let response = array(vec![bulk_string("PING")]);
         stream.write_all(&response.as_bytes()).await?;
         stream.flush().await?;
         stream.read(&mut [0; BUFFER_SIZE]).await?; // Read the PONG response (not used)
 
         // Send REPLCONF listening-port <PORT>
-        let response = Array(vec![
-            BulkString("REPLCONF".into()),
-            BulkString("listening-port".into()),
-            BulkString(self.port.to_string()),
+        let response = array(vec![
+            bulk_string("REPLCONF"),
+            bulk_string("listening-port"),
+            bulk_string(self.port.to_string().as_str()),
         ]);
         stream.write_all(&response.as_bytes()).await?;
         stream.flush().await?;
         stream.read(&mut [0; BUFFER_SIZE]).await?; // Read the OK response (not used)
 
         // Send REPLCONF capa psync2
-        let response = Array(vec![
-            BulkString("REPLCONF".into()),
-            BulkString("capa".into()),
-            BulkString("psync2".into()),
+        let response = array(vec![
+            bulk_string("REPLCONF"),
+            bulk_string("capa"),
+            bulk_string("psync2"),
         ]);
         stream.write_all(&response.as_bytes()).await?;
         stream.flush().await?;
         stream.read(&mut [0; BUFFER_SIZE]).await?; // Read the OK response (not used)
 
         // Send PSYNC <REPLID> <OFFSET>
-        let response = Array(vec![
-            BulkString("PSYNC".into()),
-            BulkString("?".into()),
-            BulkString("-1".into()),
+        let response = array(vec![
+            bulk_string("PSYNC"),
+            bulk_string("?"),
+            bulk_string("-1"),
         ]);
         stream.write_all(&response.as_bytes()).await?;
         stream.flush().await?;
