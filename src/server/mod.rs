@@ -7,7 +7,7 @@ use tokio::{
 };
 
 // Modules
-pub mod conn;
+pub mod connection;
 pub mod replication;
 use replication::Role;
 
@@ -119,7 +119,7 @@ impl Server {
         let listener = TcpListener::bind(&self.addr).await?;
         Ok(while let Ok((stream, _)) = listener.accept().await {
             // Create a new Connection instance for the incoming connection
-            let mut connection = conn::new(stream);
+            let mut connection = connection::new(stream);
 
             // Clone the Arc<Mutex<Server>> instance
             let server = Arc::clone(&server);

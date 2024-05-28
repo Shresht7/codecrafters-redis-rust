@@ -2,7 +2,7 @@
 use crate::{
     database,
     parser::resp,
-    server::{conn::Connection, Server},
+    server::{connection::Connection, Server},
 };
 use std::sync::Arc;
 use tokio::sync::Mutex;

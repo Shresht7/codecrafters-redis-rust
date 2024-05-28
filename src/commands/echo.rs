@@ -1,5 +1,5 @@
 // Library
-use crate::{parser::resp::Type, server::conn::Connection};
+use crate::{parser::resp::Type, server::connection::Connection};
 
 /// Handles the ECHO command.
 /// The ECHO command simply returns the argument provided to it.

@@ -1,5 +1,5 @@
 // Library
-use crate::{parser::resp, server::conn::Connection};
+use crate::{parser::resp, server::connection::Connection};
 
 /// Handles the PING command.
 /// The PING command simply returns a PONG response.

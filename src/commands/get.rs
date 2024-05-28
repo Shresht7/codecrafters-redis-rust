@@ -1,7 +1,7 @@
 // Library
 use crate::{
     parser::resp::Type,
-    server::{conn::Connection, Server},
+    server::{connection::Connection, Server},
 };
 use std::{ops::Deref, sync::Arc};
 use tokio::sync::Mutex;

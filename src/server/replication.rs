@@ -1,7 +1,7 @@
 // Library
 use crate::{
     parser::resp::{array, bulk_string},
-    server::conn,
+    server::connection,
 };
 use tokio::net::TcpStream;
 
@@ -61,7 +61,7 @@ impl Role {
     pub async fn send_handshake(
         &self,
         port: u16,
-    ) -> Result<conn::Connection, Box<dyn std::error::Error>> {
+    ) -> Result<connection::Connection, Box<dyn std::error::Error>> {
         // Get the address of the replication master.
         // Return an error if the server is a master. Master servers cannot send handshakes.
         let addr = match self {
@@ -71,7 +71,7 @@ impl Role {
 
         // Connect to the replication master
         let stream = TcpStream::connect(addr).await?;
-        let mut connection = conn::new(stream);
+        let mut connection = connection::new(stream);
 
         // Send a PING
         send_ping(&mut connection).await?;
@@ -95,7 +95,9 @@ impl Role {
 // ----
 
 /// Sends a PING command to the replication master server.
-async fn send_ping(connection: &mut conn::Connection) -> Result<(), Box<dyn std::error::Error>> {
+async fn send_ping(
+    connection: &mut connection::Connection,
+) -> Result<(), Box<dyn std::error::Error>> {
     // Send a PING
     let response = array(vec![bulk_string("PING")]);
     connection.write_all(&response.as_bytes()).await?;
@@ -110,7 +112,7 @@ async fn send_ping(connection: &mut conn::Connection) -> Result<(), Box<dyn std:
 /// The command is used to inform the master server of the port that the replica server is listening on.
 /// The master server uses this information to send replication data to the replica server.
 async fn send_replconf_listening_port(
-    connection: &mut conn::Connection,
+    connection: &mut connection::Connection,
     port: u16,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Send REPLCONF listening-port <PORT>
@@ -129,7 +131,7 @@ async fn send_replconf_listening_port(
 
 // REPLCONF capa psync2 is sent as part of the handshake to inform the master server that the replica server supports the PSYNC2 command.
 async fn send_replconf_capa_psync2(
-    connection: &mut conn::Connection,
+    connection: &mut connection::Connection,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Send REPLCONF capa psync2
     let response = array(vec![
@@ -147,7 +149,7 @@ async fn send_replconf_capa_psync2(
 
 // PSYNC is used to synchronize the replica server with the master server.
 async fn psync(
-    connection: &mut conn::Connection,
+    connection: &mut connection::Connection,
     replid: &str,
     offset: i64,
 ) -> Result<(), Box<dyn std::error::Error>> {
