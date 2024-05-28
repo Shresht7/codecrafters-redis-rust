@@ -16,8 +16,8 @@ use crate::{
 };
 // Modules
 pub mod conn;
-pub mod role;
-use role::Role;
+pub mod replication;
+use replication::Role;
 
 // ----------
 // TCP SERVER

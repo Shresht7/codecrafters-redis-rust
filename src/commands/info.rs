@@ -1,7 +1,7 @@
 // Library
 use crate::{
     parser::resp::Type,
-    server::{self, conn::Connection},
+    server::{conn::Connection, replication::Role, Server},
 };
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -11,7 +11,7 @@ use tokio::sync::Mutex;
 pub async fn command(
     args: &[Type],
     connection: &mut Connection,
-    server: &Arc<Mutex<server::Server>>,
+    server: &Arc<Mutex<Server>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Check the number of arguments
     if args.len() < 1 {
@@ -27,8 +27,8 @@ pub async fn command(
 
     // Get the role of the server
     let role = match server.role {
-        server::role::Role::Master => "role:master",
-        server::role::Role::Replica(_) => "role:slave",
+        Role::Master => "role:master",
+        Role::Replica(_) => "role:slave",
     };
 
     // Get Master Replication ID and Offset
