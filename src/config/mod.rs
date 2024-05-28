@@ -1,3 +1,23 @@
+/// Configuration module for the application.
+/// The configuration can be parsed from the command-line arguments.
+/// The configuration includes the port the server will listen on and the replica-of address.
+/// If the replica-of address is set, the server will act as a replica of the given address.
+///
+/// To parse the configuration from the command-line arguments, use the `from_command_line` function.
+/// The function returns a `Result` with the `Config` struct or an error message.
+/// ```rs
+/// use config::{Config, from_command_line};
+///
+/// let args: Vec<String> = std::env::args().collect(); // Get the command-line arguments
+/// let config = from_command_line(args).expect("Failed to parse command-line arguments"); // Parse the configuration
+///
+/// // Print the configuration values
+/// println!("Port: {}", config.port);
+/// if let Some(replicaof) = &config.replicaof {
+///    println!("Replica-of: {}", replicaof);
+/// }
+/// ```
+
 // -------------
 // CONFIGURATION
 // -------------
