@@ -39,6 +39,10 @@ pub async fn command(
             let response = Type::SimpleString("OK".into());
             connection.write_all(&response.as_bytes()).await?;
         }
+        "CAPA" => {
+            let response = Type::SimpleString("OK".into());
+            connection.write_all(&response.as_bytes()).await?;
+        }
         "GETACK" => get_ack(connection).await?,
         x => {
             let response = Type::SimpleError(format!("ERR Unknown REPLCONF subcommand '{}'", x));
