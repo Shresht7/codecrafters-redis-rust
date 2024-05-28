@@ -5,7 +5,7 @@ use crate::{
     server::{conn::Connection, Server},
 };
 use std::sync::Arc;
-use tokio::sync::{broadcast::Sender, Mutex};
+use tokio::sync::Mutex;
 
 /// Handles the PSYNC command
 /// PSYNC is used to synchronize a replica with the master server.
@@ -16,7 +16,6 @@ pub async fn command(
     args: &[resp::Type],
     connection: &mut Connection,
     server: &Arc<Mutex<Server>>,
-    sender: &Arc<Sender<resp::Type>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Check the number of arguments
     if args.len() < 2 {
@@ -60,12 +59,12 @@ pub async fn command(
         println!("RDB File: {:?}", rdb_bytes);
         let response = resp::Type::RDBFile(rdb_bytes);
         connection.write_all(&response.as_bytes()).await?;
-    }
 
-    // Create a new receiver for the broadcast channel
-    let mut receiver = sender.subscribe();
-    while let Ok(x) = receiver.recv().await {
-        connection.write_all(&x.as_bytes()).await?;
+        // Create a new receiver for the broadcast channel
+        let mut receiver = server.sender.subscribe();
+        while let Ok(x) = receiver.recv().await {
+            connection.write_all(&x.as_bytes()).await?;
+        }
     }
 
     Ok(())

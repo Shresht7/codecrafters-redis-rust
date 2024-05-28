@@ -49,6 +49,10 @@ pub struct Server {
     /// The offset is set to 0 when the server starts.
     /// The offset is incremented every time new data is read from the master server.
     pub master_repl_offset: u64,
+
+    /// The broadcast sender is used to send the server instance to each thread.
+    /// This allows each thread to access the server instance and share data across threads.
+    pub sender: broadcast::Sender<Type>,
 }
 
 /// Creates a new Server instance with the given host and port
@@ -61,6 +65,7 @@ pub fn new(host: &'static str, port: u16) -> Server {
         db: database::new(),
         master_replid: helpers::generate_id(40),
         master_repl_offset: 0,
+        sender: broadcast::channel(16).0,
     }
 }
 
@@ -68,17 +73,9 @@ impl Server {
     /// Runs the TCP server on the given address, listening for incoming connections.
     /// The server will handle each incoming connection in a separate thread.
     pub async fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
-        // Create a TCPListener and bind it to the given address and port
-        // Note: 6379 is the default port that Redis uses (You may have to stop any running Redis instances)
-        let listener = TcpListener::bind(&self.addr).await?;
-
         // Clone the server instance and wrap it in an Arc<Mutex<Server>>
         // This will allows us to share the server instance across threads.
         let server = Arc::new(Mutex::new(self.clone()));
-
-        // Create a broadcast channel to send the server instance to each thread
-        let sender: broadcast::Sender<Type> = broadcast::channel(16).0;
-        let sender = Arc::new(sender);
 
         // If this server is a replica, connect to the master server
         if let Role::Replica(addr) = &self.role {
@@ -87,16 +84,18 @@ impl Server {
 
             // Clone the Arc<Mutex<Server>> instance
             let server = Arc::clone(&server);
-            // Clone the broadcast sender instance
-            let sender = Arc::clone(&sender);
 
             // Spawn a new thread to handle the replication connection
             tokio::spawn(async move {
-                handle_connection(&mut connection, &server, &sender)
+                handle_connection(&mut connection, &server)
                     .await
                     .expect("Failed to handle connection");
             });
         }
+
+        // Create a TCPListener and bind it to the given address and port
+        // Note: 6379 is the default port that Redis uses (You may have to stop any running Redis instances)
+        let listener = TcpListener::bind(&self.addr).await?;
 
         // Listen for incoming connections and handle them
         while let Ok((stream, _)) = listener.accept().await {
@@ -104,12 +103,10 @@ impl Server {
             let mut connection = conn::new(stream);
             // Clone the Arc<Mutex<Server>> instance
             let server = Arc::clone(&server);
-            // Clone the broadcast sender instance
-            let sender = Arc::clone(&sender);
 
             // ... and spawn a new thread for each incoming connection
             tokio::spawn(async move {
-                handle_connection(&mut connection, &server, &sender)
+                handle_connection(&mut connection, &server)
                     .await
                     .expect("Failed to handle connection");
             });
@@ -133,7 +130,6 @@ impl Server {
 pub async fn handle_connection(
     connection: &mut Connection,
     server: &Arc<Mutex<Server>>,
-    sender: &Arc<broadcast::Sender<Type>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     loop {
         // Read the incoming data from the stream
@@ -148,7 +144,7 @@ pub async fn handle_connection(
         println!("Incoming Request: {:?}", cmds);
 
         // Handle the commands
-        commands::handle(cmds, connection, server, sender).await?;
+        commands::handle(cmds, connection, server).await?;
     }
     Ok(())
 }

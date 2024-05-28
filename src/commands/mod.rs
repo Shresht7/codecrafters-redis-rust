@@ -4,7 +4,7 @@ use crate::{
     server::{conn::Connection, Server},
 };
 use std::sync::Arc;
-use tokio::sync::{broadcast::Sender, Mutex};
+use tokio::sync::Mutex;
 
 // Commands
 mod echo;
@@ -20,7 +20,6 @@ pub async fn handle(
     cmds: Vec<resp::Type>,
     conn: &mut Connection,
     server: &Arc<Mutex<Server>>,
-    sender: &Arc<Sender<resp::Type>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     for cmd in &cmds {
         if let resp::Type::Array(array) = cmd {
@@ -43,13 +42,8 @@ pub async fn handle(
                 "ECHO" => echo::command(&array[1..], conn).await?,
 
                 "SET" => {
-                    println!("Sender count: {:?}", sender.receiver_count());
-                    if sender.receiver_count() > 0 {
-                        sender
-                            .send(cmds[0].clone())
-                            .expect("Failed to send message");
-                    }
-                    set::command(&array[1..], conn, server).await?
+                    set::command(&array[1..], conn, server).await?;
+                    broadcast(server, cmds[0].clone()).await?;
                 }
 
                 "GET" => get::command(&array[1..], conn, server).await?,
@@ -58,7 +52,7 @@ pub async fn handle(
 
                 "REPLCONF" => replconf::command(&array[1..], conn, server).await?,
 
-                "PSYNC" => psync::command(&array[1..], conn, server, sender).await?,
+                "PSYNC" => psync::command(&array[1..], conn, server).await?,
 
                 _ => {
                     let response = resp::Type::SimpleError("ERR unknown command\r\n".into());
@@ -67,5 +61,15 @@ pub async fn handle(
             }
         }
     }
+    Ok(())
+}
+
+/// Broadcast the value on the server's broadcast sender channel
+async fn broadcast(
+    server: &Arc<Mutex<Server>>,
+    value: resp::Type,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let server = server.lock().await;
+    server.sender.send(value)?;
     Ok(())
 }
