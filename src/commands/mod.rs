@@ -74,7 +74,15 @@ async fn broadcast(
     server: &Arc<Mutex<Server>>,
     value: resp::Type,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // Get the server instance from the Arc<Mutex<Server>>
     let server = server.lock().await;
+
+    // If there are no receivers, return early
+    if server.sender.receiver_count() == 0 {
+        return Ok(());
+    }
+
+    // Broadcast the value to all receivers
     server.sender.send(value)?;
     Ok(())
 }
