@@ -9,6 +9,11 @@ pub fn base64_to_bytes(base64: &str) -> Vec<u8> {
     BASE64_STANDARD.decode(base64).unwrap()
 }
 
+/// Convert a byte vector to a base64 encoded string
+pub fn bytes_to_base64(bytes: &[u8]) -> String {
+    BASE64_STANDARD.encode(bytes)
+}
+
 // -----
 // TESTS
 // -----
@@ -22,5 +27,12 @@ mod tests {
         let base64 = "SGVsbG8gV29ybGQ=";
         let bytes = base64_to_bytes(base64);
         assert_eq!(bytes, b"Hello World");
+    }
+
+    #[test]
+    fn test_bytes_to_base64() {
+        let bytes = b"Hello World";
+        let base64 = bytes_to_base64(bytes);
+        assert_eq!(base64, "SGVsbG8gV29ybGQ=");
     }
 }
