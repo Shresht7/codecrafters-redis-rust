@@ -1,26 +1,31 @@
 // Library
 use crate::{parser::resp::Type, server};
-use std::sync::{Arc, Mutex};
+use tokio::{io::AsyncWriteExt, net::TcpStream, sync::MutexGuard};
 
 /// Handles the INFO command.
 /// The INFO command returns information and statistics about the server.
-pub fn command(args: &[Type], server: &Arc<Mutex<server::Server>>) -> Type {
+pub async fn command<'a>(
+    args: &[Type],
+    stream: &mut TcpStream,
+    server: &mut MutexGuard<'a, server::Server>,
+) -> Result<(), Box<dyn std::error::Error>> {
     // Check the number of arguments
     if args.len() < 1 {
-        return Type::SimpleError(
-            "ERR at least one argument is required for 'INFO' command".into(),
-        );
+        let response =
+            Type::SimpleError("ERR at least one argument is required for 'INFO' command".into());
+        stream.write_all(&response.as_bytes()).await?;
+        return Ok(());
     }
 
     // Get the role of the server
-    let role = match server.lock().unwrap().role {
+    let role = match server.role {
         server::Role::Master => "role:master",
         server::Role::Replica(_) => "role:slave",
     };
 
     // Get Master Replication ID and Offset
-    let master_replid = server.lock().unwrap().master_replid.clone();
-    let master_repl_offset = server.lock().unwrap().master_repl_offset;
+    let master_replid = server.master_replid.clone();
+    let master_repl_offset = server.master_repl_offset;
 
     // Respond with the server information
     let response: String = vec![
@@ -30,5 +35,8 @@ pub fn command(args: &[Type], server: &Arc<Mutex<server::Server>>) -> Type {
         format!("master_repl_offset:{}", master_repl_offset),
     ]
     .join("\r\n");
-    Type::BulkString(response)
+
+    let response = Type::BulkString(response);
+    stream.write_all(&response.as_bytes()).await?;
+    Ok(())
 }

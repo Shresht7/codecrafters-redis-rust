@@ -1,7 +1,8 @@
 // Library
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
+use tokio::sync::{Mutex, MutexGuard};
 
 // Modules
 use crate::{
@@ -74,7 +75,7 @@ const BUFFER_SIZE: usize = 1024;
 impl Server {
     /// Runs the TCP server on the given address, listening for incoming connections.
     /// The server will handle each incoming connection in a separate thread.
-    pub async fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
         // Create a TCPListener and bind it to the given address and port
         // Note: 6379 is the default port that Redis uses (You may have to stop any running Redis instances)
         let listener = TcpListener::bind(&self.addr).await?;
@@ -84,6 +85,8 @@ impl Server {
             self.send_handshake(addr).await?;
         }
 
+        let server = Arc::new(Mutex::new(self.clone()));
+
         // Listen for incoming connections and handle them
         loop {
             // Accept an incoming connection ...
@@ -91,11 +94,12 @@ impl Server {
 
             // Clone the server instance and wrap it in an Arc<Mutex<Server>>
             // This allows us to share the server instance across threads.
-            let server = Arc::new(Mutex::new(self.clone()));
+            let server = Arc::clone(&server);
 
             // ... and spawn a new thread for each incoming connection
             tokio::spawn(async move {
-                handle_connection(&server, &mut stream).await.unwrap();
+                let mut server = server.lock().await;
+                handle_connection(&mut server, &mut stream).await.unwrap();
             });
         }
     }
@@ -153,8 +157,8 @@ impl Server {
 
 /// Handles the incoming connection stream by reading the incoming data,
 /// parsing it, and writing a response back to the stream.
-async fn handle_connection(
-    server: &Arc<Mutex<Server>>,
+async fn handle_connection<'a>(
+    server: &mut MutexGuard<'a, Server>,
     stream: &mut tokio::net::TcpStream,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Loop as long as requests are being made
@@ -174,15 +178,7 @@ async fn handle_connection(
         println!("Incoming Request: {:?}", cmd);
 
         // Handle the parsed data and get a response
-        let response = commands::handle(cmd, server);
-
-        println!("Outgoing Response: {:?}", response);
-
-        // Write a response back to the stream
-        stream.write_all(&response.as_bytes()).await?;
-
-        // Flush the stream to ensure the response is sent
-        stream.flush().await?;
+        commands::handle(cmd, stream, server).await?;
     }
 
     Ok(())

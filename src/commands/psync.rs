@@ -1,16 +1,23 @@
 // Library
 use crate::{database, parser::resp, server::Server};
-use std::sync::{Arc, Mutex};
+use tokio::{io::AsyncWriteExt, net::TcpStream, sync::MutexGuard};
 
 /// Handles the PSYNC command
 /// PSYNC is used to synchronize a replica with the master server.
 /// The command takes two arguments: the replication ID and the replication offset.
 /// The replica will use the replication ID to identify the master server.
 /// The replica will use the replication offset to request new data from the master server.
-pub fn command(args: &[resp::Type], server: &Arc<Mutex<Server>>) -> resp::Type {
+pub async fn command<'a>(
+    args: &[resp::Type],
+    stream: &mut TcpStream,
+    server: &mut MutexGuard<'a, Server>,
+) -> Result<(), Box<dyn std::error::Error>> {
     // Check the number of arguments
     if args.len() < 2 {
-        return resp::Type::SimpleError("ERR wrong number of arguments for 'PSYNC' command".into());
+        let response =
+            resp::Type::SimpleError("ERR wrong number of arguments for 'PSYNC' command".into());
+        stream.write_all(&response.as_bytes()).await?;
+        return Ok(());
     }
 
     // Get the replication ID and offset from the arguments
@@ -28,17 +35,22 @@ pub fn command(args: &[resp::Type], server: &Arc<Mutex<Server>>) -> resp::Type {
 
     // FULLRESYNC
     // if repl_id == "?" && repl_offset == -1 {
-    let repl_id = server.lock().unwrap().master_replid.clone();
-    let repl_offset = server.lock().unwrap().master_repl_offset;
+    let repl_id = server.master_replid.clone();
+    let repl_offset = server.master_repl_offset;
 
     // Read Empty RDB File
     let rdb = database::rdb::EMPTY_RDB;
     let rdb_bytes = database::rdb::base64_to_bytes(rdb);
 
     // Send a full synchronization request to the master server
-    resp::Type::Array(vec![
-        resp::Type::SimpleString(format!("FULLRESYNC {} {}", repl_id, repl_offset)),
-        resp::Type::RDBFile(rdb_bytes),
-    ])
+    let response = resp::Type::SimpleString(format!("FULLRESYNC {} {}", repl_id, repl_offset));
+    stream.write_all(&response.as_bytes()).await?;
+    stream.flush().await?;
+
+    let response = resp::Type::RDBFile(rdb_bytes);
+    stream.write_all(&response.as_bytes()).await?;
+    stream.flush().await?;
+
+    Ok(())
     // }
 }
