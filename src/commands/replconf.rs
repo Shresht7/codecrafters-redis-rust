@@ -10,7 +10,7 @@ pub async fn command(
     _server: &Arc<Mutex<Server>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Check if the command has the correct number of arguments
-    if args.len() != 2 {
+    if args.len() < 2 {
         let response =
             Type::SimpleError("ERR wrong number of arguments for 'replconf' command".into());
         stream.write_all(&response.as_bytes()).await?;

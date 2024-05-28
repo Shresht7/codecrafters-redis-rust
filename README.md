@@ -10,6 +10,9 @@ event loops, the Redis protocol and more.
 **Note**: If you're viewing this repo on GitHub, head over to
 [codecrafters.io](https://codecrafters.io) to try the challenge.
 
+>> [!NOTE]
+> To test the server locally, use the `redis-cli` client application.
+
 ---
 
 ## Stage 1: Bind to a Port
