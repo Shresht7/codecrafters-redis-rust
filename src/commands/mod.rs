@@ -21,7 +21,10 @@ pub async fn handle(
     conn: &mut Connection,
     server: &Arc<Mutex<Server>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // Iterate over the parsed commands
+    // There can be multiple commands in a single request
     for cmd in &cmds {
+        // All commands are in the shape of a RESP Array
         if let resp::Type::Array(array) = cmd {
             // Extract the command from the parsed data
             let command = match array.get(0) {
@@ -32,8 +35,6 @@ pub async fn handle(
                     return Ok(());
                 }
             };
-
-            println!("Received command: {:?}", command);
 
             // Handle the command
             match command.to_uppercase().as_str() {
@@ -63,6 +64,10 @@ pub async fn handle(
     }
     Ok(())
 }
+
+// ----------------
+// HELPER FUNCTIONS
+// ----------------
 
 /// Broadcast the value on the server's broadcast sender channel
 async fn broadcast(

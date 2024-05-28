@@ -21,6 +21,7 @@ pub async fn command(
     }
 
     // Handle the REPLCONF GETACK command
+    println!("REPLCONF subcommand: {:?}", args);
     match args[0].to_string().to_uppercase().as_str() {
         "GETACK" => get_ack(connection).await?,
         _ => {

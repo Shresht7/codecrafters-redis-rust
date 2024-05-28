@@ -77,13 +77,16 @@ impl Connection {
         &self.buffer[..len]
     }
 
-    // /// Parses the buffer and returns the data as a string.
-    // fn parse_from_buffer(&mut self) -> String {
-    //     // Convert the buffer to a string
-    //     let str = String::from_utf8_lossy(&self.buffer).to_string();
-    //     self.buffer = [0; BUFFER_SIZE]; // Clear the buffer
-    //     str
-    // }
+    /// Parses the buffer and returns the data as a string.
+    pub fn parse_from_buffer(&mut self) -> String {
+        String::from_utf8_lossy(&self.buffer).to_string()
+        // self.buffer = [0; BUFFER_SIZE]; // Clear the buffer
+    }
+
+    /// Clears the buffer by setting all elements to 0.
+    pub fn clear_buffer(&mut self) {
+        self.buffer = [0; BUFFER_SIZE];
+    }
 
     /// Handles the incoming connection stream by reading the incoming data,
     /// parsing it, and writing a response back to the stream.
@@ -102,8 +105,9 @@ impl Connection {
 
             // Parse the incoming data
             let request = self.read_buffer(bytes_read);
+            println!("Incoming Requests: {}", String::from_utf8_lossy(request));
             let cmds = parser::parse(request).expect("Failed to parse request");
-            println!("Incoming Request: {:?}", cmds);
+            println!("Incoming Commands: {:?}", cmds);
 
             // Handle the commands
             commands::handle(cmds, self, server).await?;
