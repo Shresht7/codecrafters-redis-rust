@@ -1,16 +1,17 @@
 // Library
 use crate::{database, parser::resp, server::Server};
-use tokio::{io::AsyncWriteExt, net::TcpStream, sync::MutexGuard};
+use std::sync::Arc;
+use tokio::{io::AsyncWriteExt, net::TcpStream, sync::Mutex};
 
 /// Handles the PSYNC command
 /// PSYNC is used to synchronize a replica with the master server.
 /// The command takes two arguments: the replication ID and the replication offset.
 /// The replica will use the replication ID to identify the master server.
 /// The replica will use the replication offset to request new data from the master server.
-pub async fn command<'a>(
+pub async fn command(
     args: &[resp::Type],
     stream: &mut TcpStream,
-    server: &mut MutexGuard<'a, Server>,
+    server: &Arc<Mutex<Server>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Check the number of arguments
     if args.len() < 2 {
@@ -19,6 +20,9 @@ pub async fn command<'a>(
         stream.write_all(&response.as_bytes()).await?;
         return Ok(());
     }
+
+    // Get server instance from the Server
+    let server = server.lock().await;
 
     // Get the replication ID and offset from the arguments
     // let repl_id = match &args[0] {

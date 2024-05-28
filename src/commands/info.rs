@@ -1,13 +1,14 @@
 // Library
 use crate::{parser::resp::Type, server};
-use tokio::{io::AsyncWriteExt, net::TcpStream, sync::MutexGuard};
+use std::sync::Arc;
+use tokio::{io::AsyncWriteExt, net::TcpStream, sync::Mutex};
 
 /// Handles the INFO command.
 /// The INFO command returns information and statistics about the server.
-pub async fn command<'a>(
+pub async fn command(
     args: &[Type],
     stream: &mut TcpStream,
-    server: &mut MutexGuard<'a, server::Server>,
+    server: &Arc<Mutex<server::Server>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Check the number of arguments
     if args.len() < 1 {
@@ -16,6 +17,9 @@ pub async fn command<'a>(
         stream.write_all(&response.as_bytes()).await?;
         return Ok(());
     }
+
+    // Get server instance from the Server
+    let server = server.lock().await;
 
     // Get the role of the server
     let role = match server.role {

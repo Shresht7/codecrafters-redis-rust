@@ -1,7 +1,7 @@
-use tokio::{io::AsyncWriteExt, net::TcpStream, sync::MutexGuard};
-
 // Library
 use crate::{parser::resp, server::Server};
+use std::sync::Arc;
+use tokio::{io::AsyncWriteExt, net::TcpStream, sync::Mutex};
 
 // Commands
 mod echo;
@@ -13,10 +13,10 @@ mod replconf;
 mod set;
 
 /// Handles the incoming command by parsing it and calling the appropriate command handler.
-pub async fn handle<'a>(
+pub async fn handle(
     cmd: Vec<resp::Type>,
     stream: &mut TcpStream,
-    server: &mut MutexGuard<'a, Server>,
+    server: &Arc<Mutex<Server>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Get command array from parsed data
     let array = match cmd.get(0) {

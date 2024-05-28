@@ -2,7 +2,7 @@
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::{Mutex, MutexGuard};
+use tokio::sync::Mutex;
 
 // Modules
 use crate::{
@@ -98,8 +98,7 @@ impl Server {
 
             // ... and spawn a new thread for each incoming connection
             tokio::spawn(async move {
-                let mut server = server.lock().await;
-                handle_connection(&mut server, &mut stream).await.unwrap();
+                handle_connection(&server, &mut stream).await.unwrap();
             });
         }
     }
@@ -157,8 +156,8 @@ impl Server {
 
 /// Handles the incoming connection stream by reading the incoming data,
 /// parsing it, and writing a response back to the stream.
-async fn handle_connection<'a>(
-    server: &mut MutexGuard<'a, Server>,
+async fn handle_connection(
+    server: &Arc<Mutex<Server>>,
     stream: &mut tokio::net::TcpStream,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Loop as long as requests are being made

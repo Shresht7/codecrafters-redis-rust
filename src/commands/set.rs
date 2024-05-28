@@ -1,18 +1,18 @@
 // Library
 use super::resp::Type;
 use crate::{parser::resp, server::Server};
-use std::ops::DerefMut;
-use tokio::{io::AsyncWriteExt, net::TcpStream, sync::MutexGuard};
+use std::sync::Arc;
+use tokio::{io::AsyncWriteExt, net::TcpStream, sync::Mutex};
 
 /// Handles the SET command.
 /// The SET command sets the value of a key in the database.
 /// If the key already exists, the value is overwritten.
 /// The command returns OK if the value was set successfully.
 /// The command returns an error if the number of arguments is invalid.
-pub async fn command<'a>(
+pub async fn command(
     args: &[resp::Type],
     stream: &mut TcpStream,
-    server: &mut MutexGuard<'a, Server>,
+    server: &Arc<Mutex<Server>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Check the number of arguments
     if args.len() < 2 {
@@ -48,7 +48,7 @@ pub async fn command<'a>(
     };
 
     // Get database instance from the Server
-    let server = server.deref_mut();
+    let mut server = server.lock().await;
 
     if args.len() == 2 {
         // Set the value in the database
@@ -84,7 +84,7 @@ pub async fn command<'a>(
     server.db.set(key.clone(), value.clone(), milliseconds);
 
     // Respond with OK
-    let respone = Type::SimpleString("OK".into());
-    stream.write_all(&respone.as_bytes()).await?;
+    let response = Type::SimpleString("OK".into());
+    stream.write_all(&response.as_bytes()).await?;
     Ok(())
 }
