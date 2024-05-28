@@ -1,7 +1,7 @@
 // Library
+use conn::Connection;
 use std::sync::Arc;
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
     sync::{broadcast, Mutex},
 };
@@ -15,6 +15,7 @@ use crate::{
     },
 };
 // Modules
+pub mod conn;
 pub mod role;
 use role::Role;
 
@@ -66,9 +67,6 @@ pub fn new(host: &'static str, port: u16) -> Server {
     }
 }
 
-/// The size of the buffer to read incoming data
-const BUFFER_SIZE: usize = 1024;
-
 impl Server {
     /// Runs the TCP server on the given address, listening for incoming connections.
     /// The server will handle each incoming connection in a separate thread.
@@ -88,7 +86,7 @@ impl Server {
         // If this server is a replica, connect to the master server
         if let Role::Replica(addr) = &self.role {
             println!("Connecting to master server at {}", addr);
-            let mut stream = self.send_handshake(addr).await?;
+            let mut connection = self.send_handshake(addr).await?;
 
             // Clone the Arc<Mutex<Server>> instance
             let server = Arc::clone(&server);
@@ -97,14 +95,16 @@ impl Server {
 
             // Spawn a new thread to handle the replication connection
             tokio::spawn(async move {
-                handle_connection(&server, &mut stream, sender)
+                handle_connection(&mut connection, &server, &sender)
                     .await
-                    .expect("Failed to handle connection".into())
+                    .expect("Failed to handle connection");
             });
         }
 
         // Listen for incoming connections and handle them
-        while let Ok((mut stream, _)) = listener.accept().await {
+        while let Ok((stream, _)) = listener.accept().await {
+            // Create a new Connection instance for the incoming connection
+            let mut connection = conn::new(stream);
             // Clone the Arc<Mutex<Server>> instance
             let server = Arc::clone(&server);
             // Clone the broadcast sender instance
@@ -112,9 +112,9 @@ impl Server {
 
             // ... and spawn a new thread for each incoming connection
             tokio::spawn(async move {
-                handle_connection(&server, &mut stream, sender)
+                handle_connection(&mut connection, &server, &sender)
                     .await
-                    .expect("Failed to handle connection".into())
+                    .expect("Failed to handle connection");
             });
         }
 
@@ -131,15 +131,15 @@ impl Server {
     pub async fn send_handshake(
         &self,
         addr: &String,
-    ) -> Result<TcpStream, Box<dyn std::error::Error>> {
+    ) -> Result<conn::Connection, Box<dyn std::error::Error>> {
         // Connect to the replication master
-        let mut stream = TcpStream::connect(addr).await?;
+        let stream = TcpStream::connect(addr).await?;
+        let mut connection = conn::new(stream);
 
         // Send a PING
         let response = array(vec![bulk_string("PING")]);
-        stream.write_all(&response.as_bytes()).await?;
-        stream.flush().await?;
-        stream.read(&mut [0; BUFFER_SIZE]).await?; // Read the PONG response (not used)
+        connection.write_all(&response.as_bytes()).await?;
+        connection.read().await?; // Read the PONG response (not used)
 
         // Send REPLCONF listening-port <PORT>
         let response = array(vec![
@@ -147,9 +147,8 @@ impl Server {
             bulk_string("listening-port"),
             bulk_string(self.port.to_string().as_str()),
         ]);
-        stream.write_all(&response.as_bytes()).await?;
-        stream.flush().await?;
-        stream.read(&mut [0; BUFFER_SIZE]).await?; // Read the OK response (not used)
+        connection.write_all(&response.as_bytes()).await?;
+        connection.read().await?; // Read the OK response (not used)
 
         // Send REPLCONF capa psync2
         let response = array(vec![
@@ -157,9 +156,8 @@ impl Server {
             bulk_string("capa"),
             bulk_string("psync2"),
         ]);
-        stream.write_all(&response.as_bytes()).await?;
-        stream.flush().await?;
-        stream.read(&mut [0; BUFFER_SIZE]).await?; // Read the OK response (not used)
+        connection.write_all(&response.as_bytes()).await?;
+        connection.read().await?; // Read the OK response (not used)
 
         // Send PSYNC <REPLID> <OFFSET>
         let response = array(vec![
@@ -167,42 +165,34 @@ impl Server {
             bulk_string("?"),
             bulk_string("-1"),
         ]);
-        stream.write_all(&response.as_bytes()).await?;
-        stream.flush().await?;
-        stream.read(&mut [0; BUFFER_SIZE]).await?; // Read the FULLRESYNC response (not used)
+        connection.write_all(&response.as_bytes()).await?;
+        connection.read().await?; // Read the FULLRESYNC response (not used)
 
-        Ok(stream)
+        Ok(connection)
     }
 }
 
 /// Handles the incoming connection stream by reading the incoming data,
 /// parsing it, and writing a response back to the stream.
-async fn handle_connection(
+pub async fn handle_connection(
+    connection: &mut Connection,
     server: &Arc<Mutex<Server>>,
-    stream: &mut tokio::net::TcpStream,
-    sender: Arc<broadcast::Sender<Type>>,
+    sender: &Arc<broadcast::Sender<Type>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // Loop as long as requests are being made
     loop {
         // Read the incoming data from the stream
-        let mut buffer = [0; BUFFER_SIZE];
-        let bytes_read = stream.read(&mut buffer).await.expect("Failed to read data");
-
-        // If no bytes were read, the client has closed the connection
+        let bytes_read = connection.read().await?;
         if bytes_read == 0 {
             break;
         }
 
-        // Print the incoming data
-        let cmd = parser::parse(&buffer[..bytes_read]).expect("Failed to parse data");
+        // Parse the incoming data
+        let request = connection.read_buffer(bytes_read);
+        let cmds = parser::parse(request).expect("Failed to parse request");
+        println!("Incoming Request: {:?}", cmds);
 
-        println!("Incoming Request: {:?}", cmd);
-
-        // Handle the parsed data and get a response
-        commands::handle(cmd, stream, server, &sender)
-            .await
-            .expect("Failed to handle command");
+        // Handle the commands
+        commands::handle(cmds, connection, server, sender).await?;
     }
-
     Ok(())
 }

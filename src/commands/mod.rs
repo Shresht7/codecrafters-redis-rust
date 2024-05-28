@@ -1,11 +1,10 @@
 // Library
-use crate::{parser::resp, server::Server};
-use std::sync::Arc;
-use tokio::{
-    io::AsyncWriteExt,
-    net::TcpStream,
-    sync::{broadcast::Sender, Mutex},
+use crate::{
+    parser::resp,
+    server::{conn::Connection, Server},
 };
+use std::sync::Arc;
+use tokio::sync::{broadcast::Sender, Mutex};
 
 // Commands
 mod echo;
@@ -19,7 +18,7 @@ mod set;
 /// Handles the incoming command by parsing it and calling the appropriate command handler.
 pub async fn handle(
     cmds: Vec<resp::Type>,
-    stream: &mut TcpStream,
+    conn: &mut Connection,
     server: &Arc<Mutex<Server>>,
     sender: &Arc<Sender<resp::Type>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -30,7 +29,7 @@ pub async fn handle(
                 Some(resp::Type::BulkString(command)) => command,
                 _ => {
                     let response = resp::Type::SimpleError("ERR unknown command\r\n".into());
-                    stream.write_all(&response.as_bytes()).await?;
+                    conn.write_all(&response.as_bytes()).await?;
                     return Ok(());
                 }
             };
@@ -39,8 +38,10 @@ pub async fn handle(
 
             // Handle the command
             match command.to_uppercase().as_str() {
-                "PING" => ping::command(&array[1..], stream).await?,
-                "ECHO" => echo::command(&array[1..], stream).await?,
+                "PING" => ping::command(&array[1..], conn).await?,
+
+                "ECHO" => echo::command(&array[1..], conn).await?,
+
                 "SET" => {
                     println!("Sender count: {:?}", sender.receiver_count());
                     if sender.receiver_count() > 0 {
@@ -48,15 +49,20 @@ pub async fn handle(
                             .send(cmds[0].clone())
                             .expect("Failed to send message");
                     }
-                    set::command(&array[1..], stream, server).await?
+                    set::command(&array[1..], conn, server).await?
                 }
-                "GET" => get::command(&array[1..], stream, server).await?,
-                "INFO" => info::command(&array[1..], stream, server).await?,
-                "REPLCONF" => replconf::command(&array[1..], stream, server).await?,
-                "PSYNC" => psync::command(&array[1..], stream, server, sender).await?,
+
+                "GET" => get::command(&array[1..], conn, server).await?,
+
+                "INFO" => info::command(&array[1..], conn, server).await?,
+
+                "REPLCONF" => replconf::command(&array[1..], conn, server).await?,
+
+                "PSYNC" => psync::command(&array[1..], conn, server, sender).await?,
+
                 _ => {
                     let response = resp::Type::SimpleError("ERR unknown command\r\n".into());
-                    stream.write_all(&response.as_bytes()).await?;
+                    conn.write_all(&response.as_bytes()).await?;
                 }
             }
         }

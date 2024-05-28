@@ -1,20 +1,23 @@
 // Library
-use crate::{parser::resp::Type, server};
+use crate::{
+    parser::resp::Type,
+    server::{self, conn::Connection},
+};
 use std::sync::Arc;
-use tokio::{io::AsyncWriteExt, net::TcpStream, sync::Mutex};
+use tokio::sync::Mutex;
 
 /// Handles the INFO command.
 /// The INFO command returns information and statistics about the server.
 pub async fn command(
     args: &[Type],
-    stream: &mut TcpStream,
+    connection: &mut Connection,
     server: &Arc<Mutex<server::Server>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Check the number of arguments
     if args.len() < 1 {
         let response =
             Type::SimpleError("ERR at least one argument is required for 'INFO' command".into());
-        stream.write_all(&response.as_bytes()).await?;
+        connection.write_all(&response.as_bytes()).await?;
         return Ok(());
     }
 
@@ -42,6 +45,6 @@ pub async fn command(
     .join("\r\n");
 
     let response = Type::BulkString(response);
-    stream.write_all(&response.as_bytes()).await?;
+    connection.write_all(&response.as_bytes()).await?;
     Ok(())
 }

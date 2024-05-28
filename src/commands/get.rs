@@ -1,7 +1,10 @@
 // Library
-use crate::{parser::resp::Type, server::Server};
+use crate::{
+    parser::resp::Type,
+    server::{conn::Connection, Server},
+};
 use std::{ops::Deref, sync::Arc};
-use tokio::{io::AsyncWriteExt, net::TcpStream, sync::Mutex};
+use tokio::sync::Mutex;
 
 /// Handles the GET command.
 /// The GET command gets the value of a key in the database.
@@ -10,14 +13,14 @@ use tokio::{io::AsyncWriteExt, net::TcpStream, sync::Mutex};
 /// The command returns an error if the key does not exist.
 pub async fn command(
     args: &[Type],
-    stream: &mut TcpStream,
+    connection: &mut Connection,
     server: &Arc<Mutex<Server>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Check the number of arguments
     if args.len() < 1 {
         let response =
             Type::SimpleError("ERR at least one argument is required for 'GET' command".into());
-        stream.write_all(&response.as_bytes()).await?;
+        connection.write_all(&response.as_bytes()).await?;
         return Ok(());
     }
 
@@ -27,7 +30,7 @@ pub async fn command(
         _ => {
             return {
                 let response = Type::SimpleError("ERR invalid key".into());
-                stream.write_all(&response.as_bytes()).await?;
+                connection.write_all(&response.as_bytes()).await?;
                 Ok(())
             }
         }
@@ -49,7 +52,6 @@ pub async fn command(
     println!("[get.rs::fn command] Payload Response: {:?}", response);
 
     // Respond with the value
-    stream.write_all(&response.as_bytes()).await?;
-    stream.flush().await?;
+    connection.write_all(&response.as_bytes()).await?;
     Ok(())
 }

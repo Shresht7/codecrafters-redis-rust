@@ -1,18 +1,17 @@
 // Library
-use crate::parser::resp::Type;
-use tokio::{io::AsyncWriteExt, net::TcpStream};
+use crate::{parser::resp::Type, server::conn::Connection};
 
 /// Handles the ECHO command.
 /// The ECHO command simply returns the argument provided to it.
 pub async fn command(
     args: &[Type],
-    stream: &mut TcpStream,
+    connection: &mut Connection,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Check the number of arguments
     if args.len() < 1 {
         let response =
             Type::SimpleError("ERR at least one argument is required for 'ECHO' command".into());
-        stream.write_all(&response.as_bytes()).await?;
+        connection.write_all(&response.as_bytes()).await?;
         return Ok(());
     }
 
@@ -23,7 +22,6 @@ pub async fn command(
         Type::SimpleError("ERR invalid argument type for 'ECHO' command".into())
     };
 
-    stream.write_all(&response.as_bytes()).await?;
-    stream.flush().await?;
+    connection.write_all(&response.as_bytes()).await?;
     Ok(())
 }

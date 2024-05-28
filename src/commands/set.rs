@@ -1,8 +1,11 @@
 // Library
 use super::resp::Type;
-use crate::{parser::resp, server::Server};
+use crate::{
+    parser::resp,
+    server::{conn::Connection, Server},
+};
 use std::sync::Arc;
-use tokio::{io::AsyncWriteExt, net::TcpStream, sync::Mutex};
+use tokio::sync::Mutex;
 
 /// Handles the SET command.
 /// The SET command sets the value of a key in the database.
@@ -11,7 +14,7 @@ use tokio::{io::AsyncWriteExt, net::TcpStream, sync::Mutex};
 /// The command returns an error if the number of arguments is invalid.
 pub async fn command(
     args: &[resp::Type],
-    stream: &mut TcpStream,
+    connection: &mut Connection,
     server: &Arc<Mutex<Server>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Get database instance from the Server
@@ -32,8 +35,7 @@ pub async fn command(
                 )
                 .into(),
             );
-            stream.write_all(&response.as_bytes()).await?;
-            stream.flush().await?;
+            connection.write_all(&response.as_bytes()).await?;
         }
         return Ok(());
     }
@@ -44,8 +46,7 @@ pub async fn command(
         _ => {
             if role.is_master() {
                 let response = Type::SimpleError("ERR invalid key".into());
-                stream.write_all(&response.as_bytes()).await?;
-                stream.flush().await?;
+                connection.write_all(&response.as_bytes()).await?;
             }
             return Ok(());
         }
@@ -56,8 +57,7 @@ pub async fn command(
         _ => {
             if role.is_master() {
                 let response = Type::SimpleError("ERR invalid value".into());
-                stream.write_all(&response.as_bytes()).await?;
-                stream.flush().await?;
+                connection.write_all(&response.as_bytes()).await?;
             }
             return Ok(());
         }
@@ -77,8 +77,7 @@ pub async fn command(
         // Respond with OK
         if role.is_master() {
             let response = Type::SimpleString("OK".into());
-            stream.write_all(&response.as_bytes()).await?;
-            stream.flush().await?;
+            connection.write_all(&response.as_bytes()).await?;
         }
         return Ok(());
     }
@@ -90,16 +89,14 @@ pub async fn command(
                 Ok(time) => Some(time),
                 _ => {
                     let response = Type::SimpleError("ERR invalid time".into());
-                    stream.write_all(&response.as_bytes()).await?;
-                    stream.flush().await?;
+                    connection.write_all(&response.as_bytes()).await?;
                     return Ok(());
                 }
             },
             _ => {
                 if role.is_master() {
                     let response = Type::SimpleError("ERR invalid time".into());
-                    stream.write_all(&response.as_bytes()).await?;
-                    stream.flush().await?;
+                    connection.write_all(&response.as_bytes()).await?;
                 }
                 return Ok(());
             }
@@ -113,8 +110,7 @@ pub async fn command(
     // Respond with OK
     if role.is_master() {
         let response = Type::SimpleString("OK".into());
-        stream.write_all(&response.as_bytes()).await?;
-        stream.flush().await?;
+        connection.write_all(&response.as_bytes()).await?;
     }
 
     let g = server.db.get(&key.clone());

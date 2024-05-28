@@ -1,11 +1,11 @@
 // Library
-use crate::{database, parser::resp, server::Server};
-use std::sync::Arc;
-use tokio::{
-    io::AsyncWriteExt,
-    net::TcpStream,
-    sync::{broadcast::Sender, Mutex},
+use crate::{
+    database,
+    parser::resp,
+    server::{conn::Connection, Server},
 };
+use std::sync::Arc;
+use tokio::sync::{broadcast::Sender, Mutex};
 
 /// Handles the PSYNC command
 /// PSYNC is used to synchronize a replica with the master server.
@@ -14,7 +14,7 @@ use tokio::{
 /// The replica will use the replication offset to request new data from the master server.
 pub async fn command(
     args: &[resp::Type],
-    stream: &mut TcpStream,
+    connection: &mut Connection,
     server: &Arc<Mutex<Server>>,
     sender: &Arc<Sender<resp::Type>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -22,7 +22,7 @@ pub async fn command(
     if args.len() < 2 {
         let response =
             resp::Type::SimpleError("ERR wrong number of arguments for 'PSYNC' command".into());
-        stream.write_all(&response.as_bytes()).await?;
+        connection.write_all(&response.as_bytes()).await?;
         return Ok(());
     }
 
@@ -55,20 +55,17 @@ pub async fn command(
 
         // Send a full synchronization request to the master server
         let response = resp::Type::SimpleString(format!("FULLRESYNC {} {}", repl_id, repl_offset));
-        stream.write_all(&response.as_bytes()).await?;
-        stream.flush().await?;
+        connection.write_all(&response.as_bytes()).await?;
 
         println!("RDB File: {:?}", rdb_bytes);
         let response = resp::Type::RDBFile(rdb_bytes);
-        stream.write_all(&response.as_bytes()).await?;
-        stream.flush().await?;
+        connection.write_all(&response.as_bytes()).await?;
     }
 
     // Create a new receiver for the broadcast channel
     let mut receiver = sender.subscribe();
     while let Ok(x) = receiver.recv().await {
-        stream.write_all(&x.as_bytes()).await?;
-        stream.flush().await?;
+        connection.write_all(&x.as_bytes()).await?;
     }
 
     Ok(())
