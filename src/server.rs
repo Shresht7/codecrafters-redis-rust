@@ -197,6 +197,10 @@ impl Server {
         let bytes_read = stream.read(&mut buffer).await?;
         println!("Received: {:?}", &buffer[..bytes_read]);
 
+        let mut buffer = [0; BUFFER_SIZE];
+        let more = stream.read(&mut [0; BUFFER_SIZE]).await?; // Await the response
+        println!("Received: {:?}", &buffer[..more]);
+
         Ok(stream)
     }
 }
