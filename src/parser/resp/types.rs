@@ -352,6 +352,59 @@ impl std::fmt::Display for Type {
                 }
                 Ok(())
             }
+
+            Type::RDBFile(data) => {
+                let len = data.len();
+                write!(f, "$({}\r\n{:?}", len, data)
+            }
+        }
+    }
+}
+
+impl Type {
+    pub fn as_bytes(&self) -> Vec<u8> {
+        match &self {
+            Type::SimpleString(data) => data.as_bytes().to_vec(),
+            Type::SimpleError(data) => data.as_bytes().to_vec(),
+            Type::Integer(data) => data.to_string().as_bytes().to_vec(),
+            Type::BulkString(data) => data.as_bytes().to_vec(),
+            Type::Array(data) => {
+                let mut bytes = Vec::new();
+                for item in data {
+                    bytes.extend_from_slice(&item.as_bytes());
+                }
+                bytes
+            }
+            Type::Null => b"$-1\r\n".to_vec(),
+            Type::Boolean(data) => {
+                if *data {
+                    b"#t\r\n".to_vec()
+                } else {
+                    b"#f\r\n".to_vec()
+                }
+            }
+            Type::Double(data) => data.to_string().as_bytes().to_vec(),
+            Type::BigNumber(data) => data.to_string().as_bytes().to_vec(),
+            Type::BulkError(data) => data.as_bytes().to_vec(),
+            Type::VerbatimString(data, encoding) => {
+                format!("{}:{}", data, encoding).as_bytes().to_vec()
+            }
+            Type::Map(data) => {
+                let mut bytes = Vec::new();
+                for (key, value) in data {
+                    bytes.extend_from_slice(&key.as_bytes());
+                    bytes.extend_from_slice(&value.as_bytes());
+                }
+                bytes
+            }
+            Type::Set(data) => {
+                let mut bytes = Vec::new();
+                for item in data {
+                    bytes.extend_from_slice(&item.as_bytes());
+                }
+                bytes
+            }
+            Type::RDBFile(data) => data.clone(),
         }
     }
 }

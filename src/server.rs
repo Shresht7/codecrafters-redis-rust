@@ -174,12 +174,12 @@ async fn handle_connection(
         println!("Incoming Request: {:?}", cmd);
 
         // Handle the parsed data and get a response
-        let response = commands::handle(cmd, server).to_string();
+        let response = commands::handle(cmd, server);
 
         println!("Outgoing Response: {:?}", response);
 
         // Write a response back to the stream
-        stream.write_all(response.as_bytes()).await?;
+        stream.write_all(&response.as_bytes()).await?;
 
         // Flush the stream to ensure the response is sent
         stream.flush().await?;
