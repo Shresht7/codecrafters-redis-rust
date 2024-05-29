@@ -72,9 +72,7 @@ async fn broadcast(
     cmd: Vec<resp::Type>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Get the server instance from the Arc<Mutex<Server>>
-    println!("[commands/mod.rs:broadcast] Locking server |");
     let server = server.lock().await;
-    print!("Server locked 🔒 |");
 
     // If there are no receivers, return early
     if server.sender.receiver_count() == 0 {
@@ -84,7 +82,6 @@ async fn broadcast(
     // Broadcast the value to all receivers
     println!("Broadcasting: {:?}", cmd);
     server.sender.send(resp::Type::Array(cmd))?;
-    println!("Dropping server lock 🔓");
     Ok(())
 }
 
@@ -93,15 +90,12 @@ async fn receive(
     server: &Arc<Mutex<Server>>,
     conn: &mut Connection,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    println!("[commands/mod.rs:receive] Locking server |");
     let server = server.lock().await;
-    print!("Server locked 🔒 |");
     let mut receiver = server.sender.subscribe();
 
     // ! Drop the server lock. This needs to be done manually because the receiver
     // ! will be waiting for messages from the broadcast channel. If the lock is not
     // ! dropped, the server will be locked indefinitely.
-    println!("Dropping server lock 🔓");
     drop(server);
 
     Ok(while let Ok(x) = receiver.recv().await {

@@ -26,9 +26,7 @@ pub async fn command(
     }
 
     // Get server instance from the Server
-    println!("[psync.rs] Locking server | ");
     let server = server.lock().await;
-    print!("Server locked 🔒 |");
 
     // Get the replication ID and offset from the arguments
     // let repl_id = match &args[0] {
@@ -58,8 +56,6 @@ pub async fn command(
 
     let response = resp::Type::RDBFile(rdb_bytes);
     connection.write_all(&response.as_bytes()).await?;
-
-    println!("Dropping server lock 🔓");
 
     Ok(())
     // }

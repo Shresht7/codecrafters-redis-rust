@@ -22,9 +22,7 @@ pub async fn command(
     }
 
     // Get server instance from the Server
-    println!("[info.rs] Locking server | ");
     let server = server.lock().await;
-    print!("Server locked 🔒 |");
 
     // Get the role of the server
     let role = match server.role {
@@ -47,6 +45,5 @@ pub async fn command(
 
     let response = Type::BulkString(response);
     connection.write_all(&response.as_bytes()).await?;
-    println!("Dropping server lock 🔓");
     Ok(())
 }
