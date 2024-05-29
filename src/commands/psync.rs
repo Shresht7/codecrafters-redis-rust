@@ -8,10 +8,9 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 /// Handles the PSYNC command
-/// PSYNC is used to synchronize a replica with the master server.
-/// The command takes two arguments: the replication ID and the replication offset.
-/// The replica will use the replication ID to identify the master server.
-/// The replica will use the replication offset to request new data from the master server.
+/// The PSYNC command is used to synchronize a replica server with a master server.
+/// The command is used by the replica to request a full synchronization from the master.
+/// The master sends an RDB file to the replica, which is used to synchronize the replica server.
 pub async fn command(
     args: &[resp::Type],
     connection: &mut Connection,
@@ -24,9 +23,6 @@ pub async fn command(
         connection.write_all(&response.as_bytes()).await?;
         return Ok(());
     }
-
-    // Get server instance from the Server
-    let mut server = server.lock().await;
 
     // Get the replication ID and offset from the arguments
     // let repl_id = match &args[0] {
@@ -41,24 +37,23 @@ pub async fn command(
     //     _ => return resp::Type::SimpleError("ERR invalid replication offset".into()),
     // };
 
-    // FULLRESYNC
-    // if repl_id == "?" && repl_offset == -1 {
+    // Lock the server instance
+    let mut server = server.lock().await;
+
+    // Send a full synchronization request to the replica
     let repl_id = server.master_replid.clone();
     let repl_offset = server.master_repl_offset;
-
-    // Read Empty RDB File
-    let rdb = database::rdb::EMPTY_RDB;
-    let rdb_bytes = database::rdb::base64_to_bytes(rdb);
-
-    // Send a full synchronization request to the master server
     let response = resp::Type::SimpleString(format!("FULLRESYNC {} {}", repl_id, repl_offset));
     connection.write_all(&response.as_bytes()).await?;
 
+    // Add the replica to the list of replicas
+    server.replicas.push(connection.addr.clone());
+
+    // Send an empty RDB file to the replica
+    let rdb = database::rdb::EMPTY_RDB;
+    let rdb_bytes = database::rdb::base64_to_bytes(rdb);
     let response = resp::Type::RDBFile(rdb_bytes);
     connection.write_all(&response.as_bytes()).await?;
 
-    server.replicas.push(connection.addr.clone());
-
     Ok(())
-    // }
 }
