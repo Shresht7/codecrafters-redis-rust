@@ -51,7 +51,7 @@ pub async fn command(
         resp::Type::BulkString(timeout) => timeout.parse::<u32>()?,
         _ => 1000,
     };
-    let timeout = Instant::now() + Duration::from_secs(timeout as u64);
+    let timeout = Instant::now() + Duration::from_millis(timeout as u64);
 
     println!(
         "WAIT replicas: {:?}, timeout: {:?}",
