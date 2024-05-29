@@ -88,11 +88,12 @@ async fn broadcast(
     Ok(())
 }
 
-/// Receives messages from the broadcast channel and writes them to the connection.
+/// Receive messages from the broadcast channel
 async fn receive(
     server: &Arc<Mutex<Server>>,
     conn: &mut Connection,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // Acquire the server lock and create a receiver
     let server = server.lock().await;
     let mut receiver = server.sender.subscribe();
 
@@ -101,8 +102,9 @@ async fn receive(
     // ! dropped, the server will be locked indefinitely.
     drop(server);
 
-    Ok(while let Ok(x) = receiver.recv().await {
-        println!("Received from Broadcast: {:?}", x);
-        conn.write_all(&x.as_bytes()).await?;
+    Ok(while let Ok(cmd) = receiver.recv().await {
+        // Forward all broadcast messages to the connection
+        conn.write_all(&cmd.as_bytes()).await?;
+        println!("Forwarded {:?} to replica {}", cmd, conn.addr);
     })
 }
