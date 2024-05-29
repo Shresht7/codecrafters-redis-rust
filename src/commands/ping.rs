@@ -10,7 +10,7 @@ pub async fn command(
     _args: &[resp::Type],
     connection: &mut Connection,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let response = resp::Type::Array(vec![resp::Type::SimpleString("PONG".into())]);
+    let response = resp::Type::SimpleString("PONG".into());
 
     // Send the response only if you are the master
     if connection.kind == Kind::Main {
