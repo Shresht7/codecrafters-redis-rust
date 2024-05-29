@@ -104,6 +104,15 @@ impl Role {
     }
 }
 
+impl std::fmt::Display for Role {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Role::Master => write!(f, "master"),
+            Role::Replica(addr) => write!(f, "replica {}", addr),
+        }
+    }
+}
+
 // PING
 // ----
 
