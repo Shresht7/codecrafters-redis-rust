@@ -50,7 +50,6 @@ pub async fn command(
             return Ok(());
         }
     };
-
     let value = match args.get(1) {
         Some(value) => value,
         _ => {

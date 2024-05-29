@@ -76,6 +76,8 @@ async fn broadcast(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Get the server instance from the Arc<Mutex<Server>>
     let server = server.lock().await;
+    let addr = server.addr.clone();
+    let role = server.role.clone();
 
     // If there are no receivers, return early
     if server.sender.receiver_count() == 0 {
@@ -83,7 +85,13 @@ async fn broadcast(
     }
 
     // Broadcast the value to all receivers
-    println!("Broadcasting: {:?}", cmd);
+    println!(
+        "[{} - {}] Broadcasting: {:?} to {} receivers",
+        addr,
+        role,
+        cmd,
+        server.sender.receiver_count()
+    );
     server.sender.send(resp::Type::Array(cmd))?;
     Ok(())
 }
@@ -95,6 +103,8 @@ async fn receive(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Acquire the server lock and create a receiver
     let server = server.lock().await;
+    let addr = server.addr.clone();
+    let role = server.role.clone();
     let mut receiver = server.sender.subscribe();
 
     // ! Drop the server lock. This needs to be done manually because the receiver
@@ -105,6 +115,9 @@ async fn receive(
     Ok(while let Ok(cmd) = receiver.recv().await {
         // Forward all broadcast messages to the connection
         conn.write_all(&cmd.as_bytes()).await?;
-        println!("Forwarded {:?} to replica {}", cmd, conn.addr);
+        println!(
+            "[{} - {}]Forwarded {:?} to replica {}",
+            addr, role, cmd, conn.addr
+        );
     })
 }
