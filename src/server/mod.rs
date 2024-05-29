@@ -101,17 +101,6 @@ impl Server {
         // Clone the Arc<Mutex<Server>> instance
         let server = Arc::clone(server);
 
-        // Wait for the master to send a message that the RDB transfer is complete
-        println!("Waiting for RDB transfer to complete...");
-        loop {
-            let bytes_read = connection.read().await?;
-            if bytes_read == 0 {
-                break;
-            }
-            let buffer = connection.read_buffer(bytes_read);
-            println!("Bytes read: {:?}", buffer);
-        }
-
         // Handle the connection
         tokio::spawn(async move {
             connection
@@ -131,9 +120,9 @@ impl Server {
         // Bind the server to the address and start listening for incoming connections
         let listener = TcpListener::bind(&self.addr).await?;
         println!("[{}] Server is listening on {}", self.addr, self.port);
-        Ok(while let Ok((stream, _)) = listener.accept().await {
+        Ok(while let Ok((stream, addr)) = listener.accept().await {
             // Create a new Connection instance for the incoming connection
-            let mut connection = connection::new(stream);
+            let mut connection = connection::new(stream, addr);
 
             // Clone the Arc<Mutex<Server>> instance
             let server = Arc::clone(&server);

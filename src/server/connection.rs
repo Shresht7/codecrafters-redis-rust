@@ -4,6 +4,7 @@ use crate::{
     parser::{self, resp},
     server::Server,
 };
+use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -29,12 +30,12 @@ pub struct Connection {
     /// The stream is closed when the connection is closed.
     stream: TcpStream,
 
-    // TODO: Reimplement this
-    // /// The address of the client.
-    // /// Contains the IP address and port number of the client.
-    // /// The address is used to identify the client and send responses back to the client.
-    // /// The address is set when a new connection is accepted by the server.
-    // addr: SocketAddr,
+    /// The address of the client.
+    /// Contains the IP address and port number of the client.
+    /// The address is used to identify the client and send responses back to the client.
+    /// The address is set when a new connection is accepted by the server.
+    pub addr: SocketAddr,
+
     /// The buffer used to store incoming data from the client.
     /// The buffer is used to read data from the stream and process it.
     /// The buffer is cleared after each request is processed.
@@ -42,10 +43,10 @@ pub struct Connection {
 }
 
 /// Instantiate a new Connection with the provided TcpStream and SocketAddr.
-pub fn new(stream: TcpStream) -> Connection {
+pub fn new(stream: TcpStream, addr: SocketAddr) -> Connection {
     Connection {
         stream,
-        // addr, // TODO: Fix this
+        addr,
         buffer: [0; BUFFER_SIZE],
     }
 }

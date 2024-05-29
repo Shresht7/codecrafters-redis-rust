@@ -1,3 +1,5 @@
+use std::net::SocketAddr;
+
 // Library
 use crate::{
     parser::resp::{array, bulk_string},
@@ -71,7 +73,7 @@ impl Role {
 
         // Connect to the replication master
         let stream = TcpStream::connect(addr).await?;
-        let mut connection = connection::new(stream);
+        let mut connection = connection::new(stream, addr.parse::<SocketAddr>()?);
 
         // Send a PING
         send_ping(&mut connection).await?;
