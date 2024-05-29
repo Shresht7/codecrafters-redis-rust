@@ -4,7 +4,10 @@ use crate::{
     server::{connection::Connection, Server},
 };
 use std::{sync::Arc, time::Duration};
-use tokio::{sync::Mutex, time::Instant};
+use tokio::{
+    sync::{mpsc, Mutex},
+    time::Instant,
+};
 
 /// Handle the WAIT command.
 /// The WAIT command blocks the client until the specified number of replicas for the specified key is reached,
@@ -13,14 +16,14 @@ pub async fn command(
     args: &[resp::Type],
     connection: &mut Connection,
     server: &Arc<Mutex<Server>>,
+    wait_receiver: &Arc<Mutex<mpsc::Receiver<u64>>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let (role, master_repl_offset, sender, mut receiver) = {
+    let (role, master_repl_offset, sender) = {
         let server = server.lock().await;
         (
             server.role.clone(),
             server.master_repl_offset,
             server.sender.clone(),
-            server.sender.subscribe(),
         )
     };
 
@@ -56,7 +59,8 @@ pub async fn command(
     );
 
     // Discard all the messages in the channel
-    // while let Ok(_) = receiver.try_recv() {}
+    let mut receiver = wait_receiver.lock().await;
+    while let Ok(_) = receiver.try_recv() {}
 
     // Counter to keep track of the number of replicas that have been synced
     let mut synced_replicas = 0;
@@ -83,22 +87,7 @@ pub async fn command(
         tokio::time::sleep(Duration::from_millis(200)).await;
 
         // Await response from the replica
-        while let Ok(replica_response) = receiver.try_recv() {
-            println!("Received response from replica: {:?}", replica_response);
-            let offset = match replica_response {
-                resp::Type::Array(response) => {
-                    if response.len() == 3 {
-                        match &response[2] {
-                            resp::Type::BulkString(offset) => offset.parse::<u64>()?,
-                            _ => 0,
-                        }
-                    } else {
-                        0
-                    }
-                }
-                _ => 0,
-            };
-
+        while let Ok(offset) = receiver.try_recv() {
             println!(
                 "Received offset from replica: {}, master repl offset is {}",
                 offset, master_repl_offset

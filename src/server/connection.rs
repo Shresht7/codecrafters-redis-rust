@@ -9,7 +9,7 @@ use std::sync::Arc;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
-    sync::Mutex,
+    sync::{mpsc, Mutex},
 };
 
 // ----------
@@ -111,6 +111,7 @@ impl Connection {
     pub async fn handle(
         &mut self,
         server: &Arc<Mutex<Server>>,
+        wait_receiver: &Arc<Mutex<mpsc::Receiver<u64>>>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         println!("New connection from {}", self.addr);
         loop {
@@ -148,7 +149,7 @@ impl Connection {
                 let len = cmd.as_bytes().len();
                 match cmd {
                     resp::Type::Array(command) => {
-                        commands::handle(command, self, server).await?;
+                        commands::handle(command, self, server, wait_receiver).await?;
                         let mut server = server.lock().await;
                         if !server.role.is_master() {
                             // println!("Command Bytes: {:?}", len);

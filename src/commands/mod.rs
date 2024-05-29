@@ -4,7 +4,7 @@ use crate::{
     server::{connection::Connection, Server},
 };
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{mpsc, Mutex};
 
 // Commands
 mod echo;
@@ -21,6 +21,7 @@ pub async fn handle(
     cmd: Vec<resp::Type>,
     conn: &mut Connection,
     server: &Arc<Mutex<Server>>,
+    wait_receiver: &Arc<Mutex<mpsc::Receiver<u64>>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Extract the command from the parsed data
     let command = match cmd.get(0) {
@@ -54,7 +55,7 @@ pub async fn handle(
             receive(server, conn).await?;
         }
 
-        "WAIT" => wait::command(&cmd[1..], conn, server).await?,
+        "WAIT" => wait::command(&cmd[1..], conn, server, wait_receiver).await?,
 
         _ => {
             let response = resp::Type::SimpleError(format!("ERR unknown command: {:?}\r\n", cmd));
