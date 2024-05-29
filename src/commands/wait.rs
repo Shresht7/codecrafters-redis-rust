@@ -18,12 +18,13 @@ pub async fn command(
     server: &Arc<Mutex<Server>>,
     wait_receiver: &Arc<Mutex<mpsc::Receiver<u64>>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let (role, master_repl_offset, sender) = {
+    let (role, master_repl_offset, sender, addresses) = {
         let server = server.lock().await;
         (
             server.role.clone(),
             server.master_repl_offset,
             server.sender.clone(),
+            server.replicas.len(),
         )
     };
 
@@ -67,6 +68,13 @@ pub async fn command(
     // Counter to keep track of the number of replicas that have been synced
     let mut synced_replicas = 0;
 
+    // If the master_repl_offset is 0, return the number of replicas
+    if master_repl_offset == 0 {
+        let response = resp::Type::Integer(addresses as i64);
+        connection.write_all(&response.as_bytes()).await?;
+        return Ok(());
+    }
+
     // Flag to indicate if this is the first iteration
     let mut first_iteration = true;
     while Instant::now() < timeout {
@@ -90,8 +98,8 @@ pub async fn command(
         }
         first_iteration = false; // Set the flag to false after the first iteration to avoid sending the REPLCONF GETACK command indefinitely
 
-        // Sleep for 200 milliseconds
-        tokio::time::sleep(Duration::from_millis(200)).await;
+        // Sleep for 20 milliseconds
+        tokio::time::sleep(Duration::from_millis(20)).await;
 
         // Await response from the replica
         while let Ok(offset) = receiver.try_recv() {
