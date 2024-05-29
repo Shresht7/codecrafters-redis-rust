@@ -1,6 +1,6 @@
 // Library
 use crate::{database, helpers, parser::resp::Type};
-use std::sync::Arc;
+use std::{net::SocketAddr, sync::Arc};
 use tokio::{
     net::TcpListener,
     sync::{broadcast, Mutex},
@@ -46,6 +46,10 @@ pub struct Server {
     /// The offset is incremented every time new data is read from the master server.
     pub master_repl_offset: u64,
 
+    /// The list of replica servers connected to this master server.
+    /// Stores the address of each replica server connected to this master server.
+    pub replicas: Vec<SocketAddr>,
+
     /// The broadcast sender is used to send the server instance to each thread.
     /// This allows each thread to access the server instance and share data across threads.
     pub sender: broadcast::Sender<Type>,
@@ -61,6 +65,7 @@ pub fn new(host: &'static str, port: u16) -> Server {
         db: database::new(),
         master_replid: helpers::generate_id(40),
         master_repl_offset: 0,
+        replicas: Vec::new(),
         sender: broadcast::channel(16).0,
     }
 }

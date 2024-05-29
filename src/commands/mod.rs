@@ -54,7 +54,7 @@ pub async fn handle(
             receive(server, conn).await?;
         }
 
-        "WAIT" => wait::command(&cmd[1..], conn).await?,
+        "WAIT" => wait::command(&cmd[1..], conn, server).await?,
 
         _ => {
             let response = resp::Type::SimpleError(format!("ERR unknown command: {:?}\r\n", cmd));
