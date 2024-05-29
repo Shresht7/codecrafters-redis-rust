@@ -149,11 +149,17 @@ impl Connection {
                 let len = cmd.as_bytes().len();
                 match cmd {
                     resp::Type::Array(command) => {
-                        commands::handle(command, self, server, wait_channel).await?;
+                        commands::handle(&command, self, server, wait_channel).await?;
                         let mut server = server.lock().await;
-                        if !server.role.is_master() {
-                            // println!("Command Bytes: {:?}", len);
-                            server.master_repl_offset += len as u64;
+                        match &command[0] {
+                            resp::Type::BulkString(ref cmd) => {
+                                if cmd.to_uppercase() == "SET" {
+                                    if server.role.is_master() {
+                                        server.master_repl_offset += len as u64;
+                                    }
+                                }
+                            }
+                            _ => {}
                         }
                     }
                     resp::Type::RDBFile(_data) => {

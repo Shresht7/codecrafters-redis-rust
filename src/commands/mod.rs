@@ -21,7 +21,7 @@ mod wait;
 
 /// Handles the incoming command by parsing it and calling the appropriate command handler.
 pub async fn handle(
-    cmd: Vec<resp::Type>,
+    cmd: &Vec<resp::Type>,
     conn: &mut Connection,
     server: &Arc<Mutex<Server>>,
     wait_channel: &Arc<Mutex<(mpsc::Sender<u64>, mpsc::Receiver<u64>)>>,
@@ -76,7 +76,7 @@ pub async fn handle(
 /// Broadcast the value on the server's broadcast sender channel
 async fn broadcast(
     server: &Arc<Mutex<Server>>,
-    cmd: Vec<resp::Type>,
+    cmd: &Vec<resp::Type>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Get the server instance from the Arc<Mutex<Server>>
     let server = server.lock().await;
@@ -96,7 +96,7 @@ async fn broadcast(
         cmd,
         server.sender.receiver_count()
     );
-    server.sender.send(resp::Type::Array(cmd))?;
+    server.sender.send(resp::Type::Array(cmd.clone()))?;
     Ok(())
 }
 
