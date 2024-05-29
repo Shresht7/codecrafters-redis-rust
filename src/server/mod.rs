@@ -78,6 +78,9 @@ impl Server {
         // This will allows us to share the server instance across threads.
         let server = Arc::new(Mutex::new(self.clone()));
 
+        // TODO: There seems to be a race condition here. There is a possibility
+        // that the connection isn't established before the master server sends data.
+
         // If this server is a replica, connect to the master server
         if let Role::Replica(master_addr) = &self.role {
             self.handle_replication(master_addr, &server).await?;
