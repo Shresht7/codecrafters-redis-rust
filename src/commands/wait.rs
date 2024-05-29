@@ -68,7 +68,7 @@ pub async fn command(
     let mut synced_replicas = 0;
 
     // Flag to indicate if this is the first iteration
-    let first_iteration = true;
+    let mut first_iteration = true;
     while Instant::now() < timeout {
         // If the number of synced replicas reaches the desired number, break the loop
         if synced_replicas >= desired_replicas {
@@ -88,6 +88,7 @@ pub async fn command(
             ]);
             sender.send(command)?;
         }
+        first_iteration = false; // Set the flag to false after the first iteration to avoid sending the REPLCONF GETACK command indefinitely
 
         // Sleep for 200 milliseconds
         tokio::time::sleep(Duration::from_millis(200)).await;
@@ -99,7 +100,7 @@ pub async fn command(
                 offset, master_repl_offset
             );
             // If the offset is greater than or equal to the master_repl_offset, increment the synced_replicas counter
-            if offset >= (master_repl_offset as u64) {
+            if offset >= master_repl_offset {
                 println!("Replica is synced");
                 synced_replicas += 1;
             }
