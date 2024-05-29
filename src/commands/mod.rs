@@ -48,7 +48,10 @@ pub async fn handle(
 
         "REPLCONF" => replconf::command(&cmd[1..], conn, server).await?,
 
-        "PSYNC" => psync::command(&cmd[1..], conn, server).await?,
+        "PSYNC" => {
+            psync::command(&cmd[1..], conn, server).await?;
+            receive(server, conn).await?;
+        }
 
         _ => {
             let response = resp::Type::SimpleError(format!("ERR unknown command: {:?}\r\n", cmd));
@@ -79,4 +82,16 @@ async fn broadcast(
     // Broadcast the value to all receivers
     server.sender.send(resp::Type::Array(cmd))?;
     Ok(())
+}
+
+/// Receives messages from the broadcast channel and writes them to the connection.
+async fn receive(
+    server: &Arc<Mutex<Server>>,
+    conn: &mut Connection,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let server = server.lock().await;
+    let mut receiver = server.sender.subscribe();
+    Ok(while let Ok(x) = receiver.recv().await {
+        conn.write_all(&x.as_bytes()).await?;
+    })
 }
