@@ -156,8 +156,8 @@ impl Connection {
                         }
                     }
                     resp::Type::RDBFile(_data) => {
-                        let response = resp::Type::SimpleString("OK".into());
-                        self.write_all(&response.as_bytes()).await?;
+                        // let response = resp::Type::SimpleString("OK".into());
+                        // self.write_all(&response.as_bytes()).await?;
                         continue;
                     }
                     _ => {
