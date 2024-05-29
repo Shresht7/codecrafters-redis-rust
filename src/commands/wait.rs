@@ -69,11 +69,11 @@ pub async fn command(
     let mut synced_replicas = 0;
 
     // If the master_repl_offset is 0, return the number of replicas
-    if master_repl_offset == 0 {
-        let response = resp::Type::Integer(addresses as i64);
-        connection.write_all(&response.as_bytes()).await?;
-        return Ok(());
-    }
+    // if master_repl_offset == 0 {
+    //     let response = resp::Type::Integer(addresses as i64);
+    //     connection.write_all(&response.as_bytes()).await?;
+    //     return Ok(());
+    // }
 
     // Flag to indicate if this is the first iteration
     let mut first_iteration = true;
