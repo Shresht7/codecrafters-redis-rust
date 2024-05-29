@@ -133,7 +133,11 @@ impl Connection {
             // There can be multiple commands in a single request
             for cmd in cmds {
                 match cmd {
-                    resp::Type::Array(command) => commands::handle(command, self, server).await?,
+                    resp::Type::Array(command) => {
+                        commands::handle(command, self, server).await?;
+                        let mut server = server.lock().await;
+                        server.master_repl_offset += bytes_read as u64;
+                    }
                     resp::Type::RDBFile(_data) => {
                         // let response = resp::Type::Array(vec![resp::Type::SimpleString(format!(
                         //     "Got RDB File: {:?}",
