@@ -39,7 +39,7 @@ pub async fn handle(
 
         "SET" => {
             set::command(&cmd[1..], conn, server).await?;
-            broadcast(server, cmd[0].clone()).await?;
+            broadcast(server, cmd).await?;
         }
 
         "GET" => get::command(&cmd[1..], conn, server).await?,
@@ -66,7 +66,7 @@ pub async fn handle(
 /// Broadcast the value on the server's broadcast sender channel
 async fn broadcast(
     server: &Arc<Mutex<Server>>,
-    value: resp::Type,
+    cmd: Vec<resp::Type>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Get the server instance from the Arc<Mutex<Server>>
     let server = server.lock().await;
@@ -77,6 +77,6 @@ async fn broadcast(
     }
 
     // Broadcast the value to all receivers
-    server.sender.send(value)?;
+    server.sender.send(resp::Type::Array(cmd))?;
     Ok(())
 }
