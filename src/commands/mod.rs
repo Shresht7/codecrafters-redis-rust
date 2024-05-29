@@ -116,7 +116,7 @@ async fn receive(
         // Forward all broadcast messages to the connection
         conn.write_all(&cmd.as_bytes()).await?;
         println!(
-            "[{} - {}]Forwarded {:?} to replica {}",
+            "[{} - {}] Forwarded {:?} to replica {}",
             addr, role, cmd, conn.addr
         );
     })

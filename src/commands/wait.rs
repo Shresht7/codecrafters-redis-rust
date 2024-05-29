@@ -55,6 +55,9 @@ pub async fn command(
         desired_replicas, timeout
     );
 
+    // Discard all the messages in the channel
+    // while let Ok(_) = receiver.try_recv() {}
+
     // Counter to keep track of the number of replicas that have been synced
     let mut synced_replicas = 0;
 
