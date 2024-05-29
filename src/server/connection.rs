@@ -124,7 +124,7 @@ impl Connection {
             }
 
             // Parse the incoming data
-            let request = &self.read_buffer(bytes_read);
+            let request = self.read_buffer(bytes_read);
             println!("Received: {:?}", String::from_utf8_lossy(request));
 
             let mut err_response: Option<String> = None;
@@ -145,12 +145,13 @@ impl Connection {
             // Iterate over the parsed commands
             // There can be multiple commands in a single request
             for cmd in cmds {
+                let len = cmd.as_bytes().len();
                 match cmd {
                     resp::Type::Array(command) => {
-                        println!("Command Bytes: {:?}", bytes_read);
+                        println!("Command Bytes: {:?}", len);
                         commands::handle(command, self, server).await?;
                         let mut server = server.lock().await;
-                        server.master_repl_offset += bytes_read as u64;
+                        server.master_repl_offset += len as u64;
                     }
                     resp::Type::RDBFile(_data) => {
                         // let response = resp::Type::Array(vec![resp::Type::SimpleString(format!(
