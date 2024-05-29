@@ -101,7 +101,6 @@ impl Connection {
         loop {
             // Read the incoming data from the stream
             let bytes_read = self.read().await?;
-            println!("Bytes Read: {}", bytes_read);
             if bytes_read == 0 {
                 // If no data was read, this typically indicates that the end of the
                 // stream has been reached and the connection should be closed.
@@ -110,7 +109,6 @@ impl Connection {
 
             // Parse the incoming data
             let request = self.read_buffer(bytes_read);
-            println!("Incoming Requests: {}", String::from_utf8_lossy(request));
 
             let mut err_response: Option<String> = None;
             let mut cmds: Vec<parser::resp::Type> = Vec::new();
@@ -120,7 +118,6 @@ impl Connection {
                     err_response = Some(format!("-ERR {}\r\n", e));
                 }
             }
-            println!("Incoming Commands: {:?}", cmds);
 
             if let Some(r) = err_response {
                 self.write_all(r.as_bytes()).await?;
@@ -132,12 +129,11 @@ impl Connection {
             for cmd in cmds {
                 match cmd {
                     resp::Type::Array(command) => commands::handle(command, self, server).await?,
-                    resp::Type::RDBFile(data) => {
-                        let response = resp::Type::Array(vec![resp::Type::SimpleString(format!(
-                            "Got RDB File: {:?}",
-                            data
-                        ))]);
-                        println!("Ignoring RDB File: {:?}", response);
+                    resp::Type::RDBFile(_data) => {
+                        // let response = resp::Type::Array(vec![resp::Type::SimpleString(format!(
+                        //     "Got RDB File: {:?}",
+                        //     data
+                        // ))]);
                         // self.write_all(&response.as_bytes()).await?;
                         continue;
                     }

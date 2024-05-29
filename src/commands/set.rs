@@ -18,7 +18,6 @@ pub async fn command(
     server: &Arc<Mutex<Server>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Get database instance from the Server
-    println!("[set.rs::fn command] Acquiring lock");
     let mut server = server.lock().await;
 
     // Get the role of the server
@@ -63,13 +62,6 @@ pub async fn command(
         }
     };
 
-    println!(
-        "[set.rs::fn command] Role: {:?}, {}: {}",
-        role,
-        key.clone(),
-        value.clone()
-    );
-
     if args.len() == 2 {
         // Set the value in the database
         server.db.set(key.clone(), value.clone(), None);
@@ -112,13 +104,6 @@ pub async fn command(
         let response = Type::SimpleString("OK".into());
         connection.write_all(&response.as_bytes()).await?;
     }
-
-    let g = server.db.get(&key.clone());
-    println!(
-        "[set.rs::fn command] Key: {:?}, Value: {:?}",
-        key.clone(),
-        g
-    );
 
     Ok(())
 }

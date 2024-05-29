@@ -40,16 +40,11 @@ pub async fn command(
     let server = server.lock().await;
     let server = server.deref();
 
-    let response = server.db.get(key);
-    println!("[get.rs::fn command] DB Response: {:?}", response);
-
     // Get the value from the database
     let response = match server.db.get(key) {
         Some(value) => value.clone(),
         None => Type::BulkString("".into()),
     };
-
-    println!("[get.rs::fn command] Payload Response: {:?}", response);
 
     // Respond with the value
     connection.write_all(&response.as_bytes()).await?;
