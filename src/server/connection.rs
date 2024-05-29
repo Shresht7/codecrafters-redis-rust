@@ -122,6 +122,7 @@ impl Connection {
                     err_response = Some(format!("-ERR {}\r\n", e));
                 }
             }
+            println!("Parsed: {:?}", cmds);
 
             if let Some(r) = err_response {
                 self.write_all(r.as_bytes()).await?;

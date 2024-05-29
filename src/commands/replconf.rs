@@ -68,7 +68,9 @@ pub async fn get_ack(
     connection: &mut Connection,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Get the current replication offset from the server
+    println!("[replconf.rs] Locking server |");
     let server = server.lock().await;
+    println!("Server locked 🔒 |");
     let offset = server.master_repl_offset;
 
     // Send the REPLCONF ACK response
@@ -78,5 +80,6 @@ pub async fn get_ack(
         Type::BulkString(offset.to_string()),
     ]);
     connection.write_all(&response.as_bytes()).await?;
+    println!("Dropping server lock 🔓");
     return Ok(());
 }

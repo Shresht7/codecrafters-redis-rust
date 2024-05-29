@@ -18,7 +18,9 @@ pub async fn command(
     server: &Arc<Mutex<Server>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Get database instance from the Server
+    println!("[set.rs] Locking server |");
     let mut server = server.lock().await;
+    print!("Server locked 🔒 |");
 
     // Get the role of the server
     let role = server.role.clone();
@@ -104,6 +106,8 @@ pub async fn command(
         let response = Type::SimpleString("OK".into());
         connection.write_all(&response.as_bytes()).await?;
     }
+
+    println!("Dropping server lock 🔓");
 
     Ok(())
 }

@@ -3,7 +3,7 @@ use crate::{
     parser::resp::Type,
     server::{connection::Connection, Server},
 };
-use std::{ops::Deref, sync::Arc};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 /// Handles the GET command.
@@ -37,8 +37,9 @@ pub async fn command(
     };
 
     // Get database instance from the Server
+    println!("[get.rs] Locking server | ");
     let server = server.lock().await;
-    let server = server.deref();
+    print!("Server locked 🔒 |");
 
     // Get the value from the database
     let response = match server.db.get(key) {
@@ -48,5 +49,6 @@ pub async fn command(
 
     // Respond with the value
     connection.write_all(&response.as_bytes()).await?;
+    println!("Dropping server lock 🔓");
     Ok(())
 }
