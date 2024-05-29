@@ -133,8 +133,10 @@ impl Connection {
                 match cmd {
                     resp::Type::Array(command) => commands::handle(command, self, server).await?,
                     resp::Type::RDBFile(data) => {
-                        let response =
-                            resp::Type::SimpleString(format!("Got RDB File: {:?}", data));
+                        let response = resp::Type::Array(vec![resp::Type::SimpleString(format!(
+                            "Got RDB File: {:?}",
+                            data
+                        ))]);
                         self.write_all(&response.as_bytes()).await?;
                     }
                     _ => {
