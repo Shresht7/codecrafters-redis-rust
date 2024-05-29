@@ -14,6 +14,7 @@ mod ping;
 mod psync;
 mod replconf;
 mod set;
+mod wait;
 
 /// Handles the incoming command by parsing it and calling the appropriate command handler.
 pub async fn handle(
@@ -52,6 +53,8 @@ pub async fn handle(
             psync::command(&cmd[1..], conn, server).await?;
             receive(server, conn).await?;
         }
+
+        "WAIT" => wait::command(&cmd[1..], conn).await?,
 
         _ => {
             let response = resp::Type::SimpleError(format!("ERR unknown command: {:?}\r\n", cmd));
