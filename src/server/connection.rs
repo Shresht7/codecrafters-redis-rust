@@ -148,10 +148,12 @@ impl Connection {
                 let len = cmd.as_bytes().len();
                 match cmd {
                     resp::Type::Array(command) => {
-                        println!("Command Bytes: {:?}", len);
                         commands::handle(command, self, server).await?;
                         let mut server = server.lock().await;
-                        server.master_repl_offset += len as u64;
+                        if !server.role.is_master() {
+                            println!("Command Bytes: {:?}", len);
+                            server.master_repl_offset += len as u64;
+                        }
                     }
                     resp::Type::RDBFile(_data) => {
                         // let response = resp::Type::Array(vec![resp::Type::SimpleString(format!(
