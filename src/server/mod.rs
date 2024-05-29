@@ -77,19 +77,19 @@ impl Server {
         // Clone the server instance and wrap it in an Arc<Mutex<Server>>
         // This will allows us to share the server instance across threads.
         let server = Arc::new(Mutex::new(self.clone()));
-        let wait_receiver = Arc::new(Mutex::new(mpsc::channel::<u64>(64).1));
+        let wait_channel = Arc::new(Mutex::new(mpsc::channel::<u64>(64)));
 
         // TODO: There seems to be a race condition here. There is a possibility
         // that the connection isn't established before the master server sends data.
 
         // If this server is a replica, connect to the master server
         if let Role::Replica(master_addr) = &self.role {
-            self.handle_replication(master_addr, &server, &wait_receiver)
+            self.handle_replication(master_addr, &server, &wait_channel)
                 .await?;
         }
 
         // Handle the main connection
-        self.handle_main_connections(server, &wait_receiver).await?;
+        self.handle_main_connections(server, &wait_channel).await?;
 
         Ok(())
     }
@@ -100,7 +100,7 @@ impl Server {
         &self,
         master_addr: &String,
         server: &Arc<Mutex<Server>>,
-        wait_receiver: &Arc<Mutex<mpsc::Receiver<u64>>>,
+        wait_channel: &Arc<Mutex<(mpsc::Sender<u64>, mpsc::Receiver<u64>)>>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         println!(
             "[{}] Connecting to master server at {}...",
@@ -112,13 +112,13 @@ impl Server {
 
         // Clone the Arc<Mutex<Server>> instance
         let server = Arc::clone(server);
-        let wait_receiver = Arc::clone(wait_receiver);
+        let wait_channel = Arc::clone(wait_channel);
 
         // Handle the connection
         tokio::spawn(async move {
             println!("New replication connection from {}", connection.addr);
             connection
-                .handle(&server, &wait_receiver)
+                .handle(&server, &wait_channel)
                 .await
                 .expect("Failed to handle connection");
         });
@@ -130,7 +130,7 @@ impl Server {
     async fn handle_main_connections(
         &self,
         server: Arc<Mutex<Server>>,
-        wait_receiver: &Arc<Mutex<mpsc::Receiver<u64>>>,
+        wait_channel: &Arc<Mutex<(mpsc::Sender<u64>, mpsc::Receiver<u64>)>>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // Bind the server to the address and start listening for incoming connections
         let listener = TcpListener::bind(&self.addr).await?;
@@ -141,13 +141,13 @@ impl Server {
 
             // Clone the Arc<Mutex<Server>> instance
             let server = Arc::clone(&server);
-            let wait_receiver = Arc::clone(wait_receiver);
+            let wait_channel = Arc::clone(wait_channel);
 
             // ... and spawn a new thread for each incoming connection
             tokio::spawn(async move {
                 println!("New main connection from {}", connection.addr);
                 connection
-                    .handle(&server, &wait_receiver)
+                    .handle(&server, &wait_channel)
                     .await
                     .expect("Failed to handle connection");
             });

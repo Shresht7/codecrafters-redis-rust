@@ -3,8 +3,11 @@ use crate::{
     parser::resp,
     server::{connection::Connection, Server},
 };
-use std::sync::Arc;
-use tokio::sync::{mpsc, Mutex};
+use std::{sync::Arc, time::Duration};
+use tokio::{
+    sync::{mpsc, Mutex},
+    time::timeout,
+};
 
 // Commands
 mod echo;
@@ -21,7 +24,7 @@ pub async fn handle(
     cmd: Vec<resp::Type>,
     conn: &mut Connection,
     server: &Arc<Mutex<Server>>,
-    wait_receiver: &Arc<Mutex<mpsc::Receiver<u64>>>,
+    wait_channel: &Arc<Mutex<(mpsc::Sender<u64>, mpsc::Receiver<u64>)>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Extract the command from the parsed data
     let command = match cmd.get(0) {
@@ -52,10 +55,10 @@ pub async fn handle(
 
         "PSYNC" => {
             psync::command(&cmd[1..], conn, server).await?;
-            receive(server, conn).await?;
+            receive(server, conn, wait_channel).await?;
         }
 
-        "WAIT" => wait::command(&cmd[1..], conn, server, wait_receiver).await?,
+        "WAIT" => wait::command(&cmd[1..], conn, server, wait_channel).await?,
 
         _ => {
             let response = resp::Type::SimpleError(format!("ERR unknown command: {:?}\r\n", cmd));
@@ -101,6 +104,7 @@ async fn broadcast(
 async fn receive(
     server: &Arc<Mutex<Server>>,
     conn: &mut Connection,
+    wait_channel: &Arc<Mutex<(mpsc::Sender<u64>, mpsc::Receiver<u64>)>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Acquire the server lock and create a receiver
     let server = server.lock().await;
@@ -114,11 +118,80 @@ async fn receive(
     drop(server);
 
     Ok(while let Ok(cmd) = receiver.recv().await {
-        // Forward all broadcast messages to the connection
-        conn.write_all(&cmd.as_bytes()).await?;
-        println!(
-            "[{} - {}] Forwarded {:?} to replica {}",
-            addr, role, cmd, conn.addr
-        );
+        let array = match &cmd {
+            resp::Type::Array(array) => array,
+            _ => continue,
+        };
+
+        let command = match array.get(0) {
+            Some(resp::Type::BulkString(command)) => command,
+            _ => continue,
+        };
+
+        let subcommand = match array.get(1) {
+            Some(resp::Type::BulkString(subcommand)) => subcommand,
+            _ => continue,
+        };
+
+        let is_wait_cmd =
+            command.to_uppercase() == "REPLCONF" && subcommand.to_uppercase() == "ACK";
+
+        println!("Received broadcast: {:?}", cmd);
+
+        if !is_wait_cmd {
+            println!("Forwarding broadcast to connection");
+            // Forward all broadcast messages to the connection
+            conn.write_all(&cmd.as_bytes()).await?;
+            continue;
+        }
+
+        if is_wait_cmd {
+            println!("Received REPLCONF ACK command");
+            let offset = match array.get(2) {
+                Some(resp::Type::BulkString(offset)) => offset,
+                _ => continue,
+            };
+
+            println!("offset: {:?}", offset);
+            let duration = Duration::from_millis(200);
+            let res = timeout(duration, conn.stream.readable())
+                .await
+                .expect("Timed out waiting for replica to respond");
+
+            if res.is_err() {
+                println!("[{} - {}] Replica did not respond", addr, role);
+                continue;
+            }
+
+            let mut bytes_read_vec = Vec::new();
+            let buf = &mut [0; 1024];
+            match conn.stream.try_read(buf) {
+                Ok(0) => {
+                    println!("[{}] Connection closed", addr);
+                    break;
+                }
+                Ok(n) => {
+                    bytes_read_vec.extend_from_slice(&buf[..n]);
+                }
+                Err(e) => {
+                    println!("[{} - {}] Error: {:?}", addr, role, e);
+                }
+            }
+
+            if !bytes_read_vec.is_empty() {
+                let response = String::from_utf8_lossy(&bytes_read_vec);
+                println!("[{} - {}] Received: {:?}", addr, role, response);
+                continue;
+            }
+
+            println!("GOT BYTES: {:?}", bytes_read_vec);
+
+            println!("[{} - {}] Received ACK with offset {}", addr, role, offset);
+
+            // Send the offset to the wait channel
+            let offset = offset.parse::<u64>()?;
+            let wc = wait_channel.lock().await;
+            wc.0.send(offset).await?;
+        }
     })
 }

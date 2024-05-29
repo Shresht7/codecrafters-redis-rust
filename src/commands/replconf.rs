@@ -33,6 +33,8 @@ pub async fn command(
         }
     };
 
+    println!("REPLCONF: {:?}", subcommand);
+
     // Handle the REPLCONF GETACK command
     match subcommand.to_uppercase().as_str() {
         "LISTENING-PORT" => {
@@ -44,9 +46,9 @@ pub async fn command(
             connection.write_all(&response.as_bytes()).await?;
         }
         "GETACK" => get_ack(server, connection).await?,
-        x => {
-            let response = Type::SimpleError(format!("ERR Unknown REPLCONF subcommand '{}'", x));
-            connection.write_all(&response.as_bytes()).await?;
+        _ => {
+            let ok = Type::SimpleString("OK".into());
+            connection.write_all(&ok.as_bytes()).await?;
         }
     }
 
@@ -68,12 +70,14 @@ pub async fn get_ack(
     connection: &mut Connection,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Get the current replication offset from the server
-    let server = server.lock().await;
-    let offset = server.master_repl_offset;
+    let (addr, offset) = {
+        let server = server.lock().await;
+        (server.addr.clone(), server.master_repl_offset)
+    };
 
     println!(
-        "[{}] REPLCONF GETACK: Sending ACK with offset {}",
-        server.addr, offset
+        "[{}] REPLCONF ACK: Sending ACK with offset {}",
+        addr, offset
     );
 
     // Send the REPLCONF ACK response

@@ -28,7 +28,7 @@ pub struct Connection {
     /// The stream is used to read and write data to the client.
     /// The stream is created when a new connection is accepted by the server.
     /// The stream is closed when the connection is closed.
-    stream: TcpStream,
+    pub stream: TcpStream,
 
     /// The address of the client.
     /// Contains the IP address and port number of the client.
@@ -111,7 +111,7 @@ impl Connection {
     pub async fn handle(
         &mut self,
         server: &Arc<Mutex<Server>>,
-        wait_receiver: &Arc<Mutex<mpsc::Receiver<u64>>>,
+        wait_channel: &Arc<Mutex<(mpsc::Sender<u64>, mpsc::Receiver<u64>)>>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         println!("New connection from {}", self.addr);
         loop {
@@ -136,7 +136,7 @@ impl Connection {
                     err_response = Some(format!("-ERR {}\r\n", e));
                 }
             }
-            // println!("Parsed: {:?}", cmds);
+            println!("Parsed: {:?}", cmds);
 
             if let Some(r) = err_response {
                 self.write_all(r.as_bytes()).await?;
@@ -149,7 +149,7 @@ impl Connection {
                 let len = cmd.as_bytes().len();
                 match cmd {
                     resp::Type::Array(command) => {
-                        commands::handle(command, self, server, wait_receiver).await?;
+                        commands::handle(command, self, server, wait_channel).await?;
                         let mut server = server.lock().await;
                         if !server.role.is_master() {
                             // println!("Command Bytes: {:?}", len);

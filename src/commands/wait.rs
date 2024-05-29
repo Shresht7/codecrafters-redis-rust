@@ -16,14 +16,13 @@ pub async fn command(
     args: &[resp::Type],
     connection: &mut Connection,
     server: &Arc<Mutex<Server>>,
-    wait_receiver: &Arc<Mutex<mpsc::Receiver<u64>>>,
+    wait_channel: &Arc<Mutex<(mpsc::Sender<u64>, mpsc::Receiver<u64>)>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let (role, master_repl_offset, sender, addresses) = {
+    let (role, master_repl_offset, addresses) = {
         let server = server.lock().await;
         (
             server.role.clone(),
             server.master_repl_offset,
-            server.sender.clone(),
             server.replicas.len(),
         )
     };
@@ -46,11 +45,24 @@ pub async fn command(
     // Extract number of replicas and timeout from the arguments
     let desired_replicas = match &args[0] {
         resp::Type::BulkString(replicas) => replicas.parse::<u32>()?,
-        _ => 0,
+        _ => {
+            let response = resp::Type::SimpleError("ERR invalid number of replicas".to_string());
+            connection.write_all(&response.as_bytes()).await?;
+            return Ok(());
+        }
+    };
+    let desired_replicas = if desired_replicas as usize > addresses {
+        addresses
+    } else {
+        desired_replicas as usize
     };
     let timeout = match &args[1] {
         resp::Type::BulkString(timeout) => timeout.parse::<u32>()?,
-        _ => 1000,
+        _ => {
+            let response = resp::Type::SimpleError("ERR invalid timeout".to_string());
+            connection.write_all(&response.as_bytes()).await?;
+            return Ok(());
+        }
     };
     let timeout = Instant::now() + Duration::from_millis(timeout as u64);
 
@@ -60,20 +72,20 @@ pub async fn command(
     );
 
     // Discard all the messages in the channel
-    let mut receiver = wait_receiver.lock().await;
-    // while receiver.try_recv().is_ok() {
-    //     continue;
-    // }
+    let mut wc = wait_channel.lock().await;
+    while wc.1.try_recv().is_ok() {
+        continue;
+    }
 
     // Counter to keep track of the number of replicas that have been synced
     let mut synced_replicas = 0;
 
     // If the master_repl_offset is 0, return the number of replicas
-    // if master_repl_offset == 0 {
-    //     let response = resp::Type::Integer(addresses as i64);
-    //     connection.write_all(&response.as_bytes()).await?;
-    //     return Ok(());
-    // }
+    if master_repl_offset == 0 {
+        let response = resp::Type::Integer(addresses as i64);
+        connection.write_all(&response.as_bytes()).await?;
+        return Ok(());
+    }
 
     // Flag to indicate if this is the first iteration
     let mut first_iteration = true;
@@ -94,7 +106,9 @@ pub async fn command(
                 Type::BulkString("GETACK".to_string()),
                 Type::BulkString("*".to_string()),
             ]);
-            sender.send(command)?;
+            println!("Sending REPLCONF GETACK * command");
+            let s = server.lock().await;
+            s.sender.send(command)?;
         }
         first_iteration = false; // Set the flag to false after the first iteration to avoid sending the REPLCONF GETACK command indefinitely
 
@@ -102,7 +116,7 @@ pub async fn command(
         tokio::time::sleep(Duration::from_millis(20)).await;
 
         // Await response from the replica
-        while let Ok(offset) = receiver.try_recv() {
+        while let Ok(offset) = wc.1.try_recv() {
             println!(
                 "Received offset from replica: {}, master repl offset is {}",
                 offset, master_repl_offset
