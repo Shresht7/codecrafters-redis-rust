@@ -61,9 +61,9 @@ pub async fn command(
 
     // Discard all the messages in the channel
     let mut receiver = wait_receiver.lock().await;
-    while receiver.try_recv().is_ok() {
-        continue;
-    }
+    // while receiver.try_recv().is_ok() {
+    //     continue;
+    // }
 
     // Counter to keep track of the number of replicas that have been synced
     let mut synced_replicas = 0;
