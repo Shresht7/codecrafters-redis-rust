@@ -123,7 +123,7 @@ impl Server {
         println!("[{}] Server is listening on {}", self.addr, self.port);
         Ok(while let Ok((stream, addr)) = listener.accept().await {
             // Create a new Connection instance for the incoming connection
-            let mut connection = connection::new(stream, addr);
+            let mut connection = connection::new(stream, addr, self.role.clone());
 
             // Clone the Arc<Mutex<Server>> instance
             let server = Arc::clone(&server);

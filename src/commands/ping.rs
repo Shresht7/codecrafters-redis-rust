@@ -8,6 +8,11 @@ pub async fn command(
     connection: &mut Connection,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let response = resp::Type::Array(vec![resp::Type::SimpleString("PONG".into())]);
-    connection.write_all(&response.as_bytes()).await?;
+
+    // Send the response only if you are the master
+    if connection.role.is_master() {
+        connection.write_all(&response.as_bytes()).await?;
+    }
+
     Ok(())
 }

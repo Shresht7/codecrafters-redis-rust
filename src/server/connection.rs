@@ -2,7 +2,7 @@
 use crate::{
     commands,
     parser::{self, resp},
-    server::Server,
+    server::{Role, Server},
 };
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -40,14 +40,19 @@ pub struct Connection {
     /// The buffer is used to read data from the stream and process it.
     /// The buffer is cleared after each request is processed.
     buffer: [u8; BUFFER_SIZE],
+
+    /// The role of the server in the replication setup.
+    /// The role is used to determine the behavior of the server when handling connections.
+    pub role: Role,
 }
 
 /// Instantiate a new Connection with the provided TcpStream and SocketAddr.
-pub fn new(stream: TcpStream, addr: SocketAddr) -> Connection {
+pub fn new(stream: TcpStream, addr: SocketAddr, role: Role) -> Connection {
     Connection {
         stream,
         addr,
         buffer: [0; BUFFER_SIZE],
+        role,
     }
 }
 

@@ -81,6 +81,7 @@ impl Role {
         let mut connection = connection::new(
             stream,
             SocketAddr::new(IpAddr::from_str("127.0.0.1").unwrap(), master_port.clone()),
+            self.clone(),
         );
 
         // Send a PING
