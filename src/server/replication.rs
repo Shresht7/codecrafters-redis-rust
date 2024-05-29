@@ -11,6 +11,8 @@ use crate::{
 };
 use tokio::net::TcpStream;
 
+use super::connection::Kind;
+
 // -----------
 // REPLICATION
 // -----------
@@ -81,7 +83,7 @@ impl Role {
         let mut connection = connection::new(
             stream,
             SocketAddr::new(IpAddr::from_str("127.0.0.1").unwrap(), master_port.clone()),
-            self.clone(),
+            Kind::Replication,
         );
 
         // Send a PING

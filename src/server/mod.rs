@@ -8,6 +8,7 @@ use tokio::{
 
 // Modules
 pub mod connection;
+use connection::Kind;
 pub mod replication;
 use replication::Role;
 
@@ -123,7 +124,7 @@ impl Server {
         println!("[{}] Server is listening on {}", self.addr, self.port);
         Ok(while let Ok((stream, addr)) = listener.accept().await {
             // Create a new Connection instance for the incoming connection
-            let mut connection = connection::new(stream, addr, self.role.clone());
+            let mut connection = connection::new(stream, addr, Kind::Main);
 
             // Clone the Arc<Mutex<Server>> instance
             let server = Arc::clone(&server);

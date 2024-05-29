@@ -1,5 +1,8 @@
 // Library
-use crate::{parser::resp, server::connection::Connection};
+use crate::{
+    parser::resp,
+    server::connection::{Connection, Kind},
+};
 
 /// Handles the PING command.
 /// The PING command simply returns a PONG response.
@@ -10,7 +13,7 @@ pub async fn command(
     let response = resp::Type::Array(vec![resp::Type::SimpleString("PONG".into())]);
 
     // Send the response only if you are the master
-    if connection.role.is_master() {
+    if connection.kind == Kind::Main {
         connection.write_all(&response.as_bytes()).await?;
     }
 
