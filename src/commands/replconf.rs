@@ -71,6 +71,11 @@ pub async fn get_ack(
     let server = server.lock().await;
     let offset = server.master_repl_offset;
 
+    println!(
+        "[{}] REPLCONF GETACK: Sending ACK with offset {}",
+        server.addr, offset
+    );
+
     // Send the REPLCONF ACK response
     let response = Type::Array(vec![
         Type::BulkString("REPLCONF".into()),

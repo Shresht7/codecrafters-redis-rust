@@ -60,7 +60,9 @@ pub async fn command(
 
     // Discard all the messages in the channel
     let mut receiver = wait_receiver.lock().await;
-    while let Ok(_) = receiver.try_recv() {}
+    while receiver.try_recv().is_ok() {
+        continue;
+    }
 
     // Counter to keep track of the number of replicas that have been synced
     let mut synced_replicas = 0;
@@ -79,7 +81,11 @@ pub async fn command(
 
         // If this is the first iteration, send the REPLCONF GETACK command
         if first_iteration {
-            let command = getack_command();
+            let command = Type::Array(vec![
+                Type::BulkString("REPLCONF".to_string()),
+                Type::BulkString("GETACK".to_string()),
+                Type::BulkString("*".to_string()),
+            ]);
             sender.send(command)?;
         }
 
@@ -109,12 +115,4 @@ pub async fn command(
     }
 
     Ok(())
-}
-
-fn getack_command() -> Type {
-    Type::Array(vec![
-        Type::BulkString("REPLCONF".to_string()),
-        Type::BulkString("GETACK".to_string()),
-        Type::BulkString("*".to_string()),
-    ])
 }
