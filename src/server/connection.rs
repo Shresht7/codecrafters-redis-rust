@@ -137,7 +137,9 @@ impl Connection {
                             "Got RDB File: {:?}",
                             data
                         ))]);
-                        self.write_all(&response.as_bytes()).await?;
+                        println!("Ignoring RDB File: {:?}", response);
+                        // self.write_all(&response.as_bytes()).await?;
+                        continue;
                     }
                     _ => {
                         let response = resp::Type::SimpleError("ERR unknown command\r\n".into());
