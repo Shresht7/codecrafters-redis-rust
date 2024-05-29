@@ -96,7 +96,7 @@ impl Role {
         send_replconf_capa_psync2(&mut connection).await?;
 
         // Send PSYNC <REPLID> <OFFSET>
-        psync(&mut connection, "?", -1).await?;
+        send_psync(&mut connection, "?", -1).await?;
 
         // Return the connection to the master server so that
         // we can re-use the same connection for replication.
@@ -161,7 +161,7 @@ async fn send_replconf_capa_psync2(
 // -----
 
 // PSYNC is used to synchronize the replica server with the master server.
-async fn psync(
+async fn send_psync(
     connection: &mut connection::Connection,
     replid: &str,
     offset: i64,
