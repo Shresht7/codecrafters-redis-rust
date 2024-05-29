@@ -1,7 +1,11 @@
-use std::net::SocketAddr;
+use std::{
+    net::{IpAddr, SocketAddr},
+    str::FromStr,
+};
 
 // Library
 use crate::{
+    helpers,
     parser::resp::{array, bulk_string},
     server::connection,
 };
@@ -72,8 +76,12 @@ impl Role {
         };
 
         // Connect to the replication master
-        let stream = TcpStream::connect(addr).await?;
-        let mut connection = connection::new(stream, addr.parse::<SocketAddr>()?);
+        let stream = TcpStream::connect(&addr).await?;
+        let (_, master_port) = helpers::split_host_and_port(addr.clone(), ":")?;
+        let mut connection = connection::new(
+            stream,
+            SocketAddr::new(IpAddr::from_str("127.0.0.1").unwrap(), master_port.clone()),
+        );
 
         // Send a PING
         send_ping(&mut connection).await?;

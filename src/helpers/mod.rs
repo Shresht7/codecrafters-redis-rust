@@ -28,9 +28,9 @@ pub fn generate_id(len: u16) -> String {
 /// assert_eq!(port, 6379); // true
 /// ```
 pub fn split_host_and_port(
-    addr: &'static str,
+    addr: String,
     sep: &str,
-) -> Result<(&'static str, u16), Box<dyn std::error::Error>> {
+) -> Result<(String, u16), Box<dyn std::error::Error>> {
     // Check if the address contains the separator
     if !addr.contains(sep) {
         return Err("Invalid address".into());
@@ -44,7 +44,7 @@ pub fn split_host_and_port(
     let port = port.parse::<u16>()?; // Convert port to u16
 
     // Return the host and port
-    Ok((host, port))
+    Ok((host.to_string(), port))
 }
 
 #[cfg(test)]
@@ -68,7 +68,7 @@ mod tests {
 
     #[test]
     fn should_split_host_and_port() {
-        let addr = "127.0.0.1:6379";
+        let addr = "127.0.0.1:6379".into();
         let (host, port) = split_host_and_port(addr, ":").unwrap();
         assert_eq!(host, "127.0.0.1");
         assert_eq!(port, 6379);
@@ -76,7 +76,7 @@ mod tests {
 
     #[test]
     fn should_support_different_separators() {
-        let addr = "127.0.0.1 6379";
+        let addr = "127.0.0.1 6379".into();
         let (host, port) = split_host_and_port(addr, " ").unwrap();
         assert_eq!(host, "127.0.0.1");
         assert_eq!(port, 6379);
@@ -84,14 +84,14 @@ mod tests {
 
     #[test]
     fn should_fail_to_split_host_and_port() {
-        let addr = "127.0.0.1";
+        let addr = "127.0.0.1".into();
         let result = split_host_and_port(addr, ":");
         assert!(result.is_err());
     }
 
     #[test]
     fn should_fail_to_split_host_and_port_with_invalid_port() {
-        let addr = "127.0.0.1:invalid";
+        let addr = "127.0.0.1:invalid".into();
         let result = split_host_and_port(addr, ":");
         assert!(result.is_err());
     }
