@@ -62,7 +62,8 @@ pub async fn handle(
                 }
             }
         } else {
-            let response = resp::Type::SimpleError(format!("ERR Not an array: {:?}\r\n", cmd));
+            // If the command is not an array, ignore it for now
+            let response = resp::Type::SimpleString("OK".into());
             conn.write_all(&response.as_bytes()).await?;
         }
     }
