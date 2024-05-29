@@ -101,6 +101,17 @@ impl Server {
         // Clone the Arc<Mutex<Server>> instance
         let server = Arc::clone(server);
 
+        // Wait for the master to send a message that the RDB transfer is complete
+        println!("Waiting for RDB transfer to complete...");
+        loop {
+            let bytes_read = connection.read().await?;
+            if bytes_read == 0 {
+                break;
+            }
+            let buffer = connection.read_buffer(bytes_read);
+            println!("Bytes read: {:?}", buffer);
+        }
+
         // Handle the connection
         tokio::spawn(async move {
             connection
