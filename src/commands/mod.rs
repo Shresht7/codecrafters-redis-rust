@@ -17,56 +17,45 @@ mod set;
 
 /// Handles the incoming command by parsing it and calling the appropriate command handler.
 pub async fn handle(
-    cmds: Vec<resp::Type>,
+    cmd: Vec<resp::Type>,
     conn: &mut Connection,
     server: &Arc<Mutex<Server>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // Iterate over the parsed commands
-    // There can be multiple commands in a single request
-    for cmd in &cmds {
-        // All commands are in the shape of a RESP Array
-        if let resp::Type::Array(array) = cmd {
-            // Extract the command from the parsed data
-            let command = match array.get(0) {
-                Some(resp::Type::BulkString(command)) => command,
-                _ => {
-                    let response = resp::Type::SimpleError("ERR unknown command\r\n".into());
-                    conn.write_all(&response.as_bytes()).await?;
-                    return Ok(());
-                }
-            };
+    // Extract the command from the parsed data
+    let command = match cmd.get(0) {
+        Some(resp::Type::BulkString(command)) => command,
+        _ => {
+            let response = resp::Type::SimpleError("ERR unknown command\r\n".into());
+            conn.write_all(&response.as_bytes()).await?;
+            return Ok(());
+        }
+    };
 
-            // Handle the command
-            match command.to_uppercase().as_str() {
-                "PING" => ping::command(&array[1..], conn).await?,
+    // Handle the command
+    match command.to_uppercase().as_str() {
+        "PING" => ping::command(&cmd[1..], conn).await?,
 
-                "ECHO" => echo::command(&array[1..], conn).await?,
+        "ECHO" => echo::command(&cmd[1..], conn).await?,
 
-                "SET" => {
-                    set::command(&array[1..], conn, server).await?;
-                    broadcast(server, cmds[0].clone()).await?;
-                }
+        "SET" => {
+            set::command(&cmd[1..], conn, server).await?;
+            broadcast(server, cmd[0].clone()).await?;
+        }
 
-                "GET" => get::command(&array[1..], conn, server).await?,
+        "GET" => get::command(&cmd[1..], conn, server).await?,
 
-                "INFO" => info::command(&array[1..], conn, server).await?,
+        "INFO" => info::command(&cmd[1..], conn, server).await?,
 
-                "REPLCONF" => replconf::command(&array[1..], conn, server).await?,
+        "REPLCONF" => replconf::command(&cmd[1..], conn, server).await?,
 
-                "PSYNC" => psync::command(&array[1..], conn, server).await?,
+        "PSYNC" => psync::command(&cmd[1..], conn, server).await?,
 
-                _ => {
-                    let response =
-                        resp::Type::SimpleError(format!("ERR unknown command: {:?}\r\n", cmd));
-                    conn.write_all(&response.as_bytes()).await?;
-                }
-            }
-        } else {
-            // If the command is not an array, ignore it for now
-            let response = resp::Type::SimpleString("OK".into());
+        _ => {
+            let response = resp::Type::SimpleError(format!("ERR unknown command: {:?}\r\n", cmd));
             conn.write_all(&response.as_bytes()).await?;
         }
     }
+
     Ok(())
 }
 

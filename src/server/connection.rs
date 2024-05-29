@@ -1,5 +1,9 @@
 // Library
-use crate::{commands, parser, server::Server};
+use crate::{
+    commands,
+    parser::{self, resp},
+    server::Server,
+};
 use std::sync::Arc;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -123,8 +127,22 @@ impl Connection {
                 continue;
             }
 
-            // Handle the commands
-            commands::handle(cmds, self, server).await?;
+            // Iterate over the parsed commands
+            // There can be multiple commands in a single request
+            for cmd in cmds {
+                match cmd {
+                    resp::Type::Array(command) => commands::handle(command, self, server).await?,
+                    resp::Type::RDBFile(data) => {
+                        let response =
+                            resp::Type::SimpleString(format!("Got RDB File: {:?}", data));
+                        self.write_all(&response.as_bytes()).await?;
+                    }
+                    _ => {
+                        let response = resp::Type::SimpleError("ERR unknown command\r\n".into());
+                        self.write_all(&response.as_bytes()).await?;
+                    }
+                }
+            }
         }
 
         // Once we are out of the loop, the connection will be closed.
