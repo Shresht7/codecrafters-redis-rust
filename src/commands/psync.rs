@@ -4,7 +4,7 @@ use crate::{
     parser::resp,
     server::{connection::Connection, Server},
 };
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 use tokio::sync::Mutex;
 
 /// Handles the PSYNC command
@@ -29,6 +29,8 @@ pub async fn command(
         // Get server instance from the Server
         println!("[psync.rs::fn command] Acquiring lock");
         let server = server.lock().await;
+        let server = server.deref();
+        println!("Server Acquired: {:?}", server.addr);
 
         // Get the replication ID and offset from the arguments
         // let repl_id = match &args[0] {

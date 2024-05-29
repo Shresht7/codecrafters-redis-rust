@@ -56,12 +56,14 @@ pub async fn handle(
                 "PSYNC" => psync::command(&array[1..], conn, server).await?,
 
                 _ => {
-                    let response = resp::Type::SimpleError("ERR unknown command\r\n".into());
+                    let response =
+                        resp::Type::SimpleError(format!("ERR unknown command: {:?}\r\n", cmd));
                     conn.write_all(&response.as_bytes()).await?;
                 }
             }
         } else {
-            println!("Invalid command: {:?}", cmd);
+            let response = resp::Type::SimpleError(format!("ERR Not an array: {:?}\r\n", cmd));
+            conn.write_all(&response.as_bytes()).await?;
         }
     }
     Ok(())
