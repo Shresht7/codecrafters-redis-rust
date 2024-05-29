@@ -103,6 +103,8 @@ impl Server {
 
         // Handle the connection
         tokio::spawn(async move {
+            let my_addr = { server.lock().await.addr.clone() };
+            println!("[{}] New connection from {}", my_addr, connection.addr);
             connection
                 .handle(&server)
                 .await
@@ -129,6 +131,8 @@ impl Server {
 
             // ... and spawn a new thread for each incoming connection
             tokio::spawn(async move {
+                let my_addr = { server.lock().await.addr.clone() };
+                println!("[{}] New connection from {}", my_addr, connection.addr);
                 connection
                     .handle(&server)
                     .await
