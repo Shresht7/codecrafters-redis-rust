@@ -99,6 +99,7 @@ impl Connection {
         &mut self,
         server: &Arc<Mutex<Server>>,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        println!("New connection from {}", self.addr);
         loop {
             // Read the incoming data from the stream
             let bytes_read = self.read().await?;
@@ -110,6 +111,7 @@ impl Connection {
 
             // Parse the incoming data
             let request = self.read_buffer(bytes_read);
+            println!("Received: {:?}", String::from_utf8_lossy(request));
 
             let mut err_response: Option<String> = None;
             let mut cmds: Vec<parser::resp::Type> = Vec::new();
@@ -145,6 +147,7 @@ impl Connection {
                 }
             }
         }
+        println!("Connection closed for {}", self.addr);
 
         // Once we are out of the loop, the connection will be closed.
         Ok(())

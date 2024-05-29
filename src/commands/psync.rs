@@ -25,6 +25,7 @@ pub async fn command(
         return Ok(());
     }
 
+    let mut receiver: tokio::sync::broadcast::Receiver<resp::Type>;
     {
         // Get server instance from the Server
         let server = server.lock().await;
@@ -60,10 +61,11 @@ pub async fn command(
         connection.write_all(&response.as_bytes()).await?;
 
         // Create a new receiver for the broadcast channel
-        let mut receiver = server.sender.subscribe();
-        while let Ok(x) = receiver.recv().await {
-            connection.write_all(&x.as_bytes()).await?;
-        }
+        receiver = server.sender.subscribe();
+    }
+
+    while let Ok(x) = receiver.recv().await {
+        connection.write_all(&x.as_bytes()).await?;
     }
 
     Ok(())
