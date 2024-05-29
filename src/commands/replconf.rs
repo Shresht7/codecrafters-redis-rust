@@ -10,7 +10,7 @@ use tokio::sync::Mutex;
 pub async fn command(
     args: &[Type],
     connection: &mut Connection,
-    _server: &Arc<Mutex<Server>>,
+    server: &Arc<Mutex<Server>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Check if the command has the correct number of arguments
     if args.len() < 2 {
@@ -43,7 +43,7 @@ pub async fn command(
             let response = Type::SimpleString("OK".into());
             connection.write_all(&response.as_bytes()).await?;
         }
-        "GETACK" => get_ack(connection).await?,
+        "GETACK" => get_ack(server, connection).await?,
         x => {
             let response = Type::SimpleError(format!("ERR Unknown REPLCONF subcommand '{}'", x));
             connection.write_all(&response.as_bytes()).await?;
@@ -63,11 +63,19 @@ pub async fn command(
 /// The replica responds with a `REPLCONF ACK <replication_offset>` response.
 /// The `<replication_offset>` is the number of bytes of commands processed by the replica. It starts at 0
 /// and is incremented for every command processed by the replica.
-pub async fn get_ack(connection: &mut Connection) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn get_ack(
+    server: &Arc<Mutex<Server>>,
+    connection: &mut Connection,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // Get the current replication offset from the server
+    let server = server.lock().await;
+    let offset = server.master_repl_offset;
+
+    // Send the REPLCONF ACK response
     let response = Type::Array(vec![
         Type::BulkString("REPLCONF".into()),
         Type::BulkString("ACK".into()),
-        Type::BulkString(0.to_string()),
+        Type::BulkString(offset.to_string()),
     ]);
     connection.write_all(&response.as_bytes()).await?;
     return Ok(());
