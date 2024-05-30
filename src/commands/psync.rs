@@ -7,6 +7,10 @@ use crate::{
 use std::{sync::Arc, time::Duration};
 use tokio::sync::Mutex;
 
+// -----
+// PSYNC
+// -----
+
 /// Handles the PSYNC command
 /// The PSYNC command is used to synchronize a replica server with a master server.
 /// The command is used by the replica to request a full synchronization from the master.
@@ -18,10 +22,9 @@ pub async fn command(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Check the number of arguments
     if args.len() < 2 {
-        let response =
-            resp::Type::SimpleError("ERR wrong number of arguments for 'PSYNC' command".into());
-        connection.write_all(&response.as_bytes()).await?;
-        return Ok(());
+        return connection
+            .write_error("ERR wrong number of arguments for 'PSYNC' command. Usage PSYNC <replication_id> <offset>")
+            .await;
     }
 
     // Get the replication ID and offset from the arguments
@@ -38,19 +41,14 @@ pub async fn command(
     // };
 
     // Lock the server instance
-    println!("psync locking ...");
     let mut server = server.lock().await;
-    print!("locked 🔒");
     let role = server.role.clone();
 
     // Check if the server is a master
     if !role.is_master() {
-        let response = resp::Type::SimpleError(
-            "ERR This instance is not a master. PSYNC command is only available on the master instance."
-                .into(),
-        );
-        connection.write_all(&response.as_bytes()).await?;
-        return Ok(());
+        return connection
+            .write_error("ERR PSYNC can only be used with master servers")
+            .await;
     }
 
     // Send a full synchronization request to the replica
