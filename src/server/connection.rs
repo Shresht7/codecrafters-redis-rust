@@ -177,7 +177,10 @@ impl Connection {
     }
 
     /// Writes a error response to the client.
-    pub async fn write_error(&mut self, message: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn write_error<T>(&mut self, message: T) -> Result<(), Box<dyn std::error::Error>>
+    where
+        T: Into<String>,
+    {
         let response = resp::Type::SimpleError(message.into());
         self.write_all(&response.as_bytes()).await?;
         Ok(())
