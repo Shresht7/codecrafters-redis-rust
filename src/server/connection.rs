@@ -126,7 +126,6 @@ impl Connection {
 
             // Parse the incoming data
             let request = self.read_buffer(bytes_read);
-            println!("Raw request: {:?} of len {}", request, request.len());
             let len = request.len();
             // println!("Received: {:?}", String::from_utf8_lossy(request));
 
@@ -161,15 +160,15 @@ impl Connection {
                             resp::Type::BulkString(ref cmd) => {
                                 if cmd.to_uppercase() == "SET" {
                                     if !server.role.is_master() {
-                                        println!("{} {}", server.repl_offset, len as u64);
+                                        println!("{} {} {}", cmd, server.repl_offset, len as u64);
                                         server.repl_offset += len as u64;
                                     } else {
-                                        println!("{} {}", server.master_repl_offset, len as u64);
+                                        println!("{} {} {}", cmd, server.repl_offset, len as u64);
                                         server.master_repl_offset += len as u64;
                                     }
                                 } else if cmd.to_uppercase() == "PING" {
                                     if !server.role.is_master() {
-                                        println!("{} {}", server.repl_offset, len as u64);
+                                        println!("{} {} {}", cmd, server.repl_offset, len as u64);
                                         server.repl_offset += len as u64;
                                     }
                                 }
