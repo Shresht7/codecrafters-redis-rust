@@ -156,6 +156,8 @@ impl Connection {
                                 if cmd.to_uppercase() == "SET" {
                                     if !server.role.is_master() {
                                         server.repl_offset += len as u64;
+                                    } else {
+                                        server.master_repl_offset += len as u64;
                                     }
                                 } else if cmd.to_uppercase() == "PING" {
                                     if !server.role.is_master() {
