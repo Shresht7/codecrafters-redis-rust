@@ -17,7 +17,5 @@ pub async fn command(
         connection.write_all(&response.as_bytes()).await?;
     }
 
-    let response = resp::Type::SimpleString("PONG".into());
-    connection.write_all(&response.as_bytes()).await?;
     Ok(())
 }
