@@ -149,6 +149,7 @@ impl Connection {
                 let len = cmd.as_bytes().len();
                 match cmd {
                     resp::Type::Array(command) => {
+                        println!("Array: {:?}", command);
                         commands::handle(&command, self, server, wait_channel).await?;
                         let mut server = server.lock().await;
                         println!(
@@ -166,10 +167,6 @@ impl Connection {
                                 } else if cmd.to_uppercase() == "PING" {
                                     if !server.role.is_master() {
                                         server.repl_offset += len as u64;
-                                    }
-                                } else if cmd.to_uppercase() == "REPLCONF" {
-                                    if !server.role.is_master() {
-                                        // server.repl_offset += len as u64;
                                     }
                                 }
                             }
