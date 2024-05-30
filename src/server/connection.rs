@@ -174,7 +174,7 @@ impl Connection {
                                 } else if cmd.to_uppercase() == "REPLCONF" {
                                     match &command[1] {
                                         resp::Type::BulkString(subcommand) => {
-                                            if subcommand.to_uppercase() == "GETACK" {
+                                            if subcommand.to_uppercase() == "ACK" {
                                                 if !server.role.is_master() {
                                                     println!(
                                                         "{} {} {}",
