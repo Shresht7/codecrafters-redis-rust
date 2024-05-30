@@ -175,4 +175,11 @@ impl Connection {
         // Once we are out of the loop, the connection will be closed.
         Ok(())
     }
+
+    /// Writes a error response to the client.
+    pub async fn write_error(&mut self, message: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let response = resp::Type::SimpleError(message.into());
+        self.write_all(&response.as_bytes()).await?;
+        Ok(())
+    }
 }
