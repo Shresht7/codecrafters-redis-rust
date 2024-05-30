@@ -110,6 +110,8 @@ pub async fn command(
         // Set the value in the database
         s.db.set(key.clone(), value.clone(), milliseconds);
 
+        println!("Here");
+
         // Respond with OK
         if role.is_master() {
             println!("SET(master) {} + {}", s.master_repl_offset, len as u64);

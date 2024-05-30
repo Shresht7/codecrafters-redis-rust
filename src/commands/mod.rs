@@ -109,17 +109,16 @@ async fn receive(
     wait_channel: &Arc<Mutex<(mpsc::Sender<u64>, mpsc::Receiver<u64>)>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Acquire the server lock and create a receiver
-    println!("receive locking ...");
-    let server = server.lock().await;
-    print!("locked 🔒");
-    let addr = server.addr.clone();
-    let role = server.role.clone();
-    let mut receiver = server.sender.subscribe();
-
-    // ! Drop the server lock. This needs to be done manually because the receiver
-    // ! will be waiting for messages from the broadcast channel. If the lock is not
-    // ! dropped, the server will be locked indefinitely.
-    drop(server);
+    let (addr, role, mut receiver) = {
+        println!("receive locking ...");
+        let server = server.lock().await;
+        print!("locked 🔒");
+        (
+            server.addr.clone(),
+            server.role.clone(),
+            server.sender.subscribe(),
+        )
+    };
 
     loop {
         match receiver.recv().await {
