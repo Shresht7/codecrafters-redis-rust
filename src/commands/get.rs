@@ -6,6 +6,10 @@ use crate::{
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+// ---
+// GET
+// ---
+
 /// Handles the GET command.
 /// The GET command gets the value of a key in the database.
 /// The command returns the value if the key exists.
@@ -18,29 +22,21 @@ pub async fn command(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Check the number of arguments
     if args.len() < 1 {
-        let response = Type::SimpleError(
-            "ERR wrong number of arguments for 'GET' command. Usage: GET <key>".into(),
-        );
-        connection.write_all(&response.as_bytes()).await?;
-        return Ok(());
+        return connection
+            .write_error("ERR wrong number of arguments for 'GET' command. Usage GET key")
+            .await;
     }
 
     // Extract the key from the arguments
     let key = match args.get(0) {
         Some(key) => key,
-        _ => {
-            return {
-                let response = Type::SimpleError("ERR invalid key".into());
-                connection.write_all(&response.as_bytes()).await?;
-                Ok(())
-            }
+        None => {
+            return connection.write_error("ERR invalid key").await;
         }
     };
 
-    // Get database instance from the Server
-    let server = server.lock().await;
-
     // Get the value from the database
+    let server = server.lock().await;
     let response = match server.db.get(key) {
         Some(value) => value.clone(),
         None => Type::BulkString("".into()),
