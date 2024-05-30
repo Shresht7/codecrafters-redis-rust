@@ -156,13 +156,15 @@ pub async fn command(
     let response = resp::Type::Integer(synced_replicas as i64);
     connection.write_all(&response.as_bytes()).await?;
 
+    println!("Here");
+
     // Add the bytes that were sent later to the master_repl_offset
-    {
-        println!("wait locking ...");
-        let mut s = server.lock().await;
-        print!("locked 🔒");
-        s.master_repl_offset += later_bytes as u64;
-    }
+    // {
+    //     println!("wait locking ...");
+    //     let mut s = server.lock().await;
+    //     print!("locked 🔒");
+    //     s.master_repl_offset += later_bytes as u64;
+    // }
 
     Ok(())
 }
