@@ -175,9 +175,7 @@ async fn receive(
 
                     println!("offset: {:?}", offset);
                     let duration = Duration::from_millis(200);
-                    let res = timeout(duration, conn.stream.readable())
-                        .await
-                        .expect("Timed out waiting for replica to respond");
+                    let res = timeout(duration, conn.stream.readable()).await?;
 
                     if res.is_err() {
                         println!("[{} - {}] Replica did not respond", addr, role);
