@@ -176,6 +176,13 @@ impl Connection {
         Ok(())
     }
 
+    /// Write an OK response to the client.
+    pub async fn write_ok(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let response = resp::Type::SimpleString("OK".into());
+        self.write_all(&response.as_bytes()).await?;
+        Ok(())
+    }
+
     /// Writes a error response to the client.
     pub async fn write_error<T>(&mut self, message: T) -> Result<(), Box<dyn std::error::Error>>
     where
