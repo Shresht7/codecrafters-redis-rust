@@ -65,18 +65,21 @@ pub async fn command(
     };
 
     if args.len() == 3 {
-        {
-            // Set the value in the database
-            println!("Set locking ...");
-            let mut s = server.lock().await;
-            print!("locked 🔒");
-            s.db.set(key.clone(), value.clone(), None);
-        }
+        // Set the value in the database
+        println!("Set locking ...");
+        let mut s = server.lock().await;
+        print!("locked 🔒");
+        s.db.set(key.clone(), value.clone(), None);
 
         // Respond with OK
         if role.is_master() {
+            println!("SET(master) {} + {}", s.master_repl_offset, len as u64);
             let response = Type::SimpleString("OK".into());
             connection.write_all(&response.as_bytes()).await?;
+            s.master_repl_offset += len;
+        } else {
+            println!("SET(replica) {} + {}", s.repl_offset, len as u64);
+            s.repl_offset += len;
         }
         return Ok(());
     }
@@ -109,8 +112,6 @@ pub async fn command(
         print!("locked 🔒");
         // Set the value in the database
         s.db.set(key.clone(), value.clone(), milliseconds);
-
-        println!("Here");
 
         // Respond with OK
         if role.is_master() {
