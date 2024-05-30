@@ -156,6 +156,8 @@ impl Connection {
                                 if cmd.to_uppercase() == "SET" {
                                     if server.role.is_master() {
                                         server.master_repl_offset += len as u64;
+                                        let wc = wait_channel.lock().await;
+                                        wc.0.send(server.master_repl_offset).await?;
                                     }
                                 }
                             }
