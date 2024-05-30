@@ -76,8 +76,8 @@ pub async fn get_ack(
     };
 
     println!(
-        "[{}] REPLCONF ACK: Sending ACK with offset {}",
-        addr, offset
+        "[{}] REPLCONF ACK: Sending ACK with offset {} to {}",
+        addr, offset, connection.addr
     );
 
     // Send the REPLCONF ACK response
