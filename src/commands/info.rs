@@ -22,7 +22,9 @@ pub async fn command(
     }
 
     // Get server instance from the Server
+    println!("[info.rs] locking ...");
     let server = server.lock().await;
+    print!("locked 🔒");
 
     // Get the role of the server
     let role = match server.role {

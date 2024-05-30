@@ -79,7 +79,9 @@ async fn broadcast(
     cmd: &Vec<resp::Type>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Get the server instance from the Arc<Mutex<Server>>
+    println!("broadcast locking ...");
     let server = server.lock().await;
+    print!("locked 🔒");
     let addr = server.addr.clone();
     let role = server.role.clone();
 
@@ -107,7 +109,9 @@ async fn receive(
     wait_channel: &Arc<Mutex<(mpsc::Sender<u64>, mpsc::Receiver<u64>)>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Acquire the server lock and create a receiver
+    println!("receive locking ...");
     let server = server.lock().await;
+    print!("locked 🔒");
     let addr = server.addr.clone();
     let role = server.role.clone();
     let mut receiver = server.sender.subscribe();
@@ -226,10 +230,14 @@ async fn receive(
                     println!("[{} - {}] Received ACK with offset {}", addr, role, offset);
 
                     // Send the offset to the wait channel
-                    let wc = wait_channel.lock().await;
-                    wc.0.send(offset)
-                        .await
-                        .expect("Failed to send offset to wait channel");
+                    {
+                        println!("receive locking wait ...");
+                        let wc = wait_channel.lock().await;
+                        print!("locked 🔒");
+                        wc.0.send(offset)
+                            .await
+                            .expect("Failed to send offset to wait channel");
+                    }
                 }
             }
             Err(e) => {

@@ -38,7 +38,9 @@ pub async fn command(
     // };
 
     // Lock the server instance
+    println!("psync locking ...");
     let mut server = server.lock().await;
+    print!("locked 🔒");
     let role = server.role.clone();
 
     // Check if the server is a master

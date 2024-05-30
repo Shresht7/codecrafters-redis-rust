@@ -37,7 +37,9 @@ pub async fn command(
     };
 
     // Get database instance from the Server
+    println!("[get.rs] locking ...");
     let server = server.lock().await;
+    print!("locked 🔒");
 
     // Get the value from the database
     let response = match server.db.get(key) {

@@ -54,7 +54,9 @@ pub async fn command(
             let offset = match args.get(1) {
                 Some(Type::BulkString(offset)) => offset.parse::<u64>().unwrap_or(0),
                 _ => {
+                    println!("replconf ack locking ...");
                     let wc = wait_channel.lock().await;
+                    print!("locked 🔒");
                     wc.0.send(0).await?;
                     connection
                         .write_all(&Type::SimpleString("OK".into()).as_bytes())
@@ -62,7 +64,9 @@ pub async fn command(
                     return Ok(());
                 }
             };
+            println!("replconf ack locking ...");
             let wc = wait_channel.lock().await;
+            print!("locked 🔒");
 
             println!("REPLCONF ACK: Received ACK with offset {}", offset);
             wc.0.send(offset).await?;
@@ -97,7 +101,9 @@ pub async fn get_ack(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Get the current replication offset from the server
     let (addr, offset, role) = {
+        println!("get_ack locking ...");
         let server = server.lock().await;
+        print!("locked 🔒");
         (server.addr.clone(), server.repl_offset, server.role.clone())
     };
 
@@ -124,13 +130,10 @@ pub async fn get_ack(
     connection.write_all(&bytes).await?;
     println!("[{}] REPLCONF ACK: Sent ACK", addr);
 
-    println!(
-        "REPLCONF GETACK: Incrementing offset from {} to {}",
-        offset,
-        offset + 37
-    );
-    if offset == 0 {
+    {
+        println!("get_ack locking ...");
         let mut server = server.lock().await;
+        print!("locked 🔒");
         // TODO: Fix this. Hardcoded value for testing purposes (37 bytes for REPLCONF GETACK *)
         server.repl_offset += 37;
     }

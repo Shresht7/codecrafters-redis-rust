@@ -17,11 +17,12 @@ pub async fn command(
     connection: &mut Connection,
     server: &Arc<Mutex<Server>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // Get database instance from the Server
-    let mut server = server.lock().await;
-
-    // Get the role of the server
-    let role = server.role.clone();
+    let role = {
+        println!("SET locking ...");
+        let server = server.lock().await;
+        print!("locked 🔒");
+        server.role.clone()
+    };
 
     let len = resp::array(args.clone()).as_bytes().len() as u64;
 
@@ -64,8 +65,13 @@ pub async fn command(
     };
 
     if args.len() == 3 {
-        // Set the value in the database
-        server.db.set(key.clone(), value.clone(), None);
+        {
+            // Set the value in the database
+            println!("Set locking ...");
+            let mut s = server.lock().await;
+            print!("locked 🔒");
+            s.db.set(key.clone(), value.clone(), None);
+        }
 
         // Respond with OK
         if role.is_master() {
@@ -97,21 +103,24 @@ pub async fn command(
         _ => Some(7),
     };
 
-    // Set the value in the database
-    server.db.set(key.clone(), value.clone(), milliseconds);
+    {
+        println!("Set locking ...");
+        let mut s = server.lock().await;
+        print!("locked 🔒");
+        // Set the value in the database
+        s.db.set(key.clone(), value.clone(), milliseconds);
 
-    // Respond with OK
-    if role.is_master() {
-        println!("SET(master) {} + {}", server.master_repl_offset, len as u64);
-        let response = Type::SimpleString("OK".into());
-        connection.write_all(&response.as_bytes()).await?;
-        server.master_repl_offset += len;
-    } else {
-        println!("SET(replica) {} + {}", server.repl_offset, len as u64);
-        server.repl_offset += len;
+        // Respond with OK
+        if role.is_master() {
+            println!("SET(master) {} + {}", s.master_repl_offset, len as u64);
+            let response = Type::SimpleString("OK".into());
+            connection.write_all(&response.as_bytes()).await?;
+            s.master_repl_offset += len;
+        } else {
+            println!("SET(replica) {} + {}", s.repl_offset, len as u64);
+            s.repl_offset += len;
+        }
     }
-
-    drop(server);
 
     Ok(())
 }

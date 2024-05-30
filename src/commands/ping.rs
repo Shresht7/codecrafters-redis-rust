@@ -26,7 +26,9 @@ pub async fn command(
     if connection.kind == Kind::Main {
         connection.write_all(&response.as_bytes()).await?;
     } else {
+        println!("PING locking ...");
         let mut s = server.lock().await;
+        print!("locked 🔒");
         println!("PING(replica) {} + {}", s.repl_offset, len as u64);
         s.repl_offset += len;
     }
