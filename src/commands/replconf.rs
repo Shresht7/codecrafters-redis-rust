@@ -6,6 +6,10 @@ use crate::{
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
 
+// --------
+// REPLCONF
+// --------
+
 /// Handles the REPLCONF command.
 pub async fn command(
     args: &[Type],
@@ -15,71 +19,32 @@ pub async fn command(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Check if the command has the correct number of arguments
     if args.len() < 2 {
-        let response =
-            Type::SimpleError("ERR wrong number of arguments for 'replconf' command".into());
-        connection.write_all(&response.as_bytes()).await?;
-        return Ok(());
+        return connection
+            .write_error("ERR wrong number of arguments for 'REPLCONF' command. Usage REPLCONF <subcommand> <arg>")
+            .await;
     }
 
     // Extract Sub-Command
     let subcommand = match args.get(0) {
         Some(Type::BulkString(subcommand)) => subcommand,
         x => {
-            let response = Type::SimpleError(format!(
-                "ERR Protocol error: expected bulk string but got '{:?}'",
-                x
-            ));
-            connection.write_all(&response.as_bytes()).await?;
-            return Ok(());
+            return connection
+                .write_error(format!("ERR invalid subcommand {:?}", x))
+                .await
         }
     };
 
-    println!("REPLCONF: {:?}", subcommand);
-
-    println!("REPLCONF: {:?}", args);
-
-    // Handle the REPLCONF GETACK command
+    // Handle the REPLCONF subcommands
     match subcommand.to_uppercase().as_str() {
-        "LISTENING-PORT" => {
-            let response = Type::SimpleString("OK".into());
-            connection.write_all(&response.as_bytes()).await?;
-        }
-        "CAPA" => {
-            let response = Type::SimpleString("OK".into());
-            connection.write_all(&response.as_bytes()).await?;
-        }
-        "GETACK" => get_ack(server, connection).await?,
-        "ACK" => {
-            println!("REPLCONF ACK: {:?}", args);
-            let offset = match args.get(1) {
-                Some(Type::BulkString(offset)) => offset.parse::<u64>().unwrap_or(0),
-                _ => {
-                    println!("replconf ack locking ...");
-                    let wc = wait_channel.lock().await;
-                    print!("locked 🔒");
-                    wc.0.send(0).await?;
-                    connection
-                        .write_all(&Type::SimpleString("OK".into()).as_bytes())
-                        .await?;
-                    return Ok(());
-                }
-            };
-            println!("replconf ack locking ...");
-            let wc = wait_channel.lock().await;
-            print!("locked 🔒");
+        "LISTENING-PORT" => connection.write_ok().await?,
 
-            println!("REPLCONF ACK: Received ACK with offset {}", offset);
-            wc.0.send(offset).await?;
-            println!("REPLCONF ACK: Sent ACK with offset {}", offset);
-            connection
-                .write_all(&Type::SimpleString("OK".into()).as_bytes())
-                .await?;
-            return Ok(());
-        }
-        _ => {
-            let ok = Type::SimpleString("OK".into());
-            connection.write_all(&ok.as_bytes()).await?;
-        }
+        "CAPA" => connection.write_ok().await?,
+
+        "GETACK" => get_ack(server, connection).await?,
+
+        "ACK" => ack(args, wait_channel, connection).await?,
+
+        _ => connection.write_ok().await?,
     }
 
     Ok(())
@@ -88,6 +53,9 @@ pub async fn command(
 // ------------
 // SUB-COMMANDS
 // ------------
+
+// GET ACK
+// -------
 
 /// Handles the REPLCONF GETACK subcommand.
 /// When a master requires an acknowledgement from a replica, it sends a `REPLCONF GETACK *` to the replica.
@@ -99,18 +67,17 @@ pub async fn get_ack(
     server: &Arc<Mutex<Server>>,
     connection: &mut Connection,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // Get the current replication offset from the server
+    // Get the server address, replication offset, and role from the server instance
     let (addr, offset, role) = {
-        println!("get_ack locking ...");
         let server = server.lock().await;
-        print!("locked 🔒");
         (server.addr.clone(), server.repl_offset, server.role.clone())
     };
 
+    // If the server is a master, return an error
     if role.is_master() {
-        let response = Type::SimpleError("ERR This instance is a master".into());
-        connection.write_all(&response.as_bytes()).await?;
-        return Ok(());
+        return connection
+            .write_error("ERR GETACK can only be called on a replica")
+            .await;
     }
 
     println!(
@@ -124,19 +91,57 @@ pub async fn get_ack(
         Type::BulkString("ACK".into()),
         Type::BulkString(offset.to_string()),
     ]);
-
     let bytes = response.as_bytes();
-
     connection.write_all(&bytes).await?;
+
     println!("[{}] REPLCONF ACK: Sent ACK", addr);
 
+    // Update the replication offset of the replica
     {
-        println!("get_ack locking ...");
         let mut server = server.lock().await;
-        print!("locked 🔒");
         // TODO: Fix this. Hardcoded value for testing purposes (37 bytes for REPLCONF GETACK *)
         server.repl_offset += 37;
     }
 
     return Ok(());
+}
+
+// ACK
+// ---
+
+/// Handles the REPLCONF ACK subcommand.
+/// When a replica receives a `REPLCONF GETACK *` command from the master, it responds with a `REPLCONF ACK <replication_offset>` command.
+/// The `<replication_offset>` is the number of bytes of commands processed by the replica. It starts at 0
+/// and is incremented for every command processed by the replica.
+/// The master waits for the ACK response from the replica before sending more commands.
+async fn ack(
+    args: &[Type],
+    wait_channel: &Arc<Mutex<(mpsc::Sender<u64>, mpsc::Receiver<u64>)>>,
+    connection: &mut Connection,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // Extract the offset from the arguments
+    let offset = match args.get(1) {
+        Some(Type::BulkString(offset)) => offset,
+        _ => {
+            return connection.write_error("ERR invalid offset").await;
+        }
+    };
+    // Parse the offset as a u64
+    let offset = match offset.parse::<u64>() {
+        Ok(offset) => offset,
+        Err(x) => {
+            return connection
+                .write_error(format!("ERR failed to parse offset as u64: {:?}", x))
+                .await;
+        }
+    };
+
+    // Send the offset to the master
+    let wc = wait_channel.lock().await;
+    println!("REPLCONF ACK: Received ACK with offset {}", offset);
+    wc.0.send(offset).await?;
+    println!("REPLCONF ACK: Sent ACK with offset {}", offset);
+
+    connection.write_ok().await?;
+    Ok(())
 }
