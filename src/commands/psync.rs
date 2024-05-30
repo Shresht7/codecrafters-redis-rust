@@ -62,7 +62,7 @@ pub async fn command(
     server.replicas.push(connection.addr.clone());
 
     // Sleep for a short duration to give the replica time to setup the main connection
-    let duration = Duration::from_millis(200);
+    let duration = Duration::from_millis(500);
     tokio::time::sleep(duration).await;
 
     // Send an empty RDB file to the replica
