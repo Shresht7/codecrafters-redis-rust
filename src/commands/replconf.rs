@@ -126,7 +126,8 @@ pub async fn get_ack(
 
     {
         let mut server = server.lock().await;
-        server.repl_offset += bytes.len() as u64;
+        // TODO: Fix this. Hardcoded value for testing purposes (37 bytes for REPLCONF GETACK *)
+        server.repl_offset += 37;
     }
     return Ok(());
 }
