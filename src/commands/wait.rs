@@ -149,6 +149,8 @@ pub async fn command(
         }
     }
 
+    println!("Number of synced replicas: {}", synced_replicas);
+
     // Send the response to the client
     let response = resp::Type::Integer(synced_replicas as i64);
     connection.write_all(&response.as_bytes()).await?;
