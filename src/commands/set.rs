@@ -111,5 +111,7 @@ pub async fn command(
         server.repl_offset += len;
     }
 
+    drop(server);
+
     Ok(())
 }
