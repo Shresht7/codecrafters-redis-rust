@@ -143,6 +143,9 @@ pub async fn command(
                 }
                 Err(e) => {
                     eprintln!("No response from replica. Error: {:?}", e);
+                    connection
+                        .write_all(b"-ERR No response from replica\r\n")
+                        .await?;
                     break;
                 }
             }
