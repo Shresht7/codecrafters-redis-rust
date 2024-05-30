@@ -152,8 +152,8 @@ impl Connection {
                         commands::handle(&command, self, server, wait_channel).await?;
                         let mut server = server.lock().await;
                         println!(
-                            "repl_offset: {}, mater_repl_offset: {}",
-                            server.repl_offset, server.master_repl_offset
+                            "cmd: {}, repl_offset: {}, mater_repl_offset: {}",
+                            command[0], server.repl_offset, server.master_repl_offset
                         );
                         match &command[0] {
                             resp::Type::BulkString(ref cmd) => {
@@ -176,8 +176,8 @@ impl Connection {
                             _ => {}
                         }
                         println!(
-                            "repl_offset: {}, mater_repl_offset: {}",
-                            server.repl_offset, server.master_repl_offset
+                            "cmd: {}, repl_offset: {}, mater_repl_offset: {}",
+                            command[0], server.repl_offset, server.master_repl_offset
                         );
                     }
                     resp::Type::RDBFile(_data) => {

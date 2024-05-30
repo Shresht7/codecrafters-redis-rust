@@ -111,7 +111,7 @@ pub async fn command(
             ]);
             later_bytes += command.as_bytes().len();
             println!("Sending REPLCONF GETACK * command");
-            let mut s = server.lock().await;
+            let s = server.lock().await;
             s.sender.send(command)?;
         }
         first_iteration = false; // Set the flag to false after the first iteration to avoid sending the REPLCONF GETACK command indefinitely
