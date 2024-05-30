@@ -6,6 +6,10 @@ use crate::{
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+// ----
+// INFO
+// ----
+
 /// Handles the INFO command.
 /// The INFO command returns information and statistics about the server.
 pub async fn command(
@@ -15,16 +19,13 @@ pub async fn command(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Check the number of arguments
     if args.len() < 1 {
-        let response =
-            Type::SimpleError("ERR at least one argument is required for 'INFO' command".into());
-        connection.write_all(&response.as_bytes()).await?;
-        return Ok(());
+        return connection
+            .write_error("ERR wrong number of arguments for 'INFO' command")
+            .await;
     }
 
-    // Get server instance from the Server
-    println!("[info.rs] locking ...");
+    // Lock the server instance
     let server = server.lock().await;
-    print!("locked 🔒");
 
     // Get the role of the server
     let role = match server.role {
@@ -36,7 +37,7 @@ pub async fn command(
     let master_replid = server.master_replid.clone();
     let master_repl_offset = server.master_repl_offset;
 
-    // Respond with the server information
+    // Generate the response
     let response: String = vec![
         "# Replication".to_string(),
         role.to_string(),
@@ -45,7 +46,9 @@ pub async fn command(
     ]
     .join("\r\n");
 
+    // Respond with the server information
     let response = Type::BulkString(response);
     connection.write_all(&response.as_bytes()).await?;
+
     Ok(())
 }
