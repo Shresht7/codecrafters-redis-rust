@@ -120,17 +120,6 @@ pub async fn get_ack(
     ]);
 
     let bytes = response.as_bytes();
-    {
-        let mut s = server.lock().await;
-        let len = bytes.len();
-        println!(
-            "{} + {} = {}",
-            s.repl_offset,
-            len,
-            s.repl_offset + len as u64
-        );
-        s.repl_offset += len as u64;
-    }
 
     connection.write_all(&bytes).await?;
     println!("[{}] REPLCONF ACK: Sent ACK", addr);
