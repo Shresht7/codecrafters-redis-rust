@@ -4,13 +4,14 @@ use crate::{
     server::{connection::Connection, Server},
 };
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{mpsc, Mutex};
 
 /// Handles the REPLCONF command.
 pub async fn command(
     args: &[Type],
     connection: &mut Connection,
     server: &Arc<Mutex<Server>>,
+    wait_channel: &Arc<Mutex<(mpsc::Sender<u64>, mpsc::Receiver<u64>)>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Check if the command has the correct number of arguments
     if args.len() < 2 {
@@ -35,6 +36,10 @@ pub async fn command(
 
     println!("REPLCONF: {:?}", subcommand);
 
+    let wc = wait_channel.lock().await;
+
+    println!("REPLCONF: {:?}", args);
+
     // Handle the REPLCONF GETACK command
     match subcommand.to_uppercase().as_str() {
         "LISTENING-PORT" => {
@@ -46,6 +51,23 @@ pub async fn command(
             connection.write_all(&response.as_bytes()).await?;
         }
         "GETACK" => get_ack(server, connection).await?,
+        "ACK" => {
+            println!("REPLCONF ACK: {:?}", args);
+            let offset = match args.get(1) {
+                Some(Type::BulkString(offset)) => offset.parse::<u64>().unwrap_or(0),
+                _ => {
+                    wc.0.send(0).await?;
+                    return Ok(());
+                }
+            };
+            println!("REPLCONF ACK: Received ACK with offset {}", offset);
+            wc.0.send(offset).await?;
+            println!("REPLCONF ACK: Sent ACK with offset {}", offset);
+            connection
+                .write_all(&Type::SimpleString("OK".into()).as_bytes())
+                .await?;
+            return Ok(());
+        }
         _ => {
             let ok = Type::SimpleString("OK".into());
             connection.write_all(&ok.as_bytes()).await?;

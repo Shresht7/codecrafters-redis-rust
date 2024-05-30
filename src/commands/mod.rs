@@ -51,7 +51,7 @@ pub async fn handle(
 
         "INFO" => info::command(&cmd[1..], conn, server).await?,
 
-        "REPLCONF" => replconf::command(&cmd[1..], conn, server).await?,
+        "REPLCONF" => replconf::command(&cmd[1..], conn, server, wait_channel).await?,
 
         "PSYNC" => {
             psync::command(&cmd[1..], conn, server).await?;
@@ -139,7 +139,7 @@ async fn receive(
         println!("Received broadcast: {:?}", cmd);
 
         if !is_wait_cmd {
-            println!("Forwarding broadcast to connection");
+            println!("Forwarding broadcast to connection: {:?}", cmd);
             // Forward all broadcast messages to the connection
             conn.write_all(&cmd.as_bytes()).await?;
             continue;
@@ -191,7 +191,9 @@ async fn receive(
             // Send the offset to the wait channel
             let offset = offset.parse::<u64>()?;
             let wc = wait_channel.lock().await;
-            wc.0.send(offset).await?;
+            wc.0.send(offset)
+                .await
+                .expect("Failed to send offset to wait channel");
         }
     })
 }

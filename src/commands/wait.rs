@@ -73,9 +73,9 @@ pub async fn command(
 
     // Discard all the messages in the channel
     let mut wc = wait_channel.lock().await;
-    while wc.1.try_recv().is_ok() {
-        continue;
-    }
+    // while wc.1.try_recv().is_ok() {
+    //     continue;
+    // }
 
     // Counter to keep track of the number of replicas that have been synced
     let mut synced_replicas = 0;
@@ -113,25 +113,30 @@ pub async fn command(
         first_iteration = false; // Set the flag to false after the first iteration to avoid sending the REPLCONF GETACK command indefinitely
 
         // Sleep for 20 milliseconds
-        tokio::time::sleep(Duration::from_millis(20)).await;
+        tokio::time::sleep(Duration::from_millis(200)).await;
 
         // Await response from the replica
-        while let Ok(offset) = wc.1.try_recv() {
-            println!(
-                "Received offset from replica: {}, master repl offset is {}",
-                offset, master_repl_offset
-            );
-            // If the offset is greater than or equal to the master_repl_offset, increment the synced_replicas counter
-            if offset >= master_repl_offset {
-                println!("Replica is synced");
-                synced_replicas += 1;
-            }
-            // If the number of synced replicas reaches the desired number, break the loop
-            if synced_replicas >= desired_replicas {
+        loop {
+            if let Ok(offset) = wc.1.try_recv() {
                 println!(
-                    "Number of synced replicas reached the desired number: {}/{}",
-                    synced_replicas, desired_replicas
+                    "Received offset from replica: {}, master repl offset is {}",
+                    offset, master_repl_offset
                 );
+                // If the offset is greater than or equal to the master_repl_offset, increment the synced_replicas counter
+                if offset >= master_repl_offset {
+                    println!("Replica is synced");
+                    synced_replicas += 1;
+                }
+                // If the number of synced replicas reaches the desired number, break the loop
+                if synced_replicas >= desired_replicas {
+                    println!(
+                        "Number of synced replicas reached the desired number: {}/{}",
+                        synced_replicas, desired_replicas
+                    );
+                    break;
+                }
+            } else {
+                println!("No response from replica");
                 break;
             }
         }
