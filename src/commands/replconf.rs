@@ -57,6 +57,9 @@ pub async fn command(
                 Some(Type::BulkString(offset)) => offset.parse::<u64>().unwrap_or(0),
                 _ => {
                     wc.0.send(0).await?;
+                    connection
+                        .write_all(&Type::SimpleString("OK".into()).as_bytes())
+                        .await?;
                     return Ok(());
                 }
             };
