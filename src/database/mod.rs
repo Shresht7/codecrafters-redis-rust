@@ -19,13 +19,22 @@ pub struct Item {
 /// Database struct to store key-value pairs.
 #[derive(Clone)]
 pub struct Database {
+    /// The actual data store
     data: HashMap<Type, Item>,
+
+    /// The directory where the database is stored
+    dir: String,
+
+    /// The name of the RDB file
+    dbfilename: String,
 }
 
 /// Creates a new instance of the database.
 pub fn new() -> Database {
     Database {
         data: HashMap::new(),
+        dir: String::from(""),
+        dbfilename: String::from(""),
     }
 }
 
