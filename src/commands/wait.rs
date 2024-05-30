@@ -121,9 +121,9 @@ pub async fn command(
         {
             let mut wc = wait_channel.lock().await;
             // Await response from the replica
-            loop {
-                match wc.1.recv().await {
-                    Some(offset) => {
+            'l: loop {
+                match wc.1.try_recv() {
+                    Ok(offset) => {
                         println!(
                             "Received offset from replica: {}, master repl offset is {}",
                             offset, master_repl_offset
@@ -139,12 +139,12 @@ pub async fn command(
                                 "Number of synced replicas reached the desired number: {}/{}",
                                 synced_replicas, desired_replicas
                             );
-                            break;
+                            break 'l;
                         }
                     }
-                    None => {
-                        println!("No more messages in the channel");
-                        break;
+                    Err(e) => {
+                        eprintln!("No response from replica. Error: {:?}", e);
+                        break 'l;
                     }
                 }
             }
