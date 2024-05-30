@@ -195,6 +195,8 @@ impl Connection {
         }
         println!("Connection closed for {}", self.addr);
 
+        let response = resp::Type::SimpleString("DONE".into());
+        self.write_all(&response.as_bytes()).await?;
         // Once we are out of the loop, the connection will be closed.
         Ok(())
     }
