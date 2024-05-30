@@ -60,8 +60,18 @@ pub async fn command(
         }
     };
     // Extract the expiration time from the arguments if it exists, and parse it as a u64, otherwise set it to None
-    let expiry = match args.get(3) {
-        Some(Type::BulkString(expiry)) => Some(expiry.parse::<usize>()?),
+    let expiry = match args.get(4) {
+        Some(Type::BulkString(expiry)) => match expiry.parse::<usize>() {
+            Ok(expiry) => Some(expiry),
+            Err(x) => {
+                if role.is_master() {
+                    connection
+                        .write_error(format!("ERR invalid expiry {:?}, got {:?}", expiry, x))
+                        .await?;
+                }
+                return Ok(());
+            }
+        },
         _ => None,
     };
 
