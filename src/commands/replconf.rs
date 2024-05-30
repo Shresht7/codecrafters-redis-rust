@@ -124,10 +124,11 @@ pub async fn get_ack(
     connection.write_all(&bytes).await?;
     println!("[{}] REPLCONF ACK: Sent ACK", addr);
 
-    {
+    if offset > 0 {
         let mut server = server.lock().await;
         // TODO: Fix this. Hardcoded value for testing purposes (37 bytes for REPLCONF GETACK *)
         server.repl_offset += 37;
     }
+
     return Ok(());
 }
