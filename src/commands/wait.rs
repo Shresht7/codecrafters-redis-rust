@@ -73,9 +73,6 @@ pub async fn command(
 
     // Discard all the messages in the channel
     let mut wc = wait_channel.lock().await;
-    while wc.1.try_recv().is_ok() {
-        continue;
-    }
 
     // Counter to keep track of the number of replicas that have been synced
     let mut synced_replicas = 0;
@@ -143,7 +140,7 @@ pub async fn command(
     }
 
     // Send the response to the client
-    let response = resp::Type::Integer(synced_replicas as i64 + 1);
+    let response = resp::Type::Integer(synced_replicas as i64);
     connection.write_all(&response.as_bytes()).await?;
 
     Ok(())
