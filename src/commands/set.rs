@@ -7,6 +7,10 @@ use crate::{
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+// ---
+// SET
+// ---
+
 /// Handles the SET command.
 /// The SET command sets the value of a key in the database.
 /// If the key already exists, the value is overwritten.
@@ -17,27 +21,21 @@ pub async fn command(
     connection: &mut Connection,
     server: &Arc<Mutex<Server>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // Determine the length of the command bytes
+    let cmd_bytes_len = resp::array(args.clone()).as_bytes().len() as u64;
+
+    // Get the role of the server
     let role = {
-        println!("SET locking ...");
         let server = server.lock().await;
-        print!("locked 🔒");
         server.role.clone()
     };
-
-    let len = resp::array(args.clone()).as_bytes().len() as u64;
 
     // Check the number of arguments
     if args.len() < 3 {
         if role.is_master() {
-            let response = Type::SimpleError(
-                format!(
-                    "ERR wrong number of arguments for 'SET' command. Expected {} but got {}",
-                    3,
-                    args.len()
-                )
-                .into(),
-            );
-            connection.write_all(&response.as_bytes()).await?;
+            connection
+                .write_error("ERR wrong number of arguments for 'SET' command")
+                .await?;
         }
         return Ok(());
     }
@@ -47,8 +45,7 @@ pub async fn command(
         Some(key) => key,
         _ => {
             if role.is_master() {
-                let response = Type::SimpleError("ERR invalid key".into());
-                connection.write_all(&response.as_bytes()).await?;
+                connection.write_error("ERR invalid key").await?;
             }
             return Ok(());
         }
@@ -57,72 +54,33 @@ pub async fn command(
         Some(value) => value,
         _ => {
             if role.is_master() {
-                let response = Type::SimpleError("ERR invalid value".into());
-                connection.write_all(&response.as_bytes()).await?;
+                connection.write_error("ERR invalid value").await?;
             }
             return Ok(());
         }
     };
-
-    if args.len() == 3 {
-        // Set the value in the database
-        println!("Set locking ...");
-        let mut s = server.lock().await;
-        print!("locked 🔒");
-        s.db.set(key.clone(), value.clone(), None);
-
-        // Respond with OK
-        if role.is_master() {
-            println!("SET(master) {} + {}", s.master_repl_offset, len as u64);
-            let response = Type::SimpleString("OK".into());
-            connection.write_all(&response.as_bytes()).await?;
-            s.master_repl_offset += len;
-        } else {
-            println!("SET(replica) {} + {}", s.repl_offset, len as u64);
-            s.repl_offset += len;
-        }
-        return Ok(());
-    }
-
-    // Extract the expiration time from the arguments
-    let milliseconds = match args.get(3).unwrap().to_string().to_uppercase().as_str() {
-        "PX" => match args.get(4) {
-            Some(Type::BulkString(time)) => match time.parse::<usize>() {
-                Ok(time) => Some(time),
-                _ => {
-                    let response = Type::SimpleError("ERR invalid time".into());
-                    connection.write_all(&response.as_bytes()).await?;
-                    return Ok(());
-                }
-            },
-            _ => {
-                if role.is_master() {
-                    let response = Type::SimpleError("ERR invalid time".into());
-                    connection.write_all(&response.as_bytes()).await?;
-                }
-                return Ok(());
-            }
-        },
-        _ => Some(7),
+    // Extract the expiration time from the arguments if it exists, and parse it as a u64, otherwise set it to None
+    let expiry = match args.get(3) {
+        Some(Type::BulkString(expiry)) => Some(expiry.parse::<usize>()?),
+        _ => None,
     };
 
-    {
-        println!("Set locking ...");
-        let mut s = server.lock().await;
-        print!("locked 🔒");
-        // Set the value in the database
-        s.db.set(key.clone(), value.clone(), milliseconds);
+    // Set the value in the database
+    let mut s = server.lock().await;
+    s.db.set(key.clone(), value.clone(), expiry);
 
-        // Respond with OK
-        if role.is_master() {
-            println!("SET(master) {} + {}", s.master_repl_offset, len as u64);
-            let response = Type::SimpleString("OK".into());
-            connection.write_all(&response.as_bytes()).await?;
-            s.master_repl_offset += len;
-        } else {
-            println!("SET(replica) {} + {}", s.repl_offset, len as u64);
-            s.repl_offset += len;
-        }
+    if role.is_master() {
+        // If the server is a master, increment the master replication offset
+        println!(
+            "SET(master) {} + {}",
+            s.master_repl_offset, cmd_bytes_len as u64
+        );
+        connection.write_ok().await?;
+        s.master_repl_offset += cmd_bytes_len;
+    } else {
+        // If the server is a replica, increment the replica replication offset
+        println!("SET(replica) {} + {}", s.repl_offset, cmd_bytes_len as u64);
+        s.repl_offset += cmd_bytes_len;
     }
 
     Ok(())
