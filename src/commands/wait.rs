@@ -116,7 +116,7 @@ pub async fn command(
         first_iteration = false; // Set the flag to false after the first iteration to avoid sending the REPLCONF GETACK command indefinitely
 
         // Sleep for 20 milliseconds
-        tokio::time::sleep(Duration::from_millis(20)).await;
+        tokio::time::sleep(Duration::from_millis(50)).await;
 
         let mut wc = wait_channel.lock().await;
         // Await response from the replica
