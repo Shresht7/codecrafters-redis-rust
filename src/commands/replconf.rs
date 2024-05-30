@@ -95,6 +95,13 @@ pub async fn get_ack(
     let mut server = server.lock().await;
     let addr = server.addr.clone();
     let offset = server.repl_offset;
+    let role = server.role.clone();
+
+    if role.is_master() {
+        let response = Type::SimpleError("ERR This instance is a master".into());
+        connection.write_all(&response.as_bytes()).await?;
+        return Ok(());
+    }
 
     println!(
         "[{}] REPLCONF ACK: Sending ACK with offset {} to {}",
