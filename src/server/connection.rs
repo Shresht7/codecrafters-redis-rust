@@ -126,6 +126,7 @@ impl Connection {
 
             // Parse the incoming data
             let request = self.read_buffer(bytes_read);
+            let len = request.len();
             // println!("Received: {:?}", String::from_utf8_lossy(request));
 
             let mut err_response: Option<String> = None;
@@ -146,7 +147,6 @@ impl Connection {
             // Iterate over the parsed commands
             // There can be multiple commands in a single request
             for cmd in cmds {
-                let len = cmd.as_bytes().len();
                 match cmd {
                     resp::Type::Array(command) => {
                         println!("Array: {:?}", command);
