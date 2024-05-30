@@ -18,8 +18,9 @@ pub async fn command(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Check the number of arguments
     if args.len() < 1 {
-        let response =
-            Type::SimpleError("ERR at least one argument is required for 'GET' command".into());
+        let response = Type::SimpleError(
+            "ERR wrong number of arguments for 'GET' command. Usage: GET <key>".into(),
+        );
         connection.write_all(&response.as_bytes()).await?;
         return Ok(());
     }
@@ -37,9 +38,7 @@ pub async fn command(
     };
 
     // Get database instance from the Server
-    println!("[get.rs] locking ...");
     let server = server.lock().await;
-    print!("locked 🔒");
 
     // Get the value from the database
     let response = match server.db.get(key) {

@@ -22,7 +22,7 @@ async fn main() {
 
     // If the replica-of address is set, the server will act as a replica
     if let Some(replicaof) = config.replicaof {
-        println!("[{}] Replica of: {}", server.addr, replicaof);
+        println!("[{}] Replica of {}", server.addr, replicaof);
         server
             .replicaof(replicaof)
             .expect("Failed to set replicaof address");
