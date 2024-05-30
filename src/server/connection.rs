@@ -149,7 +149,6 @@ impl Connection {
             for cmd in cmds {
                 match cmd {
                     resp::Type::Array(command) => {
-                        let subcommand = &command[1];
                         println!("Array: {:?}", command);
                         commands::handle(&command, self, server, wait_channel).await?;
                         let mut server = server.lock().await;
@@ -173,9 +172,19 @@ impl Connection {
                                         server.repl_offset += len as u64;
                                     }
                                 } else if cmd.to_uppercase() == "REPLCONF" {
-                                    if subcommand.to_string().to_uppercase() == "ACK" {
-                                        println!("{} {} {}", cmd, server.repl_offset, len as u64);
-                                        server.repl_offset += len as u64;
+                                    match &command[1] {
+                                        resp::Type::BulkString(subcommand) => {
+                                            if subcommand.to_uppercase() == "GETACK" {
+                                                if !server.role.is_master() {
+                                                    println!(
+                                                        "{} {} {}",
+                                                        cmd, server.repl_offset, len as u64
+                                                    );
+                                                    server.repl_offset += len as u64;
+                                                }
+                                            }
+                                        }
+                                        _ => {}
                                     }
                                 }
                             }
