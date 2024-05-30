@@ -120,6 +120,12 @@ pub async fn get_ack(
     ]);
     let bytes = response.as_bytes();
     let len = bytes.len();
+    println!(
+        "{} + {} = {}",
+        server.repl_offset,
+        len,
+        server.repl_offset + len as u64
+    );
     server.repl_offset += len as u64;
 
     connection.write_all(&bytes).await?;

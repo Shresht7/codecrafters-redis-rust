@@ -137,11 +137,7 @@ impl Connection {
                     err_response = Some(format!("-ERR {}\r\n", e));
                 }
             }
-            println!(
-                "Parsed: {:?} of len {}",
-                cmds,
-                resp::Type::Array(cmds.clone()).as_bytes().len()
-            );
+            println!("Parsed: {:?} of len", cmds);
 
             if let Some(r) = err_response {
                 self.write_all(r.as_bytes()).await?;
@@ -164,12 +160,15 @@ impl Connection {
                             resp::Type::BulkString(ref cmd) => {
                                 if cmd.to_uppercase() == "SET" {
                                     if !server.role.is_master() {
+                                        println!("{} {}", server.repl_offset, len as u64);
                                         server.repl_offset += len as u64;
                                     } else {
+                                        println!("{} {}", server.master_repl_offset, len as u64);
                                         server.master_repl_offset += len as u64;
                                     }
                                 } else if cmd.to_uppercase() == "PING" {
                                     if !server.role.is_master() {
+                                        println!("{} {}", server.repl_offset, len as u64);
                                         server.repl_offset += len as u64;
                                     }
                                 }
