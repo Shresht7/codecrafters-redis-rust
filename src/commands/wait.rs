@@ -143,7 +143,7 @@ pub async fn command(
     }
 
     // Send the response to the client
-    let response = resp::Type::Integer(synced_replicas as i64);
+    let response = resp::Type::Integer(synced_replicas as i64 + 1);
     connection.write_all(&response.as_bytes()).await?;
 
     Ok(())
