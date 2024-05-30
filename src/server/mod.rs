@@ -46,6 +46,9 @@ pub struct Server {
     /// The offset is incremented every time new data is read from the master server.
     pub master_repl_offset: u64,
 
+    /// The number of bytes processed by the replica.
+    pub repl_offset: u64,
+
     /// The list of replica servers connected to this master server.
     /// Stores the address of each replica server connected to this master server.
     pub replicas: Vec<SocketAddr>,
@@ -65,6 +68,7 @@ pub fn new(host: &'static str, port: u16) -> Server {
         db: database::new(),
         master_replid: helpers::generate_id(40),
         master_repl_offset: 0,
+        repl_offset: 0,
         replicas: Vec::new(),
         sender: broadcast::channel(16).0,
     }

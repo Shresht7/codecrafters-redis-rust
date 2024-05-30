@@ -94,7 +94,7 @@ pub async fn get_ack(
     // Get the current replication offset from the server
     let (addr, offset) = {
         let server = server.lock().await;
-        (server.addr.clone(), server.master_repl_offset)
+        (server.addr.clone(), server.repl_offset)
     };
 
     println!(
