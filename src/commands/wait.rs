@@ -73,6 +73,7 @@ pub async fn command(
 
     // Discard all the messages in the channel
     let mut wc = wait_channel.lock().await;
+    wc.1.try_recv().ok();
 
     println!("Locked wait_channel");
 
