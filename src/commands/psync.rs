@@ -4,7 +4,7 @@ use crate::{
     parser::resp,
     server::{connection::Connection, Server},
 };
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 use tokio::sync::Mutex;
 
 /// Handles the PSYNC command
@@ -60,6 +60,9 @@ pub async fn command(
 
     // Add the replica to the list of replicas
     server.replicas.push(connection.addr.clone());
+
+    let duration = Duration::from_millis(500);
+    tokio::time::sleep(duration).await;
 
     // Send an empty RDB file to the replica
     let rdb = database::rdb::EMPTY_RDB;
