@@ -127,7 +127,7 @@ impl Connection {
             // Parse the incoming data
             let request = self.read_buffer(bytes_read);
             let len = request.len();
-            // println!("Received: {:?}", String::from_utf8_lossy(request));
+            println!("Received: {:?}", String::from_utf8_lossy(request));
 
             let mut err_response: Option<String> = None;
             let mut cmds: Vec<parser::resp::Type> = Vec::new();
@@ -137,7 +137,11 @@ impl Connection {
                     err_response = Some(format!("-ERR {}\r\n", e));
                 }
             }
-            println!("Parsed: {:?}", cmds);
+            println!(
+                "Parsed: {:?} of len {}",
+                cmds,
+                resp::Type::Array(cmds.clone()).as_bytes().len()
+            );
 
             if let Some(r) = err_response {
                 self.write_all(r.as_bytes()).await?;
