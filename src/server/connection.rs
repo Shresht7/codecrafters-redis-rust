@@ -169,7 +169,7 @@ impl Connection {
                                     }
                                 } else if cmd.to_uppercase() == "REPLCONF" {
                                     if !server.role.is_master() {
-                                        server.repl_offset += len as u64;
+                                        // server.repl_offset += len as u64;
                                     }
                                 }
                             }
