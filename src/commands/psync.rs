@@ -39,6 +39,17 @@ pub async fn command(
 
     // Lock the server instance
     let mut server = server.lock().await;
+    let role = server.role.clone();
+
+    // Check if the server is a master
+    if !role.is_master() {
+        let response = resp::Type::SimpleError(
+            "ERR This instance is not a master. PSYNC command is only available on the master instance."
+                .into(),
+        );
+        connection.write_all(&response.as_bytes()).await?;
+        return Ok(());
+    }
 
     // Send a full synchronization request to the replica
     let repl_id = server.master_replid.clone();
