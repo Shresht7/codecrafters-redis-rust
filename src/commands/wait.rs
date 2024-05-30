@@ -72,10 +72,9 @@ pub async fn command(
     );
 
     // Discard all the messages in the channel
-    let mut wc = wait_channel.lock().await;
-    while wc.1.try_recv().is_ok() {
-        continue;
-    }
+    // while wc.1.try_recv().is_ok() {
+    //     continue;
+    // }
 
     println!("Locked wait_channel");
 
@@ -119,29 +118,33 @@ pub async fn command(
         // Sleep for 20 milliseconds
         tokio::time::sleep(Duration::from_millis(200)).await;
 
+        let mut wc = wait_channel.lock().await;
         // Await response from the replica
         loop {
-            if let Ok(offset) = wc.1.try_recv() {
-                println!(
-                    "Received offset from replica: {}, master repl offset is {}",
-                    offset, master_repl_offset
-                );
-                // If the offset is greater than or equal to the master_repl_offset, increment the synced_replicas counter
-                if offset >= master_repl_offset {
-                    println!("Replica is synced");
-                    synced_replicas += 1;
-                }
-                // If the number of synced replicas reaches the desired number, break the loop
-                if synced_replicas >= desired_replicas {
+            match wc.1.try_recv() {
+                Ok(offset) => {
                     println!(
-                        "Number of synced replicas reached the desired number: {}/{}",
-                        synced_replicas, desired_replicas
+                        "Received offset from replica: {}, master repl offset is {}",
+                        offset, master_repl_offset
                     );
+                    // If the offset is greater than or equal to the master_repl_offset, increment the synced_replicas counter
+                    if offset >= master_repl_offset {
+                        println!("Replica is synced");
+                        synced_replicas += 1;
+                    }
+                    // If the number of synced replicas reaches the desired number, break the loop
+                    if synced_replicas >= desired_replicas {
+                        println!(
+                            "Number of synced replicas reached the desired number: {}/{}",
+                            synced_replicas, desired_replicas
+                        );
+                        break;
+                    }
+                }
+                Err(e) => {
+                    eprintln!("No response from replica. Error: {:?}", e);
                     break;
                 }
-            } else {
-                println!("No response from replica");
-                break;
             }
         }
     }

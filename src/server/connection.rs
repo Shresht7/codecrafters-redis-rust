@@ -117,7 +117,7 @@ impl Connection {
         loop {
             // Read the incoming data from the stream
             let bytes_read = self.read().await?;
-            // println!("Bytes read: {}", bytes_read);
+            println!("Bytes read: {}", bytes_read);
             if bytes_read == 0 {
                 // If no data was read, this typically indicates that the end of the
                 // stream has been reached and the connection should be closed.

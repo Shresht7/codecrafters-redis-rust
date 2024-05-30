@@ -36,8 +36,6 @@ pub async fn command(
 
     println!("REPLCONF: {:?}", subcommand);
 
-    let wc = wait_channel.lock().await;
-
     println!("REPLCONF: {:?}", args);
 
     // Handle the REPLCONF GETACK command
@@ -56,6 +54,7 @@ pub async fn command(
             let offset = match args.get(1) {
                 Some(Type::BulkString(offset)) => offset.parse::<u64>().unwrap_or(0),
                 _ => {
+                    let wc = wait_channel.lock().await;
                     wc.0.send(0).await?;
                     connection
                         .write_all(&Type::SimpleString("OK".into()).as_bytes())
@@ -63,6 +62,8 @@ pub async fn command(
                     return Ok(());
                 }
             };
+            let wc = wait_channel.lock().await;
+
             println!("REPLCONF ACK: Received ACK with offset {}", offset);
             wc.0.send(offset).await?;
             println!("REPLCONF ACK: Sent ACK with offset {}", offset);
@@ -122,5 +123,6 @@ pub async fn get_ack(
     server.repl_offset += len as u64;
 
     connection.write_all(&bytes).await?;
+    println!("[{}] REPLCONF ACK: Sent ACK", addr);
     return Ok(());
 }
