@@ -38,12 +38,12 @@ pub async fn handle(
 
     // Handle the command
     match command.to_uppercase().as_str() {
-        "PING" => ping::command(&cmd[1..], conn).await?,
+        "PING" => ping::command(cmd, conn, server).await?,
 
         "ECHO" => echo::command(&cmd[1..], conn).await?,
 
         "SET" => {
-            set::command(&cmd[1..], conn, server).await?;
+            set::command(cmd, conn, server).await?;
             broadcast(server, cmd).await?;
         }
 

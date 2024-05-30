@@ -126,7 +126,6 @@ impl Connection {
 
             // Parse the incoming data
             let request = self.read_buffer(bytes_read);
-            let len = request.len();
             println!(
                 "Received: {} {:?}",
                 String::from_utf8_lossy(request),
@@ -155,34 +154,6 @@ impl Connection {
                     resp::Type::Array(command) => {
                         println!("Array: {:?}", command);
                         commands::handle(&command, self, server, wait_channel).await?;
-                        let mut server = server.lock().await;
-                        println!(
-                            "repl_offset: {}, mater_repl_offset: {}",
-                            server.repl_offset, server.master_repl_offset
-                        );
-                        match &command[0] {
-                            resp::Type::BulkString(ref cmd) => {
-                                if cmd.to_uppercase() == "SET" {
-                                    if !server.role.is_master() {
-                                        println!("{} {} {}", cmd, server.repl_offset, len as u64);
-                                        server.repl_offset += len as u64;
-                                    } else {
-                                        println!("{} {} {}", cmd, server.repl_offset, len as u64);
-                                        server.master_repl_offset += len as u64;
-                                    }
-                                } else if cmd.to_uppercase() == "PING" {
-                                    if !server.role.is_master() {
-                                        println!("{} {} {}", cmd, server.repl_offset, len as u64);
-                                        server.repl_offset += len as u64;
-                                    }
-                                }
-                            }
-                            _ => {}
-                        }
-                        println!(
-                            "repl_offset: {}, mater_repl_offset: {}",
-                            server.repl_offset, server.master_repl_offset
-                        );
                     }
                     resp::Type::RDBFile(_data) => {
                         // let response =
