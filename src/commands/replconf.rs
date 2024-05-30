@@ -96,7 +96,7 @@ pub async fn get_ack(
     connection: &mut Connection,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Get the current replication offset from the server
-    let mut server = server.lock().await;
+    let server = server.lock().await;
     let addr = server.addr.clone();
     let offset = server.repl_offset;
     let role = server.role.clone();
@@ -119,8 +119,8 @@ pub async fn get_ack(
         Type::BulkString(offset.to_string()),
     ]);
     let bytes = response.as_bytes();
-    let len = bytes.len();
-    server.repl_offset += len as u64;
+    // let len = bytes.len();
+    // server.repl_offset += len as u64;
 
     connection.write_all(&bytes).await?;
     println!("[{}] REPLCONF ACK: Sent ACK", addr);
