@@ -23,10 +23,10 @@ pub struct Database {
     data: HashMap<Type, Item>,
 
     /// The directory where the database is stored
-    dir: String,
+    pub dir: String,
 
     /// The name of the RDB file
-    dbfilename: String,
+    pub dbfilename: String,
 }
 
 /// Creates a new instance of the database.
