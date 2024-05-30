@@ -96,10 +96,10 @@ pub async fn get_ack(
     connection: &mut Connection,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Get the current replication offset from the server
-    let server = server.lock().await;
-    let addr = server.addr.clone();
-    let offset = server.repl_offset;
-    let role = server.role.clone();
+    let (addr, offset, role) = {
+        let server = server.lock().await;
+        (server.addr.clone(), server.repl_offset, server.role.clone())
+    };
 
     if role.is_master() {
         let response = Type::SimpleError("ERR This instance is a master".into());
