@@ -90,6 +90,7 @@ pub async fn command(
     }
 
     // Flag to indicate if this is the first iteration
+    let mut later_bytes = 0;
     let mut first_iteration = true;
     while Instant::now() < timeout {
         // If the number of synced replicas reaches the desired number, break the loop
@@ -108,8 +109,9 @@ pub async fn command(
                 Type::BulkString("GETACK".to_string()),
                 Type::BulkString("*".to_string()),
             ]);
+            later_bytes += command.as_bytes().len();
             println!("Sending REPLCONF GETACK * command");
-            let s = server.lock().await;
+            let mut s = server.lock().await;
             s.sender.send(command)?;
         }
         first_iteration = false; // Set the flag to false after the first iteration to avoid sending the REPLCONF GETACK command indefinitely
@@ -147,6 +149,12 @@ pub async fn command(
     // Send the response to the client
     let response = resp::Type::Integer(synced_replicas as i64);
     connection.write_all(&response.as_bytes()).await?;
+
+    // Add the bytes that were sent later to the master_repl_offset
+    {
+        let mut s = server.lock().await;
+        s.master_repl_offset += later_bytes as u64;
+    }
 
     Ok(())
 }
