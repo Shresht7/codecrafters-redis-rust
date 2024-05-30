@@ -126,6 +126,7 @@ impl Connection {
 
             // Parse the incoming data
             let request = self.read_buffer(bytes_read);
+            println!("Raw request: {:?} of len {}", request, request.len());
             let len = request.len();
             println!("Received: {:?}", String::from_utf8_lossy(request));
 
