@@ -118,15 +118,19 @@ pub async fn get_ack(
         Type::BulkString("ACK".into()),
         Type::BulkString(offset.to_string()),
     ]);
+
     let bytes = response.as_bytes();
-    // let len = bytes.len();
-    // println!(
-    //     "{} + {} = {}",
-    //     server.repl_offset,
-    //     len,
-    //     server.repl_offset + len as u64
-    // );
-    // server.repl_offset += len as u64;
+    {
+        let mut s = server.lock().await;
+        let len = bytes.len();
+        println!(
+            "{} + {} = {}",
+            s.repl_offset,
+            len,
+            s.repl_offset + len as u64
+        );
+        s.repl_offset += len as u64;
+    }
 
     connection.write_all(&bytes).await?;
     println!("[{}] REPLCONF ACK: Sent ACK", addr);
