@@ -152,8 +152,8 @@ impl Connection {
                         commands::handle(&command, self, server, wait_channel).await?;
                         let mut server = server.lock().await;
                         println!(
-                            "cmd: {}, repl_offset: {}, mater_repl_offset: {}",
-                            command[0], server.repl_offset, server.master_repl_offset
+                            "repl_offset: {}, mater_repl_offset: {}",
+                            server.repl_offset, server.master_repl_offset
                         );
                         match &command[0] {
                             resp::Type::BulkString(ref cmd) => {
@@ -169,15 +169,15 @@ impl Connection {
                                     }
                                 } else if cmd.to_uppercase() == "REPLCONF" {
                                     if !server.role.is_master() {
-                                        server.repl_offset += len as u64;
+                                        // server.repl_offset += len as u64;
                                     }
                                 }
                             }
                             _ => {}
                         }
                         println!(
-                            "cmd: {}, repl_offset: {}, mater_repl_offset: {}",
-                            command[0], server.repl_offset, server.master_repl_offset
+                            "repl_offset: {}, mater_repl_offset: {}",
+                            server.repl_offset, server.master_repl_offset
                         );
                     }
                     resp::Type::RDBFile(_data) => {

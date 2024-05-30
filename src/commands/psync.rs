@@ -53,8 +53,9 @@ pub async fn command(
 
     // Send a full synchronization request to the replica
     let repl_id = server.master_replid.clone();
-    let repl_offset = server.master_repl_offset;
-    let response = resp::Type::SimpleString(format!("FULLRESYNC {} {}", repl_id, repl_offset));
+    let master_repl_offset = server.master_repl_offset;
+    let response =
+        resp::Type::SimpleString(format!("FULLRESYNC {} {}", repl_id, master_repl_offset));
     connection.write_all(&response.as_bytes()).await?;
 
     // Add the replica to the list of replicas
