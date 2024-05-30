@@ -153,11 +153,9 @@ impl Connection {
                         let mut server = server.lock().await;
                         match &command[0] {
                             resp::Type::BulkString(ref cmd) => {
-                                let wc = wait_channel.lock().await;
                                 if cmd.to_uppercase() == "SET" {
                                     if !server.role.is_master() {
-                                        server.master_repl_offset += len as u64;
-                                        wc.0.send(server.master_repl_offset).await?;
+                                        server.repl_offset += len as u64;
                                     }
                                 } else if cmd.to_uppercase() == "PING" {
                                     if !server.role.is_master() {

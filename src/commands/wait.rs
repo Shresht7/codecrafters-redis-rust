@@ -74,6 +74,8 @@ pub async fn command(
     // Discard all the messages in the channel
     let mut wc = wait_channel.lock().await;
 
+    println!("Locked wait_channel");
+
     // Counter to keep track of the number of replicas that have been synced
     let mut synced_replicas = 0;
 
