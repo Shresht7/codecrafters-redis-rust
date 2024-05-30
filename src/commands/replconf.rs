@@ -122,6 +122,7 @@ pub async fn get_ack(
     let bytes = response.as_bytes();
 
     connection.write_all(&bytes).await?;
+    println!("[{}] REPLCONF ACK: Sent ACK", addr);
 
     println!(
         "REPLCONF GETACK: Incrementing offset from {} to {}",
