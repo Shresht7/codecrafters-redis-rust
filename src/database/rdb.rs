@@ -1,10 +1,9 @@
-use tokio::io::AsyncReadExt;
-use tokio::time::Instant;
 // Library
-use crate::helpers;
 use byteorder::{ByteOrder, LittleEndian};
 use std::collections::HashMap;
 use std::io::Cursor;
+use tokio::io::AsyncReadExt;
+use tokio::time::Instant;
 
 /// The magic bytes at the start of an RDB file
 pub const MAGIC_BYTES: &[u8; 5] = b"REDIS";
@@ -144,16 +143,6 @@ impl RDB {
 
             let key = read_encoded_string(cursor).await?;
             let value = read_encoded_string(cursor).await?;
-            let is_expired =
-                expiry.map_or(false, |e| e < Instant::now().elapsed().as_millis() as u128);
-
-            println!(
-                "Key: {}, Value: {} (expiry in {}ms, expired: {})",
-                key,
-                value,
-                expiry.unwrap_or(0),
-                is_expired
-            );
 
             // Check if the key has expired, if so, skip over it
             if !expiry.is_none() && expiry.unwrap() < Instant::now().elapsed().as_millis() as u128 {

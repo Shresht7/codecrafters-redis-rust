@@ -79,7 +79,7 @@ impl Database {
                     .expect("Failed to parse RDB file.");
                 for ele in rdb.data {
                     println!(
-                        "Key - {}, Value - {:?}, Expiry - {:?}",
+                        "Key - {}, Value - {}, Expiry - {:?}",
                         ele.0, ele.1 .0, ele.1 .1
                     );
                     let value = match ele.1 .0 {
