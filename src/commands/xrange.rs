@@ -44,12 +44,14 @@ pub async fn command(
         }
     };
     let end = match args.get(3) {
-        Some(Type::BulkString(end)) => end,
+        Some(Type::BulkString(id)) => match id.as_str() {
+            "+" => StreamID::from_parts(u64::MAX, u64::MAX),
+            _ => StreamID::from_id(&id),
+        },
         _ => {
             return connection.write_error("ERR invalid end").await;
         }
     };
-    let end = StreamID::from_id(&end);
 
     // Lock the server
     let s = server.lock().await;
@@ -93,7 +95,7 @@ pub async fn command(
         })
         .collect();
 
-    // println!("{:?}", res);
+    // println!("Result {:?}", res);
 
     // Write the response
     let response = Type::Array(res);
