@@ -72,12 +72,16 @@ impl Database {
 
     pub async fn load(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let filepath = format!("{}/{}", self.dir, self.dbfilename);
-        let contents = fs::read(filepath)
-            .await
-            .unwrap_or(helpers::base64_to_bytes(rdb::EMPTY_RDB));
-        let rdb = rdb::parse(contents).await?;
-        for ele in rdb.data {
-            self.set(Type::BulkString(ele.0), Type::BulkString(ele.1), None);
+        match fs::read(filepath).await {
+            Ok(contents) => {
+                let rdb = rdb::parse(contents).await?;
+                for ele in rdb.data {
+                    self.set(Type::BulkString(ele.0), Type::BulkString(ele.1), None);
+                }
+            }
+            Err(_) => {
+                println!("No RDB file found.");
+            }
         }
         Ok(())
     }
