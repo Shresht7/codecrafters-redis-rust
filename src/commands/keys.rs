@@ -45,11 +45,7 @@ pub async fn command(
     println!("{:?}", keys);
 
     // Write the keys to the connection
-    let mut vec = Vec::new();
-    for key in keys {
-        vec.push(Type::BulkString(key.to_string()));
-    }
-    let response = Type::Array(vec);
+    let response = resp::array(keys);
     connection.write_all(&response.as_bytes()).await?;
 
     Ok(())

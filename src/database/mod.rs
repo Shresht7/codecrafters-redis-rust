@@ -80,7 +80,7 @@ impl Database {
         Ok(())
     }
 
-    pub fn keys(&self) -> Vec<&Type> {
-        self.data.keys().collect()
+    pub fn keys(&self) -> Vec<Type> {
+        self.data.keys().cloned().collect()
     }
 }
