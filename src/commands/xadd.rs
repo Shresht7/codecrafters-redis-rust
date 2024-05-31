@@ -41,6 +41,17 @@ pub async fn command(
         }
     };
 
+    // Split the id into its parts
+    let (milliseconds, sequence) = parse_id(id);
+    println!("Stream ID {}: {}-{}", id, milliseconds, sequence);
+
+    // Check if the ID is valid
+    if milliseconds == 0 || sequence == 0 {
+        return connection
+            .write_error("ERR The ID specified in XADD must be greater than 0-0")
+            .await;
+    }
+
     // Extract the field-value pairs from the arguments
     let mut fields = HashMap::new();
     for i in (3..args.len()).step_by(2) {
@@ -59,13 +70,25 @@ pub async fn command(
         fields.insert(field.to_string(), value.to_string());
     }
 
-    // Append the entry to the stream
+    // Get the current stream
     let mut s = server.lock().await;
     let item = s.db.get(name);
     let mut stream = match item {
         Some(Type::Stream(stream)) => stream.clone(),
         _ => Vec::new(), // Create a new stream
     };
+
+    // Check that the ID is larger than the last entry
+    if let Some(last_entry) = stream.last() {
+        let last_id = parse_id(&last_entry.0);
+        if milliseconds < last_id.0 || (milliseconds == last_id.0 && sequence <= last_id.1) {
+            return connection
+                .write_error("ERR The ID specified in XADD is equal or smaller than the target stream top item")
+                .await;
+        }
+    }
+
+    // Append the entry to the stream
     stream.push((id.to_string(), fields));
 
     // Update the database
@@ -78,4 +101,16 @@ pub async fn command(
     connection.write_all(&response.as_bytes()).await?;
 
     Ok(())
+}
+
+fn parse_id(id: &str) -> (u64, u64) {
+    let (milliseconds, sequence) = match id.split_once("-") {
+        Some((milliseconds, sequence)) => {
+            let milliseconds = milliseconds.parse::<u64>().unwrap();
+            let sequence = sequence.parse::<u64>().unwrap();
+            (milliseconds, sequence)
+        }
+        None => (0, 0),
+    };
+    (milliseconds, sequence)
 }
