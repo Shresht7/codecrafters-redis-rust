@@ -88,6 +88,8 @@ pub async fn command(
         })
         .collect();
 
+    println!("{:?}", res);
+
     // Write the response
     let response = Type::Array(res);
     connection.write_all(&response.as_bytes()).await?;
