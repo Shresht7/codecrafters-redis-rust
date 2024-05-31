@@ -1,12 +1,10 @@
-use std::sync::Arc;
-
-use tokio::sync::Mutex;
-
 // Library
 use crate::{
     parser::resp::{self, Type},
     server::{connection::Connection, Server},
 };
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 // ------
 // CONFIG
