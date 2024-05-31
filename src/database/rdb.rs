@@ -180,52 +180,67 @@ async fn read_int(cursor: &mut Cursor<&Vec<u8>>) -> Result<u32, Box<dyn std::err
 async fn read_length_encoding(
     cursor: &mut Cursor<&Vec<u8>>,
 ) -> Result<(u32, bool), Box<dyn std::error::Error>> {
-    let byte = cursor.read_u8().await?; // Read the first byte
-    let two_most_significant_bits = byte & 0xC0 >> 6; // Get the two most significant bits of the byte
+    // let byte = cursor.read_u8().await?; // Read the first byte
+    // let two_most_significant_bits = byte & 0xC0 >> 6; // Get the two most significant bits of the byte
 
-    let mut is_encoded = false;
+    // let mut is_encoded = false;
+    // let length: u32;
+    // println!("Most significant bits: {}", two_most_significant_bits);
+    // match two_most_significant_bits {
+    //     0x0 => length = (byte & 0x3F) as u32, // The next 6 bits are the length
+    //     0x02 => {
+    //         // Discard the 6 bits, the next 32 bits (4 bytes) are the length
+    //         length = read_u32(cursor).await;
+    //         println!("Length: {:b}", length);
+    //     }
+    //     0x01 => {
+    //         // Read one additional byte, the combined 14 bits are the length
+    //         let next_byte = cursor.read_u8().await?;
+    //         let res = [((byte & 0x3F) << 8), next_byte];
+    //         let res_reverse = [next_byte, ((byte & 0x3F) << 8)];
+    //         println!("Byte Vector: {:?}", res);
+    //         // length = u16::from_be_bytes(res) as u32;
+    //         let be_length = u16::from_be_bytes(res);
+    //         let le_length = u16::from_le_bytes(res_reverse);
+    //         let other_len = (((byte & 0x3F) << 8) | next_byte) as u32;
+    //         length = other_len;
+    //         println!(
+    //             "Length: {}, BE: {}, LE: {}, Other: {}",
+    //             length, be_length, le_length, other_len
+    //         );
+    //     }
+    //     _ => {
+    //         is_encoded = true;
+    //         match byte & 0x3F {
+    //             0x00 => length = 1,
+    //             0x01 => length = 2,
+    //             0x02 => length = 4,
+    //             _ => {
+    //                 panic!(
+    //                     "not supported special length encoding {}: {}",
+    //                     (byte & 0xC0) >> 6,
+    //                     byte & 0x3F
+    //                 )
+    //             }
+    //         }
+    //     }
+    // };
+
+    let byte = cursor.read_u8().await?;
     let length: u32;
-    println!("Most significant bits: {}", two_most_significant_bits);
-    match two_most_significant_bits {
-        0x0 => length = (byte & 0x3F) as u32, // The next 6 bits are the length
-        0x02 => {
-            // Discard the 6 bits, the next 32 bits (4 bytes) are the length
-            length = read_u32(cursor).await;
-            println!("Length: {:b}", length);
-        }
-        0x01 => {
-            // Read one additional byte, the combined 14 bits are the length
-            let next_byte = cursor.read_u8().await?;
-            let res = [((byte & 0x3F) << 8), next_byte];
-            let res_reverse = [next_byte, ((byte & 0x3F) << 8)];
-            println!("Byte Vector: {:?}", res);
-            // length = u16::from_be_bytes(res) as u32;
-            let be_length = u16::from_be_bytes(res);
-            let le_length = u16::from_le_bytes(res_reverse);
-            let other_len = (((byte & 0x3F) << 8) | next_byte) as u32;
-            length = other_len;
-            println!(
-                "Length: {}, BE: {}, LE: {}, Other: {}",
-                length, be_length, le_length, other_len
-            );
-        }
-        _ => {
-            is_encoded = true;
-            match byte & 0x3F {
-                0x00 => length = 1,
-                0x01 => length = 2,
-                0x02 => length = 4,
-                _ => {
-                    panic!(
-                        "not supported special length encoding {}: {}",
-                        (byte & 0xC0) >> 6,
-                        byte & 0x3F
-                    )
-                }
-            }
-        }
-    };
+    if byte <= 253 {
+        length = byte as u32;
+    } else if byte == 254 {
+        let bytes = cursor.read_u32().await?;
+        length = u32::from_be_bytes(bytes.to_be_bytes());
+    } else if byte == 255 {
+        let bytes = cursor.read_u64().await?;
+        length = u64::from_be_bytes(bytes.to_be_bytes()) as u32;
+    } else {
+        return Err("Invalid length encoding in RDB file".into());
+    }
 
+    let is_encoded = byte > 253;
     Ok((length, is_encoded))
 }
 
