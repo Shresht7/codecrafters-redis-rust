@@ -1,4 +1,5 @@
 // Library
+use base64::{prelude::BASE64_STANDARD, Engine};
 use rand::Rng;
 
 // ----------------
@@ -46,6 +47,20 @@ pub fn split_host_and_port(
     // Return the host and port
     Ok((host.to_string(), port))
 }
+
+// ------------------------
+// BASE64 ENCODING/DECODING
+// ------------------------
+
+/// Convert a base64 encoded string to a byte vector
+pub fn base64_to_bytes(base64: &str) -> Vec<u8> {
+    BASE64_STANDARD.decode(base64).unwrap()
+}
+
+/// Convert a byte vector to a base64 encoded string
+// pub fn bytes_to_base64(bytes: &[u8]) -> String {
+//     BASE64_STANDARD.encode(bytes)
+// }
 
 #[cfg(test)]
 mod tests {
@@ -95,4 +110,18 @@ mod tests {
         let result = split_host_and_port(addr, ":");
         assert!(result.is_err());
     }
+
+    #[test]
+    fn test_base64_to_bytes() {
+        let base64 = "SGVsbG8gV29ybGQ=";
+        let bytes = base64_to_bytes(base64);
+        assert_eq!(bytes, b"Hello World");
+    }
+
+    // #[test]
+    // fn test_bytes_to_base64() {
+    //     let bytes = b"Hello World";
+    //     let base64 = bytes_to_base64(bytes);
+    //     assert_eq!(base64, "SGVsbG8gV29ybGQ=");
+    // }
 }

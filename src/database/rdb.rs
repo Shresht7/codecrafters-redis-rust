@@ -1,23 +1,12 @@
-use std::collections::HashMap;
-
 // Library
-use base64::{prelude::BASE64_STANDARD, Engine};
+use crate::helpers;
+use std::collections::HashMap;
 
 /// The magic bytes at the start of an RDB file
 pub const MAGIC_BYTES: &[u8; 5] = b"REDIS";
 
 /// Contents of an empty RDB file in base64 encoding
 pub const EMPTY_RDB: &str = "UkVESVMwMDEx+glyZWRpcy12ZXIFNy4yLjD6CnJlZGlzLWJpdHPAQPoFY3RpbWXCbQi8ZfoIdXNlZC1tZW3CsMQQAPoIYW9mLWJhc2XAAP/wbjv+wP9aog==";
-
-/// Convert a base64 encoded string to a byte vector
-pub fn base64_to_bytes(base64: &str) -> Vec<u8> {
-    BASE64_STANDARD.decode(base64).unwrap()
-}
-
-/// Convert a byte vector to a base64 encoded string
-// pub fn bytes_to_base64(bytes: &[u8]) -> String {
-//     BASE64_STANDARD.encode(bytes)
-// }
 
 /// Represents the contents of an RDB file
 struct RDB {
@@ -57,22 +46,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_base64_to_bytes() {
-        let base64 = "SGVsbG8gV29ybGQ=";
-        let bytes = base64_to_bytes(base64);
-        assert_eq!(bytes, b"Hello World");
-    }
-
-    // #[test]
-    // fn test_bytes_to_base64() {
-    //     let bytes = b"Hello World";
-    //     let base64 = bytes_to_base64(bytes);
-    //     assert_eq!(base64, "SGVsbG8gV29ybGQ=");
-    // }
-
-    #[test]
     fn test_rdb_default() {
-        let bytes = base64_to_bytes(EMPTY_RDB);
+        let bytes = helpers::base64_to_bytes(EMPTY_RDB);
         let rdb = parse(bytes).unwrap();
         assert_eq!(rdb.version, "0011");
         println!("Headers: {:?}", rdb.header);

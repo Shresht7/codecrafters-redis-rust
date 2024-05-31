@@ -1,6 +1,6 @@
 // Library
 use crate::{
-    database,
+    database, helpers,
     parser::resp,
     server::{connection::Connection, Server},
 };
@@ -67,7 +67,7 @@ pub async fn command(
 
     // Send an empty RDB file to the replica
     let rdb = database::rdb::EMPTY_RDB;
-    let rdb_bytes = database::rdb::base64_to_bytes(rdb);
+    let rdb_bytes = helpers::base64_to_bytes(rdb);
     let response = resp::Type::RDBFile(rdb_bytes);
     connection.write_all(&response.as_bytes()).await?;
 
