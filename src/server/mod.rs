@@ -97,6 +97,11 @@ impl Server {
         // Load the database
         self.db.load().await?;
 
+        println!(
+            "[{}] Server Configured: Role: {:?}, Directory: {}, DBFilename: {}",
+            self.addr, self.role, self.db.dir, self.db.dbfilename
+        );
+
         Ok(())
     }
 

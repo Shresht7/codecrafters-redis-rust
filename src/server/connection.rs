@@ -126,11 +126,11 @@ impl Connection {
 
             // Parse the incoming data
             let request = self.read_buffer(bytes_read);
-            println!(
-                "Received: {} {:?}",
-                String::from_utf8_lossy(request),
-                request
-            );
+            // println!(
+            //     "Received: {} {:?}",
+            //     String::from_utf8_lossy(request),
+            //     request
+            // );
 
             let mut err_response: Option<String> = None;
             let mut cmds: Vec<parser::resp::Type> = Vec::new();

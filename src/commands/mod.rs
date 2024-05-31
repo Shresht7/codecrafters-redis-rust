@@ -85,9 +85,7 @@ async fn broadcast(
     cmd: &Vec<resp::Type>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Get the server instance from the Arc<Mutex<Server>>
-    println!("broadcast locking ...");
     let server = server.lock().await;
-    print!("locked 🔒");
     let addr = server.addr.clone();
     let role = server.role.clone();
 

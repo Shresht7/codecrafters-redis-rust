@@ -101,7 +101,6 @@ impl RDB {
         let value = read_encoded_string(cursor)
             .await
             .expect("Failed to read aux value");
-        println!("Aux Key: {}, Aux Value: {}", key, value);
         Ok(())
     }
 
@@ -141,11 +140,12 @@ impl RDB {
                 _ => expiry = None,
             }
 
-            println!("Value Type: {}, expiry: {:?}", value_type, expiry);
             let key = read_encoded_string(cursor).await?;
             let value = read_encoded_string(cursor).await?;
+            let is_expired =
+                expiry.map_or(false, |e| e < Instant::now().elapsed().as_millis() as u128);
 
-            println!("Key: {}, Value: {}", key, value);
+            println!("Key: {}, Value: {} (expired: {})", key, value, is_expired);
 
             // Check if the key has expired, if so, skip over it
             if let Some(expiry) = expiry {
@@ -166,7 +166,6 @@ impl RDB {
         cursor: &mut Cursor<&Vec<u8>>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let db_number = cursor.read_u8().await?; // We essentially skip over this
-        println!("DB Number: {}", db_number);
         Ok(())
     }
 }
@@ -188,32 +187,24 @@ async fn read_length_encoding(
 
     let mut is_encoded = false;
     let length: u32;
-    println!("Most significant bits: {}", two_most_significant_bits);
     match two_most_significant_bits {
         0x0 => length = (byte & 0x3F) as u32, // The next 6 bits are the length
         0x02 => {
             // Discard the 6 bits, the next 32 bits (4 bytes) are the length
             length = read_u32(cursor).await;
-            println!("Length: {:b}", length);
         }
         0x01 => {
             // Read one additional byte, the combined 14 bits are the length
             let next_byte = cursor.read_u8().await?;
             let res = [((byte & 0x3F) << 8), next_byte];
             let res_reverse = [next_byte, ((byte & 0x3F) << 8)];
-            println!("Byte Vector: {:?}", res);
             // length = u16::from_be_bytes(res) as u32;
             let be_length = u16::from_be_bytes(res);
             let le_length = u16::from_le_bytes(res_reverse);
             let other_len = (((byte & 0x3F) << 8) | next_byte) as u32;
             length = other_len;
-            println!(
-                "Length: {}, BE: {}, LE: {}, Other: {}",
-                length, be_length, le_length, other_len
-            );
         }
         _ => {
-            println!("Encoded");
             is_encoded = true;
             match byte & 0x3F {
                 0x00 => length = 1,
