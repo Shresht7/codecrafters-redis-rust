@@ -33,6 +33,12 @@ pub struct Config {
     /// The replica-of address.
     /// If set, the server will act as a replica of the given address.
     pub replicaof: Option<String>,
+
+    /// The directory where the server will store the database files.
+    pub dir: Option<String>,
+
+    /// The filename of the database file.
+    pub dbfilename: Option<String>,
 }
 
 /// Default implementation for the Config struct.
@@ -42,6 +48,8 @@ impl Default for Config {
         Config {
             port: DEFAULT_PORT, // Default port. Same as Redis.
             replicaof: None, // No replica-of address by default. The server will act as a master.
+            dir: None,       // Default directory for the database files.
+            dbfilename: None, // Default filename for the database file.
         }
     }
 }
@@ -54,14 +62,18 @@ pub fn from_command_line(args: Vec<String>) -> Result<Config, Box<dyn std::error
     // Iterate over the arguments...
     for i in 0..args.len() {
         match args[i].as_str() {
-            "-p" | "--port" => {
-                // If the argument is a port flag, parse the port
-                config.port = parse_port(&args, i)?;
-            }
-            "--replicaof" => {
-                // If the argument is a replica-of flag, parse the replica-of address
-                config.replicaof = parse_replicaof(&args, i)?
-            }
+            // If the argument is a port flag, parse the port
+            "-p" | "--port" => config.port = parse_port(&args, i)?,
+
+            // If the argument is a replica-of flag, parse the replica-of address
+            "--replicaof" => config.replicaof = parse_replicaof(&args, i)?,
+
+            // If the argument is a directory flag, parse the directory
+            "--dir" => config.dir = parse_dir(i, &args)?,
+
+            // If the argument is a dbfilename flag, parse the dbfilename
+            "--dbfilename" => config.dbfilename = parse_dbfilename(i, &args)?,
+
             _ => {} // Ignore any other arguments
         }
     }
@@ -106,6 +118,44 @@ fn parse_replicaof(
     } else {
         // ...otherwise, print an error message
         Err("No replica-of address provided after the flag")?;
+    }
+    Ok(None)
+}
+
+// DIR
+// ---
+
+/// Parses the directory from the command-line arguments.
+/// The directory must be specified in the format `--dir 'path'`.
+/// The directory is where the server will store the rdb database files.
+fn parse_dir(i: usize, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    // Check if there is a value after the flag...
+    if i + 1 < args.len() {
+        // ...and if there is, set it as the directory
+        let dir = args[i + 1].clone();
+        return Ok(Some(dir));
+    } else {
+        // ...otherwise, print an error message
+        Err("No directory provided after the flag")?;
+    }
+    Ok(None)
+}
+
+// DBFILENAME
+// ----------
+
+pub fn parse_dbfilename(
+    i: usize,
+    args: &Vec<String>,
+) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    // Check if there is a value after the flag...
+    if i + 1 < args.len() {
+        // ...and if there is, set it as the dbfilename
+        let dbfilename = args[i + 1].clone();
+        return Ok(Some(dbfilename));
+    } else {
+        // ...otherwise, print an error message
+        Err("No dbfilename provided after the flag")?;
     }
     Ok(None)
 }
@@ -158,6 +208,20 @@ mod tests {
         let cli = from_command_line(args).unwrap();
         assert_eq!(cli.port, 5000);
         assert_eq!(cli.replicaof, Some("111.222.333.444:3000".into()));
+    }
+
+    #[test]
+    fn should_parse_dir() {
+        let args: Vec<String> = vec!["--dir".into(), "/data/tmp".into()];
+        let cli = from_command_line(args).unwrap();
+        assert_eq!(cli.dir, Some("/data/tmp".into()));
+    }
+
+    #[test]
+    fn should_parse_dbfilename() {
+        let args: Vec<String> = vec!["--dbfilename".into(), "dump.rdb".into()];
+        let cli = from_command_line(args).unwrap();
+        assert_eq!(cli.dbfilename, Some("dump.rdb".into()));
     }
 
     #[test]
