@@ -20,13 +20,10 @@ async fn main() {
     let mut server = server::new("127.0.0.1", config.port);
     println!("[{}] Server Initialized", server.addr);
 
-    // If the replica-of address is set, the server will act as a replica
-    if let Some(replicaof) = config.replicaof {
-        println!("[{}] Replica of {}", server.addr, replicaof);
-        server
-            .replicaof(replicaof)
-            .expect("Failed to set replicaof address");
-    }
+    // Configure the server
+    server
+        .configure(config)
+        .expect("Failed to configure the server");
 
     // Start the server
     println!("[{}] Server Starting...", server.addr);

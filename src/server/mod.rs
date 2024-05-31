@@ -1,5 +1,5 @@
 // Library
-use crate::{database, helpers, parser::resp::Type};
+use crate::{config::Config, database, helpers, parser::resp::Type};
 use std::{net::SocketAddr, sync::Arc};
 use tokio::{
     net::TcpListener,
@@ -75,6 +75,28 @@ pub fn new(host: &'static str, port: u16) -> Server {
 }
 
 impl Server {
+    /// Configures the server with the given configuration parameters.
+    /// The server will set the replica-of address, directory, and dbfilename based on the configuration.
+    /// Does NOT configure the port as it must be set when the server is instantiated.
+    pub fn configure(&mut self, config: Config) -> Result<(), Box<dyn std::error::Error>> {
+        // Set the replica-of address
+        if let Some(addr) = config.replicaof {
+            self.role = Role::Replica(addr);
+        }
+
+        // Set the directory
+        if let Some(dir) = config.dir {
+            self.db.dir = dir;
+        }
+
+        // Set the dbfilename
+        if let Some(dbfilename) = config.dbfilename {
+            self.db.dbfilename = dbfilename;
+        }
+
+        Ok(())
+    }
+
     /// Runs the TCP server on the given address, listening for incoming connections.
     /// The server will handle each incoming connection in a separate thread.
     pub async fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
@@ -156,14 +178,5 @@ impl Server {
                     .expect("Failed to handle connection");
             });
         })
-    }
-
-    /// Sets the server to act as a replica of the given address.
-    /// The server will act as a replica and connect to the master server at the given address.
-    /// The server will send a handshake to the master server to establish the connection.
-    /// The server will start receiving data from the master server.
-    pub fn replicaof(&mut self, addr: String) -> Result<(), Box<dyn std::error::Error>> {
-        self.role = Role::Replica(addr);
-        Ok(())
     }
 }
