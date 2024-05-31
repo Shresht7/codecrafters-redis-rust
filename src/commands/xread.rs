@@ -25,31 +25,51 @@ pub async fn command(
             .write_error("ERR wrong number of arguments for 'XREAD' command")
             .await;
     }
+    let mut args = args.iter();
 
     // Error if the first argument is not `streams`
-    let subcommand = match args.get(1) {
+    let subcommand = match args.next() {
         Some(Type::BulkString(subcommand)) => subcommand,
         _ => {
             return connection.write_error("ERR invalid subcommand").await;
         }
     };
-    if subcommand.to_uppercase() != "STREAMS" {
-        return connection.write_error("ERR invalid subcommand").await;
-    }
+    let blocking_duration = if subcommand.to_uppercase() == "BLOCK" {
+        match args.next() {
+            Some(Type::BulkString(duration)) => duration.parse::<u64>().ok(),
+            _ => {
+                return connection.write_error("ERR invalid duration").await;
+            }
+        }
+    } else {
+        None
+    };
 
-    // Determine the length of the remaining arguments
-    let len_of_remaining_args = args.len() - 2;
+    // If blocking, wait for the specified duration
+    if let Some(duration) = blocking_duration {
+        tokio::time::sleep(tokio::time::Duration::from_millis(duration)).await;
+    }
 
     // Note: Assume the happy path and ignore the case where the number of streams is not even
 
     // Extract the streams and IDs from the arguments
-    let streams = args.iter().skip(2).take(len_of_remaining_args / 2);
-    let ids = args.iter().skip(2 + streams.len()).take(streams.len());
+    let streams = &args.clone().take_while(|arg| match arg {
+        Type::BulkString(arg) => !arg.contains('-'),
+        _ => false,
+    });
+    let ids: &Vec<&Type> = &args
+        .clone()
+        .take_while(|arg| match arg {
+            Type::BulkString(arg) => arg.contains('-'),
+            _ => false,
+        })
+        .collect();
 
     // The collection of entries of all the streams
     let mut entries_of_entries = Vec::new();
 
-    for (stream, id) in streams.zip(ids) {
+    for (stream, id) in streams.clone().zip(ids) {
+        println!("Stream: {:?}, ID: {:?}", stream, id);
         let stream = match stream {
             Type::BulkString(stream) => stream,
             _ => {
