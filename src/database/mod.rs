@@ -1,3 +1,5 @@
+use tokio::fs;
+
 // Library
 use crate::parser::resp::Type;
 use std::{collections::HashMap, time::Instant};
@@ -67,4 +69,18 @@ impl Database {
     // pub fn remove(&mut self, key: &Type) {
     //     self.data.remove(key);
     // }
+
+    pub async fn load(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let filepath = format!("{}/{}", self.dir, self.dbfilename);
+        let contents = fs::read(filepath).await?;
+        let rdb = rdb::parse(contents).await?;
+        for ele in rdb.data {
+            self.set(Type::BulkString(ele.0), Type::BulkString(ele.1), None);
+        }
+        Ok(())
+    }
+
+    pub fn keys(&self) -> Vec<&Type> {
+        self.data.keys().collect()
+    }
 }

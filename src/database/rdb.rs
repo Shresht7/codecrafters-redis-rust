@@ -10,7 +10,7 @@ pub const MAGIC_BYTES: &[u8; 5] = b"REDIS";
 pub const EMPTY_RDB: &str = "UkVESVMwMDEx+glyZWRpcy12ZXIFNy4yLjD6CnJlZGlzLWJpdHPAQPoFY3RpbWXCbQi8ZfoIdXNlZC1tZW3CsMQQAPoIYW9mLWJhc2XAAP/wbjv+wP9aog==";
 
 /// Represents the contents of an RDB file
-struct RDB {
+pub struct RDB {
     pub magic_string: String,
     pub version: String,
     pub data: HashMap<String, String>,
@@ -27,7 +27,7 @@ impl Default for RDB {
 }
 
 /// Parses the given RDB file data and returns the corresponding `RDB` struct
-async fn parse(data: Vec<u8>) -> Result<RDB, Box<dyn std::error::Error>> {
+pub async fn parse(data: Vec<u8>) -> Result<RDB, Box<dyn std::error::Error>> {
     let mut rdb = RDB::default();
     rdb.parse(data).await?;
     Ok(rdb)
