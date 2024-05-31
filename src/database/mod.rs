@@ -12,7 +12,7 @@ pub mod rdb;
 #[derive(Clone, Debug)]
 pub struct Item {
     /// The actual value of the item
-    value: Type,
+    pub value: Type,
     /// The instant at which the database item was created
     created_at: Instant,
     /// The number of milliseconds since creation after which the item expires

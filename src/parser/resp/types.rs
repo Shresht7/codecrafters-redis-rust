@@ -242,6 +242,11 @@ pub enum Type {
     /// RDB files are the binary representation of the Redis database.
     /// The RDB file format is used for persistence and backups.
     RDBFile(Vec<u8>),
+
+    /// Stream data type
+    /// A Stream has many entries.
+    /// Each stream entry has an ID and a list of key-value pairs.
+    Stream(Vec<(String, HashMap<String, String>)>),
 }
 
 impl Eq for Type {
@@ -356,6 +361,16 @@ impl std::fmt::Display for Type {
             Type::RDBFile(data) => {
                 let len = data.len();
                 write!(f, "$({}\r\n{:?}", len, data)
+            }
+
+            Type::Stream(entries) => {
+                for (id, fields) in entries {
+                    write!(f, "{}:\r\n", id)?;
+                    for (key, value) in fields {
+                        write!(f, "\t{}: {}", key, value)?;
+                    }
+                }
+                Ok(())
             }
         }
     }
@@ -473,6 +488,19 @@ impl Type {
                     .chain(vec![b'\r', b'\n'])
                     .collect::<Vec<u8>>();
                 bytes.extend(data);
+                bytes
+            }
+            Type::Stream(entries) => {
+                let mut bytes = Vec::new();
+                for (id, fields) in entries {
+                    bytes.extend(id.as_bytes());
+                    bytes.extend(b":\r\n");
+                    for (key, value) in fields {
+                        bytes.extend(key.as_bytes());
+                        bytes.extend(b": ");
+                        bytes.extend(value.as_bytes());
+                    }
+                }
                 bytes
             }
         }
