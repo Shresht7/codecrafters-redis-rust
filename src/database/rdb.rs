@@ -60,13 +60,13 @@ impl RDB {
         let mut b = rest.as_bytes();
 
         loop {
-            println!("b looks like {:?}", b);
-            // Check if the remaining data is empty
-            if b.is_empty() {
+            let key_length = b[0] as usize;
+
+            // Check if the remaining data is less than the key length
+            if b.len() < key_length + 2 {
                 break;
             }
 
-            let key_length = b[0] as usize;
             let key = String::from_utf8(b[1..=key_length].to_vec())?;
             let value_len = (&b[key_length + 1..key_length + 2])[0] as usize;
             let value = String::from_utf8(b[key_length + 2..key_length + 2 + value_len].to_vec())?;
