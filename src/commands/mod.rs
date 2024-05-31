@@ -19,6 +19,7 @@ mod ping;
 mod psync;
 mod replconf;
 mod set;
+mod type_cmd;
 mod wait;
 
 /// Handles the incoming command by parsing it and calling the appropriate command handler.
@@ -65,6 +66,8 @@ pub async fn handle(
         "CONFIG" => config::command(&cmd, conn, server).await?,
 
         "KEYS" => keys::command(&cmd, conn, server).await?,
+
+        "TYPE" => type_cmd::command(&cmd, conn, server).await?,
 
         _ => {
             let response = resp::Type::SimpleError(format!("ERR unknown command: {:?}\r\n", cmd));
