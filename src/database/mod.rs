@@ -88,7 +88,7 @@ impl Database {
                         x => Type::BulkString(x),
                     };
                     let expiry = match ele.1 .1 {
-                        Some(expiry) => Some(expiry as usize),
+                        Some(x) => Some(x.as_millis() as usize),
                         None => None,
                     };
                     self.set(Type::BulkString(ele.0), value, expiry);

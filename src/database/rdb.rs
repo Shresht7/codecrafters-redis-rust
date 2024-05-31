@@ -2,6 +2,7 @@
 use byteorder::{ByteOrder, LittleEndian};
 use std::collections::HashMap;
 use std::io::Cursor;
+use std::time::Duration;
 use tokio::io::AsyncReadExt;
 use tokio::time::Instant;
 
@@ -15,7 +16,7 @@ pub const EMPTY_RDB: &str = "UkVESVMwMDEx+glyZWRpcy12ZXIFNy4yLjD6CnJlZGlzLWJpdHP
 pub struct RDB {
     pub magic_string: String,
     pub version: String,
-    pub data: HashMap<String, (String, Option<u128>)>,
+    pub data: HashMap<String, (String, Option<Duration>)>,
 }
 
 impl Default for RDB {
@@ -126,15 +127,17 @@ impl RDB {
         for _ in 0..size {
             let value_type = cursor.read_u8().await?;
 
-            let expiry: Option<u128>;
+            let expiry: Option<Duration>;
             // println!("ValueType {:b}", value_type);
             match value_type {
                 0xFC => {
-                    expiry = Some(cursor.read_u32_le().await? as u128);
+                    let val = cursor.read_u32_le().await? as u64;
+                    expiry = Some(Duration::from_millis(val));
                     cursor.read_u8().await?;
                 }
                 0xFD => {
-                    expiry = Some(cursor.read_u32_le().await? as u128 * 1000);
+                    let val = cursor.read_u32_le().await? as u64;
+                    expiry = Some(Duration::from_secs(val));
                     cursor.read_u8().await?;
                 }
                 0xFF => break,
@@ -145,8 +148,10 @@ impl RDB {
             let value = read_encoded_string(cursor).await?;
 
             // Check if the key has expired, if so, skip over it
-            if !expiry.is_none() && expiry.unwrap() < Instant::now().elapsed().as_millis() as u128 {
-                continue;
+            if let Some(expiry) = expiry {
+                if expiry.as_millis() as usize <= Instant::now().elapsed().as_millis() as usize {
+                    continue;
+                }
             }
 
             // Insert the key-value pair into the data
