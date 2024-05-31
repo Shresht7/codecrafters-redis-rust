@@ -4,7 +4,7 @@ use tokio::sync::Mutex;
 
 // Library
 use crate::{
-    parser::resp::Type,
+    parser::resp::{self, Type},
     server::{connection::Connection, Server},
 };
 
@@ -68,10 +68,11 @@ async fn get(
         }
     };
 
+    // Get the value of the key
     let value = get_config_value(key, server).await?;
 
     // Write the value to the client
-    let response = Type::BulkString(value);
+    let response = resp::array(vec![resp::bulk_string(&key), resp::bulk_string(&value)]);
     connection.write_all(&response.as_bytes()).await?;
 
     Ok(())
