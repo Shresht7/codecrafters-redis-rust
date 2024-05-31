@@ -89,8 +89,7 @@ pub async fn command(
     }
 
     // Check if the ID is greater than the last entry
-    if let Some(last_entry) = last_entry {
-        let last = StreamID::from_id(&last_entry.0);
+    if let Some((last, _)) = last_entry {
         if id.milliseconds < last.milliseconds
             || (id.milliseconds == last.milliseconds && id.sequence <= last.sequence)
         {
@@ -102,17 +101,17 @@ pub async fn command(
         }
     }
 
+    // Update the ID format
+    println!("Stream ID: {}", id.to_string());
+    let response = Type::BulkString(id.to_string());
+
     // Append the entry to the stream
-    stream.push((id.to_string(), fields));
+    stream.push((id, fields));
 
     // Update the database
     s.db.set(name.clone(), Type::Stream(stream), None);
 
-    // Update the ID format
-    println!("Stream ID: {}", id.to_string());
-
     // Write the ID of the new entry
-    let response = Type::BulkString(id.to_string());
     connection.write_all(&response.as_bytes()).await?;
 
     Ok(())

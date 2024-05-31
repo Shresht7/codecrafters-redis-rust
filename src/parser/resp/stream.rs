@@ -1,5 +1,9 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fmt::{self, Display, Formatter},
+};
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StreamID {
     pub milliseconds: u64,
     pub sequence: u64,
@@ -11,6 +15,12 @@ impl Default for StreamID {
             milliseconds: get_unix_timestamp(),
             sequence: 0,
         }
+    }
+}
+
+impl Display for StreamID {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}-{}", self.milliseconds, self.sequence)
     }
 }
 
@@ -39,12 +49,11 @@ impl StreamID {
         }
     }
 
-    pub fn parse(id: &str, last_entry: Option<(String, HashMap<String, String>)>) -> StreamID {
+    pub fn parse(id: &str, last_entry: Option<(StreamID, HashMap<String, String>)>) -> StreamID {
         let timestamp = get_unix_timestamp();
         match id {
             "*" => {
-                if let Some((last_id, _)) = last_entry {
-                    let last = StreamID::from_id(&last_id);
+                if let Some((last, _)) = last_entry {
                     if timestamp == last.milliseconds {
                         StreamID {
                             milliseconds: timestamp,
@@ -81,6 +90,10 @@ impl StreamID {
             sequence: self.sequence + 1,
         }
     }
+
+    pub fn as_bytes(&self) -> Vec<u8> {
+        self.to_string().into_bytes()
+    }
 }
 
 fn parse_milliseconds(milliseconds: &str) -> u64 {
@@ -93,12 +106,11 @@ fn parse_milliseconds(milliseconds: &str) -> u64 {
 fn parse_sequence(
     sequence: &str,
     milliseconds: u64,
-    last_entry: Option<(String, HashMap<String, String>)>,
+    last_entry: Option<(StreamID, HashMap<String, String>)>,
 ) -> u64 {
     match sequence {
         "*" => {
-            if let Some((last_id, _)) = last_entry {
-                let last = StreamID::from_id(&last_id);
+            if let Some((last, _)) = last_entry {
                 if milliseconds == last.milliseconds {
                     last.sequence + 1
                 } else {

@@ -2,6 +2,8 @@
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 
+use super::stream::StreamID;
+
 // ---------------------------------------
 // REDIS SERIALIZATION PROTOCOL DATA TYPES
 // ---------------------------------------
@@ -246,7 +248,7 @@ pub enum Type {
     /// Stream data type
     /// A Stream has many entries.
     /// Each stream entry has an ID and a list of key-value pairs.
-    Stream(Vec<(String, HashMap<String, String>)>),
+    Stream(Vec<(StreamID, HashMap<String, String>)>),
 }
 
 impl Eq for Type {
