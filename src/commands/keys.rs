@@ -42,6 +42,8 @@ pub async fn command(
     // Get the keys that match the pattern
     let keys = server.db.keys();
 
+    println!("{:?}", keys);
+
     // Write the keys to the connection
     let response = resp::array(
         keys.iter()
