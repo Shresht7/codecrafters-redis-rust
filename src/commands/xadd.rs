@@ -128,19 +128,37 @@ fn simple_parse_id(id: &str) -> (u64, u64) {
 }
 
 fn parse_id(id: &str, last_entry: Option<(String, HashMap<String, String>)>) -> (u64, u64) {
-    let (milliseconds, sequence) = match id.split_once("-") {
-        Some((milliseconds, sequence)) => {
-            let milliseconds = parse_milliseconds(milliseconds);
-            let sequence = parse_sequence(sequence, milliseconds, last_entry);
+    let timestamp = get_unix_timestamp();
+    match id {
+        "*" => {
+            if let Some((last_id, _)) = last_entry {
+                let (last_milliseconds, last_sequence) = simple_parse_id(&last_id);
+                if timestamp == last_milliseconds {
+                    (timestamp, last_sequence + 1)
+                } else {
+                    (timestamp, 0)
+                }
+            } else {
+                (timestamp, 0)
+            }
+        }
+        _ => {
+            let (milliseconds, sequence) = match id.split_once("-") {
+                Some((milliseconds, sequence)) => {
+                    let milliseconds = parse_milliseconds(milliseconds);
+                    let sequence = parse_sequence(sequence, milliseconds, last_entry);
+                    (milliseconds, sequence)
+                }
+                None => (timestamp, 0),
+            };
             (milliseconds, sequence)
         }
-        None => (0, 0),
-    };
-    (milliseconds, sequence)
+    }
 }
 
 fn parse_milliseconds(milliseconds: &str) -> u64 {
     match milliseconds {
+        "*" => get_unix_timestamp(),
         _ => milliseconds.parse::<u64>().unwrap_or(0),
     }
 }
@@ -165,4 +183,13 @@ fn parse_sequence(
         }
         _ => sequence.parse::<u64>().unwrap_or(0),
     }
+}
+
+// TODO: There is a duplicate of this somewhere else in the codebase, I think. Refactor to use a common function.
+/// Returns the current Unix timestamp in milliseconds.
+fn get_unix_timestamp() -> u64 {
+    let now = std::time::SystemTime::now();
+    now.duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64
 }
