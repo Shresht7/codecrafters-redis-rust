@@ -18,7 +18,9 @@ impl From<u8> for OPCode {
             0xfd => OPCode::ExpireTime,
             0xfe => OPCode::SelectDB,
             0xff => OPCode::End,
-            _ => panic!("Invalid opcode: {}", byte),
+            _ => {
+                panic!("Invalid Opcode {}", byte)
+            }
         }
     }
 }

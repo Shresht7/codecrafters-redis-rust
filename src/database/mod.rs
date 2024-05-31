@@ -78,6 +78,7 @@ impl Database {
                     .await
                     .expect("Failed to parse RDB file.");
                 for ele in rdb.data {
+                    println!("Key - {} Value - {:?}", ele.0, ele.1);
                     self.set(Type::BulkString(ele.0), Type::BulkString(ele.1), None);
                 }
             }

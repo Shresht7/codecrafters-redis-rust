@@ -1,7 +1,5 @@
 use tokio::io::AsyncReadExt;
 use tokio::time::Instant;
-
-use crate::database::opcode::OPCode;
 // Library
 use crate::helpers;
 use byteorder::{ByteOrder, LittleEndian};
@@ -73,16 +71,20 @@ impl RDB {
                     .parse_aux(&mut cursor)
                     .await
                     .expect("Failed to parse aux"),
-                0xFB => self
-                    .parse_resize_db(&mut cursor)
-                    .await
-                    .expect("Failed to parse resize db"),
+                0xFB => {
+                    self.parse_resize_db(&mut cursor)
+                        .await
+                        .expect("Failed to parse resize db");
+                    break;
+                }
                 0xFE => self
                     .parse_select_db(&mut cursor)
                     .await
                     .expect("Failed to parse select db"),
                 0xFF => break, // End of the RDB file
-                _ => panic!("Invalid opcode: {}", next_byte),
+                _ => {
+                    panic!("Invalid opcode: {}", next_byte);
+                }
             }
         }
 
@@ -125,16 +127,17 @@ impl RDB {
             let mut value_type = cursor.read_u8().await?;
 
             let expiry: Option<u128>;
-            match OPCode::from(value_type) {
-                OPCode::ExpireTimeMs => {
+            println!("{}", value_type);
+            match value_type {
+                0xFC => {
                     expiry = Some(cursor.read_u32().await? as u128);
                     value_type = cursor.read_u8().await?;
                 }
-                OPCode::ExpireTime => {
+                0xFD => {
                     expiry = Some(cursor.read_u64().await? as u128 * 1000);
                     value_type = cursor.read_u8().await?;
                 }
-                OPCode::End => break,
+                0xFF => break,
                 _ => expiry = None,
             }
 
@@ -181,10 +184,10 @@ async fn read_length_encoding(
     cursor: &mut Cursor<&Vec<u8>>,
 ) -> Result<(u32, bool), Box<dyn std::error::Error>> {
     let byte = cursor.read_u8().await?; // Read the first byte
-    let two_most_significant_bits = byte & 0xC0 >> 6; // Get the two most significant bits of the byte
+    let two_most_significant_bits = (byte & 0xC0) >> 6; // Get the two most significant bits of the byte
 
     let mut is_encoded = false;
-    let mut length: u32 = byte as u32;
+    let length: u32;
     println!("Most significant bits: {}", two_most_significant_bits);
     match two_most_significant_bits {
         0x0 => length = (byte & 0x3F) as u32, // The next 6 bits are the length
@@ -210,6 +213,7 @@ async fn read_length_encoding(
             );
         }
         _ => {
+            println!("Encoded");
             is_encoded = true;
             match byte & 0x3F {
                 0x00 => length = 1,
