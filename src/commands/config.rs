@@ -12,6 +12,8 @@ use crate::{
 // CONFIG
 // ------
 
+/// Handles the CONFIG command.
+/// The CONFIG command is used to read and write configuration parameters.
 pub async fn command(
     args: &Vec<Type>,
     connection: &mut Connection,
@@ -48,6 +50,9 @@ pub async fn command(
 // GET
 // ---
 
+/// Handles the CONFIG GET subcommand.
+/// The CONFIG GET subcommand is used to read configuration parameters.
+/// The subcommand is in the format `CONFIG GET 'key'`.
 async fn get(
     args: &Vec<Type>,
     connection: &mut Connection,
@@ -78,11 +83,15 @@ async fn get(
     Ok(())
 }
 
+/// Gets the value of the configuration parameter with the given key.
 async fn get_config_value(
     key: &String,
     server: &Arc<Mutex<Server>>,
 ) -> Result<String, Box<dyn std::error::Error>> {
+    // Acquire the server lock
     let s = server.lock().await;
+
+    // Get the value of the key
     let value = match key.to_string().to_uppercase().as_str() {
         "DIR" => s.db.dir.clone(),
 
@@ -96,5 +105,6 @@ async fn get_config_value(
         }
     };
 
+    // Return the value
     Ok(value)
 }
