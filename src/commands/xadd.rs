@@ -104,6 +104,7 @@ pub async fn command(
     // Update the database
     s.db.set(name.clone(), Type::Stream(stream), None);
 
+    // Update the ID format
     let id = format!("{}-{}", milliseconds, sequence);
     println!("Stream ID: {}", id);
 
@@ -156,7 +157,7 @@ fn parse_sequence(
                 if milliseconds == last_milliseconds {
                     last_sequence + 1
                 } else {
-                    1
+                    0
                 }
             } else {
                 1
