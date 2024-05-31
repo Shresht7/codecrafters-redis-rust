@@ -117,21 +117,13 @@ impl Server {
         // that the connection isn't established before the master server sends data.
 
         // If this server is a replica, connect to the master server
-        let replication_connection = if let Role::Replica(master_addr) = &self.role {
-            Some(self.handle_replication(master_addr, &server, &wait_channel))
-        } else {
-            None
-        };
+        if let Role::Replica(master_addr) = &self.role {
+            self.handle_replication(master_addr, &server, &wait_channel)
+                .await?;
+        }
 
         // Handle the main connection
-        let main_connection = self.handle_main_connections(&server, &wait_channel);
-
-        // Use tokio::join! to run both the replication and main connections concurrently if required
-        if let Some(replication_connection) = replication_connection {
-            tokio::try_join!(main_connection, replication_connection)?;
-        } else {
-            main_connection.await?;
-        }
+        self.handle_main_connections(server, &wait_channel).await?;
 
         Ok(())
     }
@@ -171,7 +163,7 @@ impl Server {
     /// Listens for incoming connections on the server's address and spawns a new thread to handle each connection.
     async fn handle_main_connections(
         &self,
-        server: &Arc<Mutex<Server>>,
+        server: Arc<Mutex<Server>>,
         wait_channel: &Arc<Mutex<(mpsc::Sender<u64>, mpsc::Receiver<u64>)>>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // Bind the server to the address and start listening for incoming connections
