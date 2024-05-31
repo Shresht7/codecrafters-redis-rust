@@ -14,6 +14,7 @@ mod config;
 mod echo;
 mod get;
 mod info;
+mod keys;
 mod ping;
 mod psync;
 mod replconf;
@@ -62,6 +63,8 @@ pub async fn handle(
         "WAIT" => wait::command(&cmd[1..], conn, server, wait_channel).await?,
 
         "CONFIG" => config::command(&cmd, conn, server).await?,
+
+        "KEYS" => keys::command(&cmd, conn, server).await?,
 
         _ => {
             let response = resp::Type::SimpleError(format!("ERR unknown command: {:?}\r\n", cmd));
