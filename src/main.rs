@@ -26,6 +26,8 @@ async fn main() {
         .await
         .expect("Failed to configure the server");
 
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
     // Start the server
     println!("[{}] Server Starting...", server.addr);
     if let Err(e) = server.run().await {

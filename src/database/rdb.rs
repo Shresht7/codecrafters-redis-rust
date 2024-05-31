@@ -145,7 +145,13 @@ impl RDB {
             let is_expired =
                 expiry.map_or(false, |e| e < Instant::now().elapsed().as_millis() as u128);
 
-            println!("Key: {}, Value: {} (expired: {})", key, value, is_expired);
+            println!(
+                "Key: {}, Value: {} (expiry in {}ms, expired: {})",
+                key,
+                value,
+                Instant::now().elapsed().as_millis() as u128 - expiry.unwrap_or(0),
+                is_expired
+            );
 
             // Check if the key has expired, if so, skip over it
             if let Some(expiry) = expiry {
