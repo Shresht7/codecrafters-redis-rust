@@ -73,7 +73,6 @@ impl Database {
     pub async fn load(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let filepath = format!("{}/{}", self.dir, self.dbfilename);
         let contents = fs::read(filepath).await?;
-        println!("{:?}", contents);
         let rdb = rdb::parse(contents).await?;
         for ele in rdb.data {
             self.set(Type::BulkString(ele.0), Type::BulkString(ele.1), None);

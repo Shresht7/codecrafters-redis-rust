@@ -47,6 +47,8 @@ impl RDB {
         // Read the next four bytes for the version
         self.version = String::from_utf8(data[5..9].to_vec())?;
 
+        println!("{:?}", data);
+
         // Create a cursor to read the remaining data
         let mut bytes = reader::read(&data[9..]);
 
