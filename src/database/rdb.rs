@@ -4,7 +4,6 @@ use std::collections::HashMap;
 use std::io::Cursor;
 use std::time::SystemTime;
 use tokio::io::AsyncReadExt;
-use tokio::time::Instant;
 
 /// The magic bytes at the start of an RDB file
 pub const MAGIC_BYTES: &[u8; 5] = b"REDIS";
