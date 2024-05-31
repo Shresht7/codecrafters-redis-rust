@@ -1,6 +1,6 @@
 // Library
 mod errors;
-mod reader;
+pub mod reader;
 pub mod resp;
 
 /// Parses the given input data and returns the corresponding `RESPData` and the remaining input
