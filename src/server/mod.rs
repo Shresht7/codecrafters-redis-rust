@@ -78,7 +78,7 @@ impl Server {
     /// Configures the server with the given configuration parameters.
     /// The server will set the replica-of address, directory, and dbfilename based on the configuration.
     /// Does NOT configure the port as it must be set when the server is instantiated.
-    pub fn configure(&mut self, config: Config) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn configure(&mut self, config: Config) -> Result<(), Box<dyn std::error::Error>> {
         // Set the replica-of address
         if let Some(addr) = config.replicaof {
             self.role = Role::Replica(addr);
@@ -93,6 +93,9 @@ impl Server {
         if let Some(dbfilename) = config.dbfilename {
             self.db.dbfilename = dbfilename;
         }
+
+        // Load the database
+        self.db.load().await?;
 
         Ok(())
     }

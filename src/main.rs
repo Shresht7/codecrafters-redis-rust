@@ -23,6 +23,7 @@ async fn main() {
     // Configure the server
     server
         .configure(config)
+        .await
         .expect("Failed to configure the server");
 
     // Start the server
