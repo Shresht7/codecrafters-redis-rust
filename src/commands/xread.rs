@@ -36,6 +36,8 @@ pub async fn command(
             return connection.write_error("ERR invalid subcommand").await;
         }
     };
+    println!("Subcommand: {:?}", subcommand);
+
     let blocking_duration = if subcommand.to_uppercase() == "BLOCK" {
         match args.next() {
             Some(Type::BulkString(duration)) => duration.parse::<u64>().ok(),
@@ -46,6 +48,7 @@ pub async fn command(
     } else {
         None
     };
+    println!("Blocking duration: {:?}", blocking_duration);
 
     // If blocking, wait for the specified duration
     if let Some(duration) = blocking_duration {
