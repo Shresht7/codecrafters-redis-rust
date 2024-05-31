@@ -126,14 +126,16 @@ impl RDB {
             let mut value_type = cursor.read_u8().await?;
 
             let expiry: Option<u128>;
-            println!("{}", value_type);
+            println!("ValueType {:b}", value_type);
             match value_type {
                 0xFC => {
-                    expiry = Some(read_u32(cursor).await as u128);
+                    expiry = Some(cursor.read_u32_le().await? as u128);
+                    println!("Expiry: {}", expiry.unwrap());
                     value_type = cursor.read_u8().await?;
                 }
                 0xFD => {
-                    expiry = Some(read_u64(cursor).await as u128 * 1000);
+                    expiry = Some(cursor.read_u64_le().await? as u128 * 1000);
+                    println!("Expiry: {}", expiry.unwrap());
                     value_type = cursor.read_u8().await?;
                 }
                 0xFF => break,
@@ -149,15 +151,13 @@ impl RDB {
                 "Key: {}, Value: {} (expiry in {}ms, expired: {})",
                 key,
                 value,
-                Instant::now().elapsed().as_millis() as u128 - expiry.unwrap_or(0),
+                expiry.unwrap_or(0),
                 is_expired
             );
 
             // Check if the key has expired, if so, skip over it
-            if let Some(expiry) = expiry {
-                if expiry < Instant::now().elapsed().as_millis() as u128 {
-                    continue;
-                }
+            if !expiry.is_none() && expiry.unwrap() < Instant::now().elapsed().as_millis() as u128 {
+                continue;
             }
 
             // Insert the key-value pair into the data
