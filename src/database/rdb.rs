@@ -134,7 +134,7 @@ impl RDB {
                     cursor.read_u8().await?;
                 }
                 0xFD => {
-                    expiry = Some(cursor.read_u64_le().await? as u128 * 1000);
+                    expiry = Some(cursor.read_u32_le().await? as u128 * 1000);
                     cursor.read_u8().await?;
                 }
                 0xFF => break,
