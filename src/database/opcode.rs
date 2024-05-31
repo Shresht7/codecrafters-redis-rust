@@ -25,13 +25,13 @@ impl From<u8> for OPCode {
     }
 }
 
-impl OPCode {
-    pub fn is_opcode(byte: u8) -> bool {
-        byte == OPCode::Aux as u8
-            || byte == OPCode::ResizeDB as u8
-            || byte == OPCode::ExpireTimeMs as u8
-            || byte == OPCode::ExpireTime as u8
-            || byte == OPCode::SelectDB as u8
-            || byte == OPCode::End as u8
-    }
-}
+// impl OPCode {
+//     pub fn is_opcode(byte: u8) -> bool {
+//         byte == OPCode::Aux as u8
+//             || byte == OPCode::ResizeDB as u8
+//             || byte == OPCode::ExpireTimeMs as u8
+//             || byte == OPCode::ExpireTime as u8
+//             || byte == OPCode::SelectDB as u8
+//             || byte == OPCode::End as u8
+//     }
+// }

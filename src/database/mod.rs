@@ -1,8 +1,8 @@
 use tokio::fs;
 
 // Library
-use crate::{helpers, parser::resp::Type};
-use std::{collections::HashMap, f32::consts::E, time::Instant};
+use crate::parser::resp::Type;
+use std::{collections::HashMap, time::Instant};
 
 // Modules
 mod opcode;
