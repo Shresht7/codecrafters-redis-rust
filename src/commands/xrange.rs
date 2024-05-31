@@ -36,7 +36,7 @@ pub async fn command(
     };
     let start = match args.get(2) {
         Some(Type::BulkString(id)) => match id.as_str() {
-            "-" => StreamID::default(),
+            "-" => StreamID::from_parts(0, 0),
             _ => StreamID::from_id(&id),
         },
         _ => {
@@ -93,7 +93,7 @@ pub async fn command(
         })
         .collect();
 
-    println!("{:?}", res);
+    // println!("{:?}", res);
 
     // Write the response
     let response = Type::Array(res);
