@@ -46,7 +46,7 @@ pub async fn command(
     println!("Stream ID {}: {}-{}", id, milliseconds, sequence);
 
     // Check if the ID is valid
-    if milliseconds == 0 || sequence == 0 {
+    if milliseconds == 0 && sequence == 0 {
         return connection
             .write_error("ERR The ID specified in XADD must be greater than 0-0")
             .await;

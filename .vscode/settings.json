@@ -8,6 +8,8 @@
         "psync",
         "REPLCONF",
         "replicaof",
-        "replid"
+        "replid",
+        "XADD",
+        "zset"
     ]
 }
