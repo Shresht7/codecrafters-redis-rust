@@ -41,17 +41,6 @@ pub async fn command(
         }
     };
 
-    // Split the id into its parts
-    let (milliseconds, sequence) = parse_id(id);
-    println!("Stream ID {}: {}-{}", id, milliseconds, sequence);
-
-    // Check if the ID is valid
-    if milliseconds == 0 && sequence == 0 {
-        return connection
-            .write_error("ERR The ID specified in XADD must be greater than 0-0")
-            .await;
-    }
-
     // Extract the field-value pairs from the arguments
     let mut fields = HashMap::new();
     for i in (3..args.len()).step_by(2) {
@@ -79,11 +68,32 @@ pub async fn command(
     };
 
     // Check that the ID is larger than the last entry
-    if let Some(last_entry) = stream.last() {
-        let last_id = parse_id(&last_entry.0);
-        if milliseconds < last_id.0 || (milliseconds == last_id.0 && sequence <= last_id.1) {
+    let last_entry = match stream.last() {
+        Some(entry) => Some(entry.clone()),
+        None => None,
+    };
+
+    // Split the id into its parts
+    let (milliseconds, sequence) = parse_id(id, last_entry.clone());
+    println!("Stream ID {}: {}-{}", id, milliseconds, sequence);
+
+    // Check if the ID is valid
+    if milliseconds == 0 && sequence == 0 {
+        return connection
+            .write_error("ERR The ID specified in XADD must be greater than 0-0")
+            .await;
+    }
+
+    // Check if the ID is greater than the last entry
+    if let Some(last_entry) = last_entry {
+        let (last_milliseconds, last_sequence) = simple_parse_id(&last_entry.0.clone());
+        if milliseconds < last_milliseconds
+            || (milliseconds == last_milliseconds && sequence <= last_sequence)
+        {
             return connection
-                .write_error("ERR The ID specified in XADD is equal or smaller than the target stream top item")
+                .write_error(
+                    "ERR The ID specified in XADD is equal or smaller than the target stream top item",
+                )
                 .await;
         }
     }
@@ -94,7 +104,8 @@ pub async fn command(
     // Update the database
     s.db.set(name.clone(), Type::Stream(stream), None);
 
-    // println!("Stream ID: {}", id.to_string());
+    let id = format!("{}-{}", milliseconds, sequence);
+    println!("Stream ID: {}", id);
 
     // Write the ID of the new entry
     let response = Type::BulkString(id.to_string());
@@ -103,14 +114,54 @@ pub async fn command(
     Ok(())
 }
 
-fn parse_id(id: &str) -> (u64, u64) {
+fn simple_parse_id(id: &str) -> (u64, u64) {
     let (milliseconds, sequence) = match id.split_once("-") {
         Some((milliseconds, sequence)) => {
-            let milliseconds = milliseconds.parse::<u64>().unwrap();
-            let sequence = sequence.parse::<u64>().unwrap();
+            let milliseconds = milliseconds.parse::<u64>().unwrap_or(0);
+            let sequence = sequence.parse::<u64>().unwrap_or(0);
             (milliseconds, sequence)
         }
         None => (0, 0),
     };
     (milliseconds, sequence)
+}
+
+fn parse_id(id: &str, last_entry: Option<(String, HashMap<String, String>)>) -> (u64, u64) {
+    let (milliseconds, sequence) = match id.split_once("-") {
+        Some((milliseconds, sequence)) => {
+            let milliseconds = parse_milliseconds(milliseconds);
+            let sequence = parse_sequence(sequence, milliseconds, last_entry);
+            (milliseconds, sequence)
+        }
+        None => (0, 0),
+    };
+    (milliseconds, sequence)
+}
+
+fn parse_milliseconds(milliseconds: &str) -> u64 {
+    match milliseconds {
+        _ => milliseconds.parse::<u64>().unwrap_or(0),
+    }
+}
+
+fn parse_sequence(
+    sequence: &str,
+    milliseconds: u64,
+    last_entry: Option<(String, HashMap<String, String>)>,
+) -> u64 {
+    match sequence {
+        "*" => {
+            if let Some((last_id, _)) = last_entry {
+                let (last_milliseconds, last_sequence) = simple_parse_id(&last_id);
+                if milliseconds == last_milliseconds {
+                    last_sequence + 1
+                } else {
+                    1
+                }
+            } else {
+                1
+            }
+        }
+        _ => sequence.parse::<u64>().unwrap_or(0),
+    }
 }
