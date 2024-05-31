@@ -1,7 +1,7 @@
 use tokio::io::AsyncReadExt;
 use tokio::time::Instant;
 // Library
-// use crate::helpers;
+use crate::helpers;
 use byteorder::{ByteOrder, LittleEndian};
 use std::collections::HashMap;
 use std::io::Cursor;
@@ -95,10 +95,12 @@ impl RDB {
         &self,
         cursor: &mut Cursor<&Vec<u8>>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let _key = read_encoded_string(cursor)
+        // Key
+        read_encoded_string(cursor)
             .await
             .expect("Failed to read aux key");
-        let _value = read_encoded_string(cursor)
+        // Value
+        read_encoded_string(cursor)
             .await
             .expect("Failed to read aux value");
         Ok(())
@@ -123,20 +125,18 @@ impl RDB {
     ) -> Result<(), Box<dyn std::error::Error>> {
         // Iterate over the hash table for the given size
         for _ in 0..size {
-            let mut value_type = cursor.read_u8().await?;
+            let value_type = cursor.read_u8().await?;
 
             let expiry: Option<u128>;
             // println!("ValueType {:b}", value_type);
             match value_type {
                 0xFC => {
                     expiry = Some(cursor.read_u32_le().await? as u128);
-                    println!("value_type: {:x}", value_type);
-                    value_type = cursor.read_u8().await?;
+                    cursor.read_u8().await?;
                 }
                 0xFD => {
                     expiry = Some(cursor.read_u64_le().await? as u128 * 1000);
-                    println!("value_type: {:x}", value_type);
-                    value_type = cursor.read_u8().await?;
+                    cursor.read_u8().await?;
                 }
                 0xFF => break,
                 _ => expiry = None,
@@ -171,7 +171,8 @@ impl RDB {
         &self,
         cursor: &mut Cursor<&Vec<u8>>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let _db_number = cursor.read_u8().await?; // We essentially skip over this
+        // DB NUMBER
+        cursor.read_u8().await?; // We essentially skip over this
         Ok(())
     }
 }
