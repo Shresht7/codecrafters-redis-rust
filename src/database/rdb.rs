@@ -52,17 +52,31 @@ impl RDB {
         // Create a cursor to read the remaining data
         let mut bytes = reader::read(&data[9..]);
 
+        // TODO: THIS IS A COMPLETE HACK. NEED TO FIX THIS
         // Read until the double zero !HACK
-        let (_, mut rest) = bytes.split(&[0, 0]).expect("Failed to find triple zero");
-        let b = rest.as_bytes();
-        let key_length = b[0] as usize;
-        let key = String::from_utf8(b[1..=key_length].to_vec())?;
-        let value_len = (&b[key_length + 1..key_length + 2])[0] as usize;
-        let value = String::from_utf8(b[key_length + 2..key_length + 2 + value_len].to_vec())?;
-        println!("Key: {}, Value: {}", key, value);
+        let (_, mut rest) = bytes
+            .split(&[0, 0])
+            .expect("Failed to find double zero. THIS IS A HACK");
+        let mut b = rest.as_bytes();
 
-        // Insert the key-value pair into the data hashmap
-        self.data.insert(key, value);
+        loop {
+            // Check if the remaining data is empty
+            if b.is_empty() {
+                break;
+            }
+
+            let key_length = b[0] as usize;
+            let key = String::from_utf8(b[1..=key_length].to_vec())?;
+            let value_len = (&b[key_length + 1..key_length + 2])[0] as usize;
+            let value = String::from_utf8(b[key_length + 2..key_length + 2 + value_len].to_vec())?;
+            println!("Key: {}, Value: {}", key, value);
+
+            // Insert the key-value pair into the data hashmap
+            self.data.insert(key, value);
+
+            // Update the remaining data
+            b = &b[key_length + 2 + value_len..];
+        }
 
         Ok(self)
     }
