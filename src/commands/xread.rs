@@ -43,8 +43,8 @@ pub async fn command(
     // Note: Assume the happy path and ignore the case where the number of streams is not even
 
     // Extract the streams and IDs from the arguments
-    let streams = args.iter().skip(2).take(len_of_remaining_args).step_by(2);
-    let ids = args.iter().skip(3).take(len_of_remaining_args).step_by(2);
+    let streams = args.iter().skip(2).take(len_of_remaining_args / 2);
+    let ids = args.iter().skip(2 + streams.len()).take(streams.len());
 
     println!("Streams: {:?}", streams.clone().collect::<Vec<_>>());
     println!("IDs: {:?}", ids.clone().collect::<Vec<_>>());
