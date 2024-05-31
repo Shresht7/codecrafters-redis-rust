@@ -93,7 +93,7 @@ pub async fn command(
         })
         .collect();
 
-    // println!("{:?}", res);
+    println!("{:?}", res);
 
     // Write the response
     let response = Type::Array(res);
