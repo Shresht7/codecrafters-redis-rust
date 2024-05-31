@@ -26,11 +26,9 @@ pub async fn command(
             .await;
     }
 
-    println!("CONFIG {:?}", args);
-
     // Extract the subcommand from the arguments
     let subcommand = match args.get(1) {
-        Some(subcommand) => subcommand,
+        Some(Type::BulkString(subcommand)) => subcommand,
         _ => {
             return connection.write_error("ERR invalid subcommand").await;
         }
