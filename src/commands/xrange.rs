@@ -66,6 +66,9 @@ pub async fn command(
         .iter()
         .filter_map(|entry| {
             let id = entry.0.clone();
+
+            println!("{} {} {}", id, start, end);
+
             if (id.milliseconds >= start.milliseconds && id.sequence >= start.sequence)
                 && (id.milliseconds <= end.milliseconds && id.sequence <= end.sequence)
             {
