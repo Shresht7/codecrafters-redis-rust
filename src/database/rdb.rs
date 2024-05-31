@@ -251,6 +251,8 @@ async fn read_encoded_string(
         }
     };
 
+    println!("Len: {:?}, String: {:?}", length, str);
+
     Ok(str)
 }
 
