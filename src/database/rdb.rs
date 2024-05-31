@@ -271,13 +271,13 @@ async fn read_encoded_string(
 
 async fn read_u32(cursor: &mut Cursor<&Vec<u8>>) -> u32 {
     let mut buffer = [0u8; 4];
-    cursor.read(&mut buffer[..]).await.unwrap() as u32;
+    cursor.read(&mut buffer).await.unwrap() as u32;
     return u32::from_le_bytes(buffer);
 }
 
 async fn read_u64(cursor: &mut Cursor<&Vec<u8>>) -> u64 {
     let mut buffer = [0u8; 8];
-    cursor.read(&mut buffer[..]).await.unwrap() as u64;
+    cursor.read(&mut buffer).await.unwrap() as u64;
     return u64::from_le_bytes(buffer);
 }
 
