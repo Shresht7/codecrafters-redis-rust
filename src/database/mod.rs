@@ -79,6 +79,7 @@ impl Database {
                 let rdb = rdb::parse(contents)
                     .await
                     .expect("Failed to parse RDB file.");
+                println!("{:?}", rdb.data.len());
                 for ele in rdb.data {
                     println!(
                         "Key - {}, Value - {}, Expiry - {:?}",
@@ -88,7 +89,7 @@ impl Database {
                         x => Type::BulkString(x),
                     };
                     let expiry = match ele.1 .1 {
-                        Some(x) => Some(x.as_millis() as usize),
+                        Some(x) => Some(x as usize),
                         None => None,
                     };
                     self.set(Type::BulkString(ele.0), value, expiry);

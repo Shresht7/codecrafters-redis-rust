@@ -2,7 +2,7 @@
 use byteorder::{ByteOrder, LittleEndian};
 use std::collections::HashMap;
 use std::io::Cursor;
-use std::time::Duration;
+use std::time::SystemTime;
 use tokio::io::AsyncReadExt;
 use tokio::time::Instant;
 
@@ -16,7 +16,7 @@ pub const EMPTY_RDB: &str = "UkVESVMwMDEx+glyZWRpcy12ZXIFNy4yLjD6CnJlZGlzLWJpdHP
 pub struct RDB {
     pub magic_string: String,
     pub version: String,
-    pub data: HashMap<String, (String, Option<Duration>)>,
+    pub data: HashMap<String, (String, Option<u128>)>,
 }
 
 impl Default for RDB {
@@ -127,17 +127,17 @@ impl RDB {
         for _ in 0..size {
             let value_type = cursor.read_u8().await?;
 
-            let expiry: Option<Duration>;
+            let expiry: Option<u128>;
             // println!("ValueType {:b}", value_type);
             match value_type {
                 0xFC => {
-                    let val = cursor.read_u32_le().await? as u64;
-                    expiry = Some(Duration::from_millis(val));
+                    let val = cursor.read_u64_le().await? as u128;
+                    expiry = Some(val);
                     cursor.read_u8().await?;
                 }
                 0xFD => {
-                    let val = cursor.read_u32_le().await? as u64;
-                    expiry = Some(Duration::from_secs(val));
+                    let val = cursor.read_u32_le().await? as u128;
+                    expiry = Some(val * 1000);
                     cursor.read_u8().await?;
                 }
                 0xFF => break,
@@ -147,11 +147,17 @@ impl RDB {
             let key = read_encoded_string(cursor).await?;
             let value = read_encoded_string(cursor).await?;
 
-            // Check if the key has expired, if so, skip over it
-            if let Some(expiry) = expiry {
-                if expiry.as_millis() as usize <= Instant::now().elapsed().as_millis() as usize {
-                    continue;
-                }
+            println!(
+                "\u{001b}[31mKey: {:?}, Value: {:?}, Expiry: {:?} (vs {})\u{001b}[0m",
+                key,
+                value,
+                expiry,
+                get_time()
+            );
+
+            // If the key is already expired, skip it
+            if !expiry.is_none() && expiry.unwrap() < get_time() {
+                continue;
             }
 
             // Insert the key-value pair into the data
@@ -160,7 +166,6 @@ impl RDB {
 
         Ok(())
     }
-
     async fn parse_select_db(
         &self,
         cursor: &mut Cursor<&Vec<u8>>,
@@ -169,6 +174,13 @@ impl RDB {
         cursor.read_u8().await?; // We essentially skip over this
         Ok(())
     }
+}
+
+fn get_time() -> u128 {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .expect("Failed to get time")
+        .as_millis()
 }
 
 // -------
