@@ -129,11 +129,11 @@ impl RDB {
             println!("{}", value_type);
             match value_type {
                 0xFC => {
-                    expiry = Some(cursor.read_u32().await? as u128);
+                    expiry = Some(read_u32(cursor).await as u128);
                     value_type = cursor.read_u8().await?;
                 }
                 0xFD => {
-                    expiry = Some(cursor.read_u64().await? as u128 * 1000);
+                    expiry = Some(read_u64(cursor).await as u128 * 1000);
                     value_type = cursor.read_u8().await?;
                 }
                 0xFF => break,
@@ -272,7 +272,13 @@ async fn read_encoded_string(
 async fn read_u32(cursor: &mut Cursor<&Vec<u8>>) -> u32 {
     let mut buffer = [0u8; 4];
     cursor.read(&mut buffer[..]).await.unwrap() as u32;
-    return u32::from_be_bytes(buffer);
+    return u32::from_le_bytes(buffer);
+}
+
+async fn read_u64(cursor: &mut Cursor<&Vec<u8>>) -> u64 {
+    let mut buffer = [0u8; 8];
+    cursor.read(&mut buffer[..]).await.unwrap() as u64;
+    return u64::from_le_bytes(buffer);
 }
 
 // -----
