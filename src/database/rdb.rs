@@ -60,6 +60,7 @@ impl RDB {
         let mut b = rest.as_bytes();
 
         loop {
+            println!("b looks like {:?}", b);
             // Check if the remaining data is empty
             if b.is_empty() {
                 break;
