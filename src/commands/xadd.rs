@@ -1,6 +1,6 @@
 // Library
 use crate::{
-    parser::resp::Type,
+    parser::resp::{stream::StreamID, Type},
     server::{connection::Connection, Server},
 };
 use std::{collections::HashMap, sync::Arc};
@@ -74,11 +74,15 @@ pub async fn command(
     };
 
     // Split the id into its parts
-    let (milliseconds, sequence) = parse_id(id, last_entry.clone());
-    println!("Stream ID {}: {}-{}", id, milliseconds, sequence);
+    let old_id = id.clone();
+    let id = StreamID::parse(&id, last_entry.clone());
+    println!(
+        "Stream ID ({}): {}-{}",
+        old_id, id.milliseconds, id.sequence
+    );
 
     // Check if the ID is valid
-    if milliseconds == 0 && sequence == 0 {
+    if id.milliseconds == 0 && id.sequence == 0 {
         return connection
             .write_error("ERR The ID specified in XADD must be greater than 0-0")
             .await;
@@ -86,9 +90,9 @@ pub async fn command(
 
     // Check if the ID is greater than the last entry
     if let Some(last_entry) = last_entry {
-        let (last_milliseconds, last_sequence) = simple_parse_id(&last_entry.0.clone());
-        if milliseconds < last_milliseconds
-            || (milliseconds == last_milliseconds && sequence <= last_sequence)
+        let last = StreamID::from_id(&last_entry.0);
+        if id.milliseconds < last.milliseconds
+            || (id.milliseconds == last.milliseconds && id.sequence <= last.sequence)
         {
             return connection
                 .write_error(
@@ -105,91 +109,11 @@ pub async fn command(
     s.db.set(name.clone(), Type::Stream(stream), None);
 
     // Update the ID format
-    let id = format!("{}-{}", milliseconds, sequence);
-    println!("Stream ID: {}", id);
+    println!("Stream ID: {}", id.to_string());
 
     // Write the ID of the new entry
     let response = Type::BulkString(id.to_string());
     connection.write_all(&response.as_bytes()).await?;
 
     Ok(())
-}
-
-fn simple_parse_id(id: &str) -> (u64, u64) {
-    let (milliseconds, sequence) = match id.split_once("-") {
-        Some((milliseconds, sequence)) => {
-            let milliseconds = milliseconds.parse::<u64>().unwrap_or(0);
-            let sequence = sequence.parse::<u64>().unwrap_or(0);
-            (milliseconds, sequence)
-        }
-        None => (0, 0),
-    };
-    (milliseconds, sequence)
-}
-
-fn parse_id(id: &str, last_entry: Option<(String, HashMap<String, String>)>) -> (u64, u64) {
-    let timestamp = get_unix_timestamp();
-    match id {
-        "*" => {
-            if let Some((last_id, _)) = last_entry {
-                let (last_milliseconds, last_sequence) = simple_parse_id(&last_id);
-                if timestamp == last_milliseconds {
-                    (timestamp, last_sequence + 1)
-                } else {
-                    (timestamp, 0)
-                }
-            } else {
-                (timestamp, 0)
-            }
-        }
-        _ => {
-            let (milliseconds, sequence) = match id.split_once("-") {
-                Some((milliseconds, sequence)) => {
-                    let milliseconds = parse_milliseconds(milliseconds);
-                    let sequence = parse_sequence(sequence, milliseconds, last_entry);
-                    (milliseconds, sequence)
-                }
-                None => (timestamp, 0),
-            };
-            (milliseconds, sequence)
-        }
-    }
-}
-
-fn parse_milliseconds(milliseconds: &str) -> u64 {
-    match milliseconds {
-        "*" => get_unix_timestamp(),
-        _ => milliseconds.parse::<u64>().unwrap_or(0),
-    }
-}
-
-fn parse_sequence(
-    sequence: &str,
-    milliseconds: u64,
-    last_entry: Option<(String, HashMap<String, String>)>,
-) -> u64 {
-    match sequence {
-        "*" => {
-            if let Some((last_id, _)) = last_entry {
-                let (last_milliseconds, last_sequence) = simple_parse_id(&last_id);
-                if milliseconds == last_milliseconds {
-                    last_sequence + 1
-                } else {
-                    0
-                }
-            } else {
-                1
-            }
-        }
-        _ => sequence.parse::<u64>().unwrap_or(0),
-    }
-}
-
-// TODO: There is a duplicate of this somewhere else in the codebase, I think. Refactor to use a common function.
-/// Returns the current Unix timestamp in milliseconds.
-fn get_unix_timestamp() -> u64 {
-    let now = std::time::SystemTime::now();
-    now.duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as u64
 }

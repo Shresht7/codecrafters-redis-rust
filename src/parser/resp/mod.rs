@@ -11,6 +11,7 @@ pub(crate) mod null;
 pub(crate) mod set;
 pub(crate) mod simple_error;
 pub(crate) mod simple_string;
+pub(crate) mod stream;
 pub(crate) mod verbatim_string;
 
 // Exports
