@@ -45,6 +45,7 @@ pub async fn command(
         Some(value) => match value {
             Type::SimpleString(_) => "string",
             Type::BulkString(_) => "string",
+            Type::Stream(_) => "stream",
             // Type::Set(_) => "set",
             // Type::ZSet(_) => "zset",
             // Type::Hash(_) => "hash",
