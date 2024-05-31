@@ -60,17 +60,15 @@ impl RDB {
         let mut b = rest.as_bytes();
 
         loop {
-            let key_length = b[0] as usize;
-
-            // Check if the remaining data is less than the key length
-            if b[0] > 200 {
-                // ANOTHER HACK
+            println!("{:?}", b);
+            if b[0] == 0xFF {
+                // End of the data
                 break;
             }
-
+            let key_length = b[0] as usize;
             let key = String::from_utf8(b[1..=key_length].to_vec())?;
-            let value_len = (&b[key_length + 1..key_length + 2])[0] as usize;
 
+            let value_len = (&b[key_length + 1..key_length + 2])[0] as usize;
             let value = String::from_utf8(b[key_length + 2..key_length + 2 + value_len].to_vec())?;
             println!("Key: {}, Value: {}", key, value);
 
