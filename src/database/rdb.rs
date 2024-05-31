@@ -1,4 +1,5 @@
 // Library
+use super::opcode;
 use crate::helpers;
 use std::collections::HashMap;
 
