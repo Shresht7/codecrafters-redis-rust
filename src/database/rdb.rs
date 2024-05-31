@@ -1,7 +1,12 @@
+use tokio::io::AsyncReadExt;
+use tokio::time::Instant;
+
+use crate::database::opcode::OPCode;
 // Library
 use crate::helpers;
-use crate::parser::reader;
+use byteorder::{ByteOrder, LittleEndian};
 use std::collections::HashMap;
+use std::io::Cursor;
 
 /// The magic bytes at the start of an RDB file
 pub const MAGIC_BYTES: &[u8; 5] = b"REDIS";
@@ -36,56 +41,237 @@ pub async fn parse(data: Vec<u8>) -> Result<RDB, Box<dyn std::error::Error>> {
 impl RDB {
     /// Parses the given RDB file data and updates the `RDB` struct
     async fn parse(&mut self, data: Vec<u8>) -> Result<&mut Self, Box<dyn std::error::Error>> {
+        let mut cursor = Cursor::new(&data);
+
         // Check if the data starts with the correct magic string (the first 5 bytes)
         if !data.starts_with(MAGIC_BYTES) {
             return Err(format!("Invalid RDB file: Expected magic bytes {:?}", MAGIC_BYTES).into());
         }
 
         // Read the first five bytes as the magic string
-        self.magic_string = String::from_utf8(data[0..4].to_vec())?;
+        let mut buf = [0; 5];
+        cursor
+            .read_exact(&mut buf)
+            .await
+            .expect("Failed to read magic string");
+        self.magic_string = String::from_utf8(buf.to_vec())?;
 
         // Read the next four bytes for the version
-        self.version = String::from_utf8(data[5..9].to_vec())?;
+        let mut buf = [0; 4];
+        cursor
+            .read_exact(&mut buf)
+            .await
+            .expect("Failed to read version");
+        self.version = String::from_utf8(buf.to_vec())?;
 
-        println!("{:?}", data);
-
-        // Create a cursor to read the remaining data
-        let mut bytes = reader::read(&data[9..]);
-
-        // TODO: THIS IS A COMPLETE HACK. NEED TO FIX THIS
-        // Read until the double zero !HACK
-        let (_, mut rest) = bytes
-            .split(&[0, 0])
-            .expect("Failed to find double zero. THIS IS A HACK");
-        let mut b = rest.as_bytes();
-
+        // Read the rest of the data
         loop {
-            println!("{:?}", b);
-            if b[0] == 0x00 {
-                b = &b[1..]; // Skip the zero byte
-                continue;
+            let next_byte = cursor.read_u8().await.expect("Failed to read opcode byte");
+            println!("Opcode Byte: {}", next_byte);
+            match next_byte {
+                0xFA => self
+                    .parse_aux(&mut cursor)
+                    .await
+                    .expect("Failed to parse aux"),
+                0xFB => self
+                    .parse_resize_db(&mut cursor)
+                    .await
+                    .expect("Failed to parse resize db"),
+                0xFE => self
+                    .parse_select_db(&mut cursor)
+                    .await
+                    .expect("Failed to parse select db"),
+                0xFF => break, // End of the RDB file
+                _ => panic!("Invalid opcode: {}", next_byte),
             }
-
-            if b[0] == 0xFF {
-                // End of the data
-                break;
-            }
-            let key_length = b[0] as usize;
-            let key = String::from_utf8(b[1..=key_length].to_vec())?;
-
-            let value_len = (&b[key_length + 1..key_length + 2])[0] as usize;
-            let value = String::from_utf8(b[key_length + 2..key_length + 2 + value_len].to_vec())?;
-            println!("Key: {}, Value: {}", key, value);
-
-            // Insert the key-value pair into the data hashmap
-            self.data.insert(key, value);
-
-            // Update the remaining data
-            b = &b[key_length + 2 + value_len..];
         }
 
         Ok(self)
     }
+
+    async fn parse_aux(
+        &self,
+        cursor: &mut Cursor<&Vec<u8>>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let key = read_encoded_string(cursor)
+            .await
+            .expect("Failed to read aux key");
+        let value = read_encoded_string(cursor)
+            .await
+            .expect("Failed to read aux value");
+        println!("Aux Key: {}, Aux Value: {}", key, value);
+        Ok(())
+    }
+
+    async fn parse_resize_db(
+        &mut self,
+        cursor: &mut Cursor<&Vec<u8>>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // We essentially skip over these
+        let database_hash_table_size = read_int(cursor).await?;
+        let _expiry_hash_table_size = read_int(cursor).await?;
+        self.parse_hash_table(database_hash_table_size, cursor)
+            .await?;
+        Ok(())
+    }
+
+    async fn parse_hash_table(
+        &mut self,
+        size: u32,
+        cursor: &mut Cursor<&Vec<u8>>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // Iterate over the hash table for the given size
+        for _ in 0..size {
+            let mut value_type = cursor.read_u8().await?;
+
+            let expiry: Option<u128>;
+            match OPCode::from(value_type) {
+                OPCode::ExpireTimeMs => {
+                    expiry = Some(cursor.read_u32().await? as u128);
+                    value_type = cursor.read_u8().await?;
+                }
+                OPCode::ExpireTime => {
+                    expiry = Some(cursor.read_u64().await? as u128 * 1000);
+                    value_type = cursor.read_u8().await?;
+                }
+                OPCode::End => break,
+                _ => expiry = None,
+            }
+
+            println!("Value Type: {}, expiry: {:?}", value_type, expiry);
+            let key = read_encoded_string(cursor).await?;
+            let value = read_encoded_string(cursor).await?;
+
+            println!("Key: {}, Value: {}", key, value);
+
+            // Check if the key has expired, if so, skip over it
+            if let Some(expiry) = expiry {
+                if expiry < Instant::now().elapsed().as_millis() as u128 {
+                    continue;
+                }
+            }
+
+            // Insert the key-value pair into the data
+            self.data.insert(key, value);
+        }
+
+        Ok(())
+    }
+
+    async fn parse_select_db(
+        &self,
+        cursor: &mut Cursor<&Vec<u8>>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let db_number = cursor.read_u8().await?; // We essentially skip over this
+        println!("DB Number: {}", db_number);
+        Ok(())
+    }
+}
+
+// -------
+// HELPERS
+// -------
+
+async fn read_int(cursor: &mut Cursor<&Vec<u8>>) -> Result<u32, Box<dyn std::error::Error>> {
+    let n = read_length_encoding(cursor).await?;
+    return Ok(n.0);
+}
+
+async fn read_length_encoding(
+    cursor: &mut Cursor<&Vec<u8>>,
+) -> Result<(u32, bool), Box<dyn std::error::Error>> {
+    let byte = cursor.read_u8().await?; // Read the first byte
+    let two_most_significant_bits = byte & 0xC0 >> 6; // Get the two most significant bits of the byte
+
+    let mut is_encoded = false;
+    let length: u32;
+    println!("Most significant bits: {}", two_most_significant_bits);
+    match two_most_significant_bits {
+        0x0 => length = (byte & 0x3F) as u32, // The next 6 bits are the length
+        0x02 => {
+            // Discard the 6 bits, the next 32 bits (4 bytes) are the length
+            length = read_u32(cursor).await;
+            println!("Length: {:b}", length);
+        }
+        0x01 => {
+            // Read one additional byte, the combined 14 bits are the length
+            let next_byte = cursor.read_u8().await?;
+            let res = [((byte & 0x3F) << 8), next_byte];
+            let res_reverse = [next_byte, ((byte & 0x3F) << 8)];
+            println!("Byte Vector: {:?}", res);
+            // length = u16::from_be_bytes(res) as u32;
+            let be_length = u16::from_be_bytes(res);
+            let le_length = u16::from_le_bytes(res_reverse);
+            let other_len = (((byte & 0x3F) << 8) | next_byte) as u32;
+            length = other_len;
+            println!(
+                "Length: {}, BE: {}, LE: {}, Other: {}",
+                length, be_length, le_length, other_len
+            );
+        }
+        _ => {
+            is_encoded = true;
+            match byte & 0x3F {
+                0x00 => length = 1,
+                0x01 => length = 2,
+                0x02 => length = 4,
+                _ => {
+                    panic!(
+                        "not supported special length encoding {}: {}",
+                        (byte & 0xC0) >> 6,
+                        byte & 0x3F
+                    )
+                }
+            }
+        }
+    };
+
+    Ok((length, is_encoded))
+}
+
+async fn read_encoded_string(
+    cursor: &mut Cursor<&Vec<u8>>,
+) -> Result<String, Box<dyn std::error::Error>> {
+    let length = read_length_encoding(cursor)
+        .await
+        .expect("Failed to read length");
+    println!("Length: {:?}", length);
+    let str = match length {
+        (len, false) => {
+            // Not encoded, read the string as is
+            let mut buf = vec![0u8; len as usize];
+            cursor
+                .read_exact(&mut buf)
+                .await
+                .expect("Failed to read string");
+            String::from_utf8_lossy(&buf).to_string()
+        }
+        (len, true) => {
+            // Encoded, read the string as base64
+            let mut buf = vec![0u8; len as usize];
+            cursor
+                .read_exact(&mut buf)
+                .await
+                .expect("Failed to read string");
+
+            let res = match len {
+                1 => buf[0] as i8 as i32,
+                2 => LittleEndian::read_i16(&buf) as i32,
+                4 => LittleEndian::read_i32(&buf),
+                _ => panic!("Invalid length for encoded string: {}", len),
+            };
+
+            res.to_string()
+        }
+    };
+
+    Ok(str)
+}
+
+async fn read_u32(cursor: &mut Cursor<&Vec<u8>>) -> u32 {
+    let mut buffer = [0u8; 4];
+    cursor.read(&mut buffer[..]).await.unwrap() as u32;
+    return u32::from_be_bytes(buffer);
 }
 
 // -----

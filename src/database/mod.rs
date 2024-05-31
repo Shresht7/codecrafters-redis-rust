@@ -74,7 +74,9 @@ impl Database {
         let filepath = format!("{}/{}", self.dir, self.dbfilename);
         match fs::read(filepath).await {
             Ok(contents) => {
-                let rdb = rdb::parse(contents).await?;
+                let rdb = rdb::parse(contents)
+                    .await
+                    .expect("Failed to parse RDB file.");
                 for ele in rdb.data {
                     self.set(Type::BulkString(ele.0), Type::BulkString(ele.1), None);
                 }
