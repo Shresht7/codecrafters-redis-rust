@@ -102,7 +102,6 @@ pub async fn command(
     }
 
     // Update the ID format
-    println!("Stream ID: {}", id.to_string());
     let response = Type::BulkString(id.to_string());
 
     // Append the entry to the stream

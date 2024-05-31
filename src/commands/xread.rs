@@ -50,25 +50,30 @@ pub async fn command(
         tokio::time::sleep(tokio::time::Duration::from_millis(duration)).await;
     }
 
+    // Calculate remaining arguments
+    let length_of_remaining_args = args.len();
+
     // Note: Assume the happy path and ignore the case where the number of streams is not even
 
     // Extract the streams and IDs from the arguments
-    let streams = &args.clone().take_while(|arg| match arg {
-        Type::BulkString(arg) => !arg.contains('-'),
-        _ => false,
-    });
-    let ids: &Vec<&Type> = &args
-        .clone()
-        .take_while(|arg| match arg {
-            Type::BulkString(arg) => arg.contains('-'),
-            _ => false,
-        })
-        .collect();
+    let mut streams = Vec::new();
+    for _ in 0..length_of_remaining_args / 2 {
+        let stream = args.next().unwrap();
+        streams.push(stream);
+    }
+    let mut ids = Vec::new();
+    for _ in 0..length_of_remaining_args / 2 {
+        let id = args.next().unwrap();
+        ids.push(id);
+    }
+
+    println!("Streams: {:?}", streams);
+    println!("IDs: {:?}", ids);
 
     // The collection of entries of all the streams
     let mut entries_of_entries = Vec::new();
 
-    for (stream, id) in streams.clone().zip(ids) {
+    for (stream, id) in streams.iter().zip(ids.iter()) {
         println!("Stream: {:?}, ID: {:?}", stream, id);
         let stream = match stream {
             Type::BulkString(stream) => stream,
