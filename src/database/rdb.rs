@@ -66,7 +66,7 @@ impl RDB {
         // Read the rest of the data
         loop {
             let next_byte = cursor.read_u8().await.expect("Failed to read opcode byte");
-            println!("Opcode Byte: {}", next_byte);
+            // println!("Opcode Byte: {}", next_byte);
             match next_byte {
                 0xFA => self
                     .parse_aux(&mut cursor)
@@ -127,16 +127,16 @@ impl RDB {
             let mut value_type = cursor.read_u8().await?;
 
             let expiry: Option<u128>;
-            println!("ValueType {:b}", value_type);
+            // println!("ValueType {:b}", value_type);
             match value_type {
                 0xFC => {
                     expiry = Some(cursor.read_u32_le().await? as u128);
-                    println!("Expiry: {}", expiry.unwrap());
+                    // println!("Expiry: {}", expiry.unwrap());
                     value_type = cursor.read_u8().await?;
                 }
                 0xFD => {
                     expiry = Some(cursor.read_u64_le().await? as u128 * 1000);
-                    println!("Expiry: {}", expiry.unwrap());
+                    // println!("Expiry: {}", expiry.unwrap());
                     value_type = cursor.read_u8().await?;
                 }
                 0xFF => break,
@@ -237,7 +237,7 @@ async fn read_encoded_string(
     let length = read_length_encoding(cursor)
         .await
         .expect("Failed to read length");
-    println!("Length: {:?}", length);
+    // println!("Length: {:?}", length);
     let str = match length {
         (len, false) => {
             // Not encoded, read the string as is
