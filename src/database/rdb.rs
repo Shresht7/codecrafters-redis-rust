@@ -187,7 +187,7 @@ async fn read_length_encoding(
         0x0 => length = (byte & 0x3F) as u32, // The next 6 bits are the length
         0x02 => {
             // Discard the 6 bits, the next 32 bits (4 bytes) are the length
-            length = read_u32(cursor).await;
+            length = cursor.read_u32_le().await?;
         }
         0x01 => {
             // Read one additional byte, the combined 14 bits are the length
@@ -252,12 +252,6 @@ async fn read_encoded_string(
     };
 
     Ok(str)
-}
-
-async fn read_u32(cursor: &mut Cursor<&Vec<u8>>) -> u32 {
-    let mut buffer = [0u8; 4];
-    cursor.read(&mut buffer).await.unwrap() as u32;
-    return u32::from_le_bytes(buffer);
 }
 
 // -----
