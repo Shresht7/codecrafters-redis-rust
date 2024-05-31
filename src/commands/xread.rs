@@ -37,34 +37,71 @@ pub async fn command(
         return connection.write_error("ERR invalid subcommand").await;
     }
 
-    // Get the key from the second argument
-    let key = match args.get(2) {
-        Some(key) => key,
-        _ => {
-            return connection.write_error("ERR invalid key").await;
-        }
-    };
+    // Determine the length of the remaining arguments
+    let len_of_remaining_args = args.len() - 2;
 
-    // Get the streamID from the third argument
-    let id = match args.get(3) {
-        Some(Type::BulkString(id)) => StreamID::from_id(&id),
-        _ => {
-            return connection.write_error("ERR invalid stream ID").await;
-        }
-    };
+    // Note: Assume the happy path and ignore the case where the number of streams is not even
 
-    // Lock the server
+    // Extract the streams and IDs from the arguments
+    let streams = args.iter().skip(2).take(len_of_remaining_args).step_by(2);
+    let ids = args.iter().skip(3).take(len_of_remaining_args).step_by(2);
+
+    println!("Streams: {:?}", streams.clone().collect::<Vec<_>>());
+    println!("IDs: {:?}", ids.clone().collect::<Vec<_>>());
+
+    // The collection of entries of all the streams
+    let mut entries_of_entries = Vec::new();
+
+    for (stream, id) in streams.zip(ids) {
+        println!("Stream: {:?}, ID: {:?}", stream, id);
+        let stream = match stream {
+            Type::BulkString(stream) => stream,
+            _ => {
+                return connection.write_error("ERR invalid stream name").await;
+            }
+        };
+
+        let id = match id {
+            Type::BulkString(id) => StreamID::from_id(&id),
+            _ => {
+                return connection.write_error("ERR invalid ID").await;
+            }
+        };
+
+        let key = Type::BulkString(stream.clone());
+        let entries = match xread(server, &key, connection, id).await {
+            Ok(value) => value,
+            Err(value) => return value,
+        };
+
+        entries_of_entries.push(entries);
+    }
+
+    // Write the entries to the client
+    let response = Type::Array(entries_of_entries);
+
+    println!("Response: {:?}", response);
+
+    connection.write_all(&response.as_bytes()).await?;
+
+    Ok(())
+}
+
+async fn xread(
+    server: &Arc<Mutex<Server>>,
+    key: &Type,
+    connection: &mut Connection,
+    id: StreamID,
+) -> Result<Type, Result<(), Box<dyn std::error::Error>>> {
     let s = server.lock().await;
 
-    // Get the stream
     let stream = match s.db.get(key) {
         Some(Type::Stream(stream)) => stream,
         _ => {
-            return connection.write_error("ERR stream not found").await;
+            return Err(connection.write_error("ERR no such stream").await);
         }
     };
 
-    // Get the entries from the stream starting from the given ID
     let entries = stream
         .iter()
         .filter_map(|entry| {
@@ -88,12 +125,5 @@ pub async fn command(
         })
         .collect::<Vec<_>>();
 
-    // Write the entries to the client
-    let response = Type::Array(vec![Type::Array(vec![key.clone(), Type::Array(entries)])]);
-
-    // println!("Response: {:?}", response);
-
-    connection.write_all(&response.as_bytes()).await?;
-
-    Ok(())
+    Ok(Type::Array(vec![key.clone(), Type::Array(entries)]))
 }
