@@ -54,7 +54,7 @@ pub async fn command(
     };
 
     // Create the response
-    let response = resp::Type::BulkString(value_type_str.into());
+    let response = resp::Type::SimpleString(value_type_str.into());
     conn.write_all(&response.as_bytes()).await?;
 
     Ok(())
