@@ -2,7 +2,7 @@ use tokio::fs;
 
 // Library
 use crate::{helpers, parser::resp::Type};
-use std::{collections::HashMap, time::Instant};
+use std::{collections::HashMap, f32::consts::E, time::Instant};
 
 // Modules
 mod opcode;
@@ -78,8 +78,18 @@ impl Database {
                     .await
                     .expect("Failed to parse RDB file.");
                 for ele in rdb.data {
-                    println!("Key - {} Value - {:?}", ele.0, ele.1);
-                    self.set(Type::BulkString(ele.0), Type::BulkString(ele.1), None);
+                    println!(
+                        "Key - {}, Value - {:?}, Expiry - {:?}",
+                        ele.0, ele.1 .0, ele.1 .1
+                    );
+                    let value = match ele.1 .0 {
+                        x => Type::BulkString(x),
+                    };
+                    let expiry = match ele.1 .1 {
+                        Some(expiry) => Some(expiry as usize),
+                        None => None,
+                    };
+                    self.set(Type::BulkString(ele.0), value, expiry);
                 }
             }
             Err(_) => {

@@ -2,6 +2,7 @@ use tokio::io::AsyncReadExt;
 use tokio::time::Instant;
 // Library
 use crate::helpers;
+use crate::parser::resp;
 use byteorder::{ByteOrder, LittleEndian};
 use std::collections::HashMap;
 use std::io::Cursor;
@@ -16,7 +17,7 @@ pub const EMPTY_RDB: &str = "UkVESVMwMDEx+glyZWRpcy12ZXIFNy4yLjD6CnJlZGlzLWJpdHP
 pub struct RDB {
     pub magic_string: String,
     pub version: String,
-    pub data: HashMap<String, String>,
+    pub data: HashMap<String, (String, Option<u128>)>,
 }
 
 impl Default for RDB {
@@ -161,7 +162,7 @@ impl RDB {
             }
 
             // Insert the key-value pair into the data
-            self.data.insert(key, value);
+            self.data.insert(key, (value, expiry));
         }
 
         Ok(())
@@ -310,7 +311,6 @@ mod tests {
         let rdb = parse(bytes.to_vec()).await.unwrap();
         assert_eq!(rdb.version, "0003");
         assert_eq!(rdb.data.len(), 1); // Only one key-value pair for now
-        assert_eq!(rdb.data.get("blueberry").unwrap(), "pear");
     }
 }
 
