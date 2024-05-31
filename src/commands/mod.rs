@@ -23,6 +23,7 @@ mod type_cmd;
 mod wait;
 mod xadd;
 mod xrange;
+mod xread;
 
 /// Handles the incoming command by parsing it and calling the appropriate command handler.
 pub async fn handle(
@@ -74,6 +75,8 @@ pub async fn handle(
         "XADD" => xadd::command(&cmd, conn, server).await?,
 
         "XRANGE" => xrange::command(&cmd, conn, server).await?,
+
+        "XREAD" => xread::command(&cmd, conn, server).await?,
 
         _ => {
             let response = resp::Type::SimpleError(format!("ERR unknown command: {:?}\r\n", cmd));

@@ -11,6 +11,7 @@
         "replid",
         "XADD",
         "xrange",
+        "xread",
         "zset"
     ]
 }
