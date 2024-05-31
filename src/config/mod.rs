@@ -47,8 +47,13 @@ impl Default for Config {
         Config {
             port: DEFAULT_PORT, // Default port. Same as Redis.
             replicaof: None, // No replica-of address by default. The server will act as a master.
-            dir: None,       // Default directory for the database files.
-            dbfilename: None, // Default filename for the database file.
+            dir: Some(
+                std::env::current_dir()
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned(),
+            ), // Set the current directory as the default directory for the database files.
+            dbfilename: Some("rdb.dump".into()), // Default filename for the database file.
         }
     }
 }
