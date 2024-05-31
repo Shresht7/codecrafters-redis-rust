@@ -52,8 +52,8 @@ impl RDB {
         // Create a cursor to read the remaining data
         let mut bytes = reader::read(&data[9..]);
 
-        // Read until the triple zero
-        let (_, mut rest) = bytes.split(&[0, 0, 0])?;
+        // Read until the double zero !HACK
+        let (_, mut rest) = bytes.split(&[0, 0]).expect("Failed to find triple zero");
         let b = rest.as_bytes();
         let key_length = b[0] as usize;
         let key = String::from_utf8(b[1..=key_length].to_vec())?;
@@ -100,3 +100,6 @@ mod tests {
         assert_eq!(rdb.data.get("blueberry").unwrap(), "pear");
     }
 }
+
+// TEST CONTENTS
+// [82, 69, 68, 73, 83, 48, 48, 48, 51, 250, 9, 114, 101, 100, 105, 115, 45, 118, 101, 114, 5, 55, 46, 50, 46, 48, 250, 10, 114, 101, 100, 105, 115, 45, 98, 105, 116, 115, 192, 64, 254, 0, 251, 1, 0, 0, 4, 112, 101, 97, 114, 5, 97, 112, 112, 108, 101, 255, 98, 13, 59, 53, 179, 65, 228, 176, 10]
