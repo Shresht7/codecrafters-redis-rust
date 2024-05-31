@@ -61,6 +61,11 @@ impl RDB {
 
         loop {
             println!("{:?}", b);
+            if b[0] == 0x00 {
+                b = &b[1..]; // Skip the zero byte
+                continue;
+            }
+
             if b[0] == 0xFF {
                 // End of the data
                 break;

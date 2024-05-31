@@ -41,11 +41,6 @@ pub async fn command(
 
     // Get the keys that match the pattern
     let keys = server.db.keys();
-    let keys = keys
-        .iter()
-        .filter(|key| key.to_string() != "")
-        .cloned()
-        .collect();
 
     println!("{:?}", keys);
 
