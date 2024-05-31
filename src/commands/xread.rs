@@ -46,14 +46,10 @@ pub async fn command(
     let streams = args.iter().skip(2).take(len_of_remaining_args / 2);
     let ids = args.iter().skip(2 + streams.len()).take(streams.len());
 
-    println!("Streams: {:?}", streams.clone().collect::<Vec<_>>());
-    println!("IDs: {:?}", ids.clone().collect::<Vec<_>>());
-
     // The collection of entries of all the streams
     let mut entries_of_entries = Vec::new();
 
     for (stream, id) in streams.zip(ids) {
-        println!("Stream: {:?}, ID: {:?}", stream, id);
         let stream = match stream {
             Type::BulkString(stream) => stream,
             _ => {
@@ -80,7 +76,7 @@ pub async fn command(
     // Write the entries to the client
     let response = Type::Array(entries_of_entries);
 
-    println!("Response: {:?}", response);
+    // println!("Response: {:?}", response);
 
     connection.write_all(&response.as_bytes()).await?;
 
