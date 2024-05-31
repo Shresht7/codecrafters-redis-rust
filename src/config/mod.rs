@@ -17,7 +17,6 @@
 ///    println!("Replica-of: {}", replicaof);
 /// }
 /// ```
-
 // -------------
 // CONFIGURATION
 // -------------
@@ -56,108 +55,132 @@ impl Default for Config {
 
 /// Parses the Configuration from the command-line arguments.
 pub fn from_command_line(args: Vec<String>) -> Result<Config, Box<dyn std::error::Error>> {
-    // Initialize the configuration with the default values
-    let mut config = Config::default();
+    let mut config = Config::default(); // Initialize the configuration with the default values
+    config.from_command_line(args)?; // Parse the configuration from the command-line arguments
+    Ok(config) // Return the configuration
+}
 
-    // Iterate over the arguments...
-    for i in 0..args.len() {
-        match args[i].as_str() {
-            // If the argument is a port flag, parse the port
-            "-p" | "--port" => config.port = parse_port(&args, i)?,
+impl Config {
+    /// Parses the Configuration from the command-line arguments.
+    fn from_command_line(&mut self, args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+        // Iterate over the arguments...
+        for i in 0..args.len() {
+            match args[i].as_str() {
+                // If the argument is a port flag, parse the port
+                "-p" | "--port" => self.parse_port(&args, i)?,
 
-            // If the argument is a replica-of flag, parse the replica-of address
-            "--replicaof" => config.replicaof = parse_replicaof(&args, i)?,
+                // If the argument is a replica-of flag, parse the replica-of address
+                "--replicaof" => self.parse_replicaof(&args, i)?,
 
-            // If the argument is a directory flag, parse the directory
-            "--dir" => config.dir = parse_dir(i, &args)?,
+                // If the argument is a directory flag, parse the directory
+                "--dir" => self.parse_dir(&args, i)?,
 
-            // If the argument is a dbfilename flag, parse the dbfilename
-            "--dbfilename" => config.dbfilename = parse_dbfilename(i, &args)?,
+                // If the argument is a dbfilename flag, parse the dbfilename
+                "--dbfilename" => self.parse_dbfilename(&args, i)?,
 
-            _ => {} // Ignore any other arguments
+                _ => {} // Ignore any other arguments
+            }
         }
+        Ok(())
     }
 
-    Ok(config)
-}
+    // PORT
+    // ----
 
-// PORT
-// ----
-
-/// Parses the port from the command-line arguments.
-/// The port must be specified in the format `--port 1234`.
-fn parse_port(args: &[String], idx: usize) -> Result<u16, Box<dyn std::error::Error>> {
-    // Check if there is a value after the flag...
-    if idx + 1 < args.len() {
-        // ...and if there is, parse it as a u16
-        return Ok(args[idx + 1].parse::<u16>()?);
-    } else {
-        // ...otherwise, print an error message
-        Err("No port provided after the flag")?;
+    /// Parses the port from the command-line arguments.
+    /// The port must be specified in the format `--port 1234`.
+    fn parse_port(
+        &mut self,
+        args: &[String],
+        idx: usize,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // Check if there is a value after the flag...
+        if idx + 1 < args.len() {
+            // ...and if there is, parse it as a u16
+            self.port = match args[idx + 1].parse::<u16>() {
+                Ok(port) => port,
+                Err(_) => {
+                    // ...if the value is not a valid port, print an error message
+                    Err("Invalid port value")?
+                }
+            }
+        } else {
+            // ...otherwise, print an error message
+            Err("No port provided after the flag")?;
+        }
+        Ok(())
     }
-    Ok(DEFAULT_PORT)
-}
 
-// REPLICA-OF
-// ----------
+    // REPLICA-OF
+    // ----------
 
-/// Parses the replica-of address from the command-line arguments.
-/// The replica-of address must be specified in the format `--replicaof 'host port'`.
-fn parse_replicaof(
-    args: &[String],
-    idx: usize,
-) -> Result<Option<String>, Box<dyn std::error::Error>> {
-    // Check if there is a value after the flag...
-    if idx + 1 < args.len() {
-        // ...and if there is, parse it as a string
-        let str = args[idx + 1].clone();
-        // Split the string into host and port parts (the --replicaof format is 'host port')
-        let parts: Vec<&str> = str.split(' ').collect();
-        let addr = format!("{}:{}", parts[0], parts[1]); // Combine the parts into an address
-        return Ok(Some(addr));
-    } else {
-        // ...otherwise, print an error message
-        Err("No replica-of address provided after the flag")?;
+    /// Parses the replica-of address from the command-line arguments.
+    /// The replica-of address must be specified in the format `--replicaof 'host port'`.
+    fn parse_replicaof(
+        &mut self,
+        args: &[String],
+        idx: usize,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // Check if there is a value after the flag...
+        if idx + 1 < args.len() {
+            // ...and if there is, parse it as a string
+            let str = args[idx + 1].clone();
+            // Split the string into host and port parts (the --replicaof format is 'host port')
+            let parts: Vec<&str> = str.split(' ').collect();
+            let addr = format!("{}:{}", parts[0], parts[1]); // Combine the parts into an address
+            self.replicaof = Some(addr); // Set the replica-of address
+        } else {
+            // ...otherwise, print an error message
+            Err("No replica-of address provided after the flag")?;
+        }
+        Ok(())
     }
-    Ok(None)
-}
 
-// DIR
-// ---
+    // DIR
+    // ---
 
-/// Parses the directory from the command-line arguments.
-/// The directory must be specified in the format `--dir 'path'`.
-/// The directory is where the server will store the rdb database files.
-fn parse_dir(i: usize, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
-    // Check if there is a value after the flag...
-    if i + 1 < args.len() {
-        // ...and if there is, set it as the directory
-        let dir = args[i + 1].clone();
-        return Ok(Some(dir));
-    } else {
-        // ...otherwise, print an error message
-        Err("No directory provided after the flag")?;
+    /// Parses the directory from the command-line arguments.
+    /// The directory must be specified in the format `--dir 'path'`.
+    /// The directory is where the server will store the rdb database files.
+    fn parse_dir(
+        &mut self,
+        args: &Vec<String>,
+        i: usize,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // Check if there is a value after the flag...
+        if i + 1 < args.len() {
+            // ...and if there is, set it as the directory
+            let dir = args[i + 1].clone();
+            self.dir = Some(dir);
+        } else {
+            // ...otherwise, print an error message
+            Err("No directory provided after the flag")?;
+        }
+        Ok(())
     }
-    Ok(None)
-}
 
-// DBFILENAME
-// ----------
+    // DBFILENAME
+    // ----------
 
-pub fn parse_dbfilename(
-    i: usize,
-    args: &Vec<String>,
-) -> Result<Option<String>, Box<dyn std::error::Error>> {
-    // Check if there is a value after the flag...
-    if i + 1 < args.len() {
-        // ...and if there is, set it as the dbfilename
-        let dbfilename = args[i + 1].clone();
-        return Ok(Some(dbfilename));
-    } else {
-        // ...otherwise, print an error message
-        Err("No dbfilename provided after the flag")?;
+    /// Parses the dbfilename from the command-line arguments.
+    /// The dbfilename must be specified in the format `--dbfilename 'filename'`.
+    /// The dbfilename is the name of the rdb database file.
+    pub fn parse_dbfilename(
+        &mut self,
+        args: &Vec<String>,
+        i: usize,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // Check if there is a value after the flag...
+        if i + 1 < args.len() {
+            // ...and if there is, set it as the dbfilename
+            let dbfilename = args[i + 1].clone();
+            self.dbfilename = Some(dbfilename);
+        } else {
+            // ...otherwise, print an error message
+            Err("No dbfilename provided after the flag")?;
+        }
+        Ok(())
     }
-    Ok(None)
 }
 
 // -----
