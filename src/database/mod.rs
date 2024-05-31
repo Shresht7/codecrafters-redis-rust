@@ -1,7 +1,7 @@
 use tokio::fs;
 
 // Library
-use crate::parser::resp::Type;
+use crate::{helpers, parser::resp::Type};
 use std::{collections::HashMap, time::Instant};
 
 // Modules
@@ -72,7 +72,9 @@ impl Database {
 
     pub async fn load(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let filepath = format!("{}/{}", self.dir, self.dbfilename);
-        let contents = fs::read(filepath).await?;
+        let contents = fs::read(filepath)
+            .await
+            .unwrap_or(helpers::base64_to_bytes(rdb::EMPTY_RDB));
         let rdb = rdb::parse(contents).await?;
         for ele in rdb.data {
             self.set(Type::BulkString(ele.0), Type::BulkString(ele.1), None);
