@@ -71,6 +71,8 @@ pub async fn command(
     // Update the database
     s.db.set(name.clone(), Type::Stream(stream), None);
 
+    // println!("Stream ID: {}", id.to_string());
+
     // Write the ID of the new entry
     let response = Type::BulkString(id.to_string());
     connection.write_all(&response.as_bytes()).await?;
