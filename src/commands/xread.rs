@@ -91,7 +91,7 @@ pub async fn command(
     // Write the entries to the client
     let response = Type::Array(vec![Type::Array(vec![key.clone(), Type::Array(entries)])]);
 
-    println!("Response: {:?}", response);
+    // println!("Response: {:?}", response);
 
     connection.write_all(&response.as_bytes()).await?;
 
