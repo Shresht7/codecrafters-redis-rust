@@ -35,12 +35,14 @@ pub async fn command(
         }
     };
     let start = match args.get(2) {
-        Some(Type::BulkString(start)) => start,
+        Some(Type::BulkString(id)) => match id.as_str() {
+            "-" => StreamID::default(),
+            _ => StreamID::from_id(&id),
+        },
         _ => {
             return connection.write_error("ERR invalid start").await;
         }
     };
-    let start = StreamID::from_id(&start);
     let end = match args.get(3) {
         Some(Type::BulkString(end)) => end,
         _ => {
