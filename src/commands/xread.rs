@@ -27,6 +27,8 @@ pub async fn command(
     }
     let mut args = args.iter();
 
+    let _ = args.next(); // Skip the first argument (XREAD)
+
     // Error if the first argument is not `streams`
     let subcommand = match args.next() {
         Some(Type::BulkString(subcommand)) => subcommand,
