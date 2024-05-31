@@ -37,6 +37,8 @@ pub async fn handle(
         }
     };
 
+    println!("Command: {:?}", command);
+
     // Handle the command
     match command.to_uppercase().as_str() {
         "PING" => ping::command(cmd, conn, server).await?,

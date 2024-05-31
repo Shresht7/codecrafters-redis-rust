@@ -26,6 +26,8 @@ pub async fn command(
             .await;
     }
 
+    println!("CONFIG {:?}", args);
+
     // Extract the subcommand from the arguments
     let subcommand = match args.get(1) {
         Some(subcommand) => subcommand,
@@ -38,8 +40,10 @@ pub async fn command(
     match subcommand.to_string().to_uppercase().as_str() {
         "GET" => get(args, connection, server).await?,
         // "SET" => set(args, connection, server).await?,
-        _ => {
-            return connection.write_error("ERR unsupported subcommand").await;
+        x => {
+            return connection
+                .write_error(format!("ERR unknown subcommand '{}'", x))
+                .await;
         }
     }
 
